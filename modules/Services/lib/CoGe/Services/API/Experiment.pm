@@ -180,6 +180,7 @@ sub add_annotation {
         text => $text,
         type_name => $type_name
     );
+    $self->render(json => { success => Mojo::JSON->true });
 }
 
 sub remove {

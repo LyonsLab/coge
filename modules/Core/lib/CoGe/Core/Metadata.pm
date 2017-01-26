@@ -47,7 +47,7 @@ sub create_annotation {
         return;
     }
 
-    my $locked = $opts{locked};
+    my $locked = $opts{locked} ? 1 : 0;
     my $text   = $opts{text};
     if (ref($target) =~ /Experiment/) {
         return $db->resultset('ExperimentAnnotation')->find_or_create({

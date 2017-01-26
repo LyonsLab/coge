@@ -12,25 +12,26 @@ class Annotations {
 		this.parent_id = parent_id;
 		this.user_can_edit = user_can_edit;
 		this.default_type = default_type;
+		this.images = [];
 		this.timers = {};
 		this.show_table();
 
 		$("#edit_annotation_type").autocomplete({source:[]});
 		$("#edit_annotation_type_group").autocomplete({source: this.get_type_groups});
-		$('#edit_annotation_image').fileupload({
-			dataType: 'json',
-			replaceFileInput: false,
-			add:
-				function(e, data) {
-					return true;
-				},
-			done:
-				function(e, data) {
-					annotations.show_table();
-					$("#wait_annotation").hide();
-					$("#annotation_edit_box").dialog('close');
-				}
-		});
+		// $('#edit_annotation_image').fileupload({
+		// 	dataType: 'json',
+		// 	replaceFileInput: false,
+		// 	add:
+		// 		function(e, data) {
+		// 			return true;
+		// 		},
+		// 	done:
+		// 		function(e, data) {
+		// 			annotations.show_table();
+		// 			$("#wait_annotation").hide();
+		// 			$("#annotation_dialog").dialog('close');
+		// 		}
+		// });
 	}
 
 	add() {
@@ -42,7 +43,7 @@ class Annotations {
 		else if(!type)
 			alert ('Please specify a type.');
 		else {
-			var type_group = $('#edit_annotation_type_group').val();
+			var group_name = $('#edit_annotation_type_group').val();
 			var link = $('#edit_annotation_link').val();
 			var annotation_image_file = $('#edit_annotation_image')[0].files[0];
 			if (annotation_image_file) {
@@ -51,26 +52,29 @@ class Annotations {
 				$("#wait_annotation").animate({opacity:1});
 			} else
 				annotation_image_file = '';
+			var form_data = new FormData();
+			form_data.append('annotation', annotation);
+			if (group_name)
+				form_data.append('group_name', group_name);
+			if (link)
+				form_data.append('link', link);
+			form_data.append('target_id', this.parent_id);
+			form_data.append('type_name', type);
+			var url = '<TMPL_VAR NAME="API_BASE_URL">' + this.api_path + '/' + this.parent_id + '/annotations';
 			$.ajax({
 				type: 'PUT',
-				url: '<TMPL_VAR NAME="API_BASE_URL">' + this.api_path + '/' + this.parent_id + '/annotations',
-				dataType: "json",
-				contentType: 'multipart/form-data',
-				data: JSON.stringify(data),
+				url: url,
+    			data: form_data,
+				contentType: false,
+    			processData: false
+			})
+			.done(function() {
+				annotations.show_table();
+				$("#wait_annotation").hide();
+				$("#annotation_dialog").dialog('close');
 			})
 			.fail(function(jqXHR, textStatus, errorThrown) { 
-				self._error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
-			})
-			$('#edit_annotation_image').fileupload('send', {
-				files: annotation_image_file,
-				formData: {
-					fname: 'add_annotation',
-					target_id: $('#annotation_edit_box').data('parent_id'),
-					group_name: type_group,
-					type_name: type,
-					annotation: annotation,
-					link: link
-				}
+				console.log('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
 			});
 		}
 	}
@@ -96,6 +100,10 @@ class Annotations {
 			}.bind(this),
 			500
 		);
+	}
+
+	on_error(img) {
+		this.images.push(img);
 	}
 
 	search_types () {
@@ -125,7 +133,7 @@ class Annotations {
 		$('#edit_annotation_image').val('');
 		$('#add_annotation_button').show();
 		$('#update_annotation_button').hide();
-		$("#annotation_edit_box").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
+		$("#annotation_dialog").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
 	}
 
 	show_edit_dialog(aid) {
@@ -137,7 +145,7 @@ class Annotations {
 			$('#edit_annotation_image').val('');
 			$('#add_annotation_button').hide();
 			$('#update_annotation_button').data({annotation_id: aid}).show();
-			$("#annotation_edit_box").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
+			$("#annotation_dialog").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
 		});
 	}
 
@@ -175,7 +183,7 @@ class Annotations {
 								var image_link = 'image.pl?id=' + annotation.image_id;
 								$('<a href=' + image_link + ' target="_blank" title="click for full-size image"><img height="40" width="40" src="' + image_link + '" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray margin-right:5px;"></a>').appendTo(td);
 							} else if (annotation.bisque_id)
-								$('<a href="http://bisque.iplantc.org/client_service/view?resource=http://bisque.iplantc.org/data_service/' + annotation.bisque_id + '6" target="_blank" title="click to view in BisQue"><img src="http://bisque.iplantc.org/image_service/' + annotation.bisque_id + '6?thumbnail=200,200" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray;width:42px;margin-right:5px;"></a>').appendTo(td);
+								$('<a href="http://bisque.iplantc.org/client_service/view?resource=http://bisque.iplantc.org/data_service/' + annotation.bisque_id + '6" target="_blank" title="click to view in BisQue"><img src="http://bisque.iplantc.org/image_service/' + annotation.bisque_id + '6?thumbnail=200,200" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray;width:42px;margin-right:5px;"></a>').appendTo(td);
 							td.append(document.createTextNode(annotation.annotation));
 							td = $('<td style="padding-left:5px;"></td>');
 							if (annotation.link)
@@ -241,7 +249,7 @@ class Annotations {
 
 </script>
 
-<div id="annotation_edit_box" class="dialog_box hidden">
+<div id="annotation_dialog" class="dialog_box hidden">
   <table class="small">
     <tr valign='top'>
       <td>Annotation:</td>
