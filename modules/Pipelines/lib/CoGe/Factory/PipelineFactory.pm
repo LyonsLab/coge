@@ -19,9 +19,9 @@ use CoGe::Builder::Tools::NucCounter;
 use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Tools::SynMap3D;
-use CoGe::Builder::Expression::MeasureExpression;
-use CoGe::Builder::Methylation::CreateMetaplot;
-use CoGe::Builder::PopGen::MeasureDiversity;
+use CoGe::Builder::Expression::qTeller;
+use CoGe::Builder::Methylation::Metaplot;
+use CoGe::Builder::PopGen::SummaryStats;
 use CoGe::Exception::Generic;
 
 my %typeToClass = (
@@ -35,12 +35,12 @@ my %typeToClass = (
     'load_batch'            => 'CoGe::Builder::Load::BatchExperiment',
     'load_genome'           => 'CoGe::Builder::Load::Genome',
     'load_annotation'       => 'CoGe::Builder::Load::Annotation',
-    'analyze_snps'          => 'CoGe::Builder::SNP::IdentifySNPs',
+    'analyze_snps'          => 'CoGe::Builder::SNP::SNPFinder',
     'synmap'                => 'CoGe::Builder::Tools::SynMap',
     'synmap3d'              => 'CoGe::Builder::Tools::SynMap3D',
-    'analyze_expression'    => 'CoGe::Builder::Expression::MeasureExpression',
-    'analyze_metaplot'      => 'CoGe::Builder::Methylation::CreateMetaplot',
-    'analyze_diversity'     => 'CoGe::Builder::PopGen::MeasureDiversity',
+    'analyze_expression'    => 'CoGe::Builder::Expression::qTeller',
+    'analyze_metaplot'      => 'CoGe::Builder::Methylation::Metaplot',
+    'analyze_diversity'     => 'CoGe::Builder::PopGen::SummaryStats',
     'analyze_nucleotides'   => 'CoGe::Builder::Tools::NucCounter'
 );
 
@@ -70,7 +70,7 @@ sub get {
                 data_dir   => $dr->data_dir,
                 ncbi_accns => $dr->ncbi_accns
               )
-            : undef
+            : ()
     );
 
     # Post-build: add completion tasks (such as sending notifiation email)
