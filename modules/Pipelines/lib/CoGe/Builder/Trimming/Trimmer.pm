@@ -3,11 +3,13 @@ package CoGe::Builder::Trimming::Trimmer;
 use Moose;
 extends 'CoGe::Builder::Buildable';
 
+use Switch;
 use Data::Dumper qw(Dumper);
 
 use CoGe::Accessory::Utils qw(detect_paired_end);
 use CoGe::Builder::Trimming::Cutadapt;
 use CoGe::Builder::Trimming::TrimGalore;
+use CoGe::Builder::Trimming::Trimmomatic;
 use CoGe::Exception::Generic;
 
 # Outputs
@@ -39,14 +41,13 @@ sub build {
     }
 
     my $trimmer;
-    if ($trimming_params->{trimmer} eq 'cutadapt') {
-        $trimmer = CoGe::Builder::Trimming::Cutadapt->new($self);
-    }
-    elsif ($trimming_params->{trimmer} eq 'trimgalore') {
-        $trimmer = CoGe::Builder::Trimming::TrimGalore->new($self);
-    }
-    else {
-        CoGe::Exception::Generic->throw(message => 'Unrecognized trimmer');
+    switch( lc($trimming_params->{trimmer}) ) {
+        case 'cutadapt'    { $trimmer = CoGe::Builder::Trimming::Cutadapt->new($self)  }
+        case 'trimgalore'  { $trimmer = CoGe::Builder::Trimming::TrimGalore->new($self)  }
+        case 'trimmomatic' { $trimmer = CoGe::Builder::Trimming::Trimmomatic->new($self)  }
+        default {
+            CoGe::Exception::Generic->throw(message => 'Invalid trimmer');
+        }
     }
 
     $trimmer->build(data_files => [$fastq1, $fastq2]);

@@ -297,6 +297,8 @@
 	            <label for="cutadapt">CutAdapt</label>
 	            <input name="trimmer" type="radio" value="trimgalore">
 	            <label for="trimgalore">Trim Galore</label>
+				<input name="trimmer" type="radio" value="trimmomatic">
+	            <label for="trimmomatic">Trimmomatic</label>
 	        </div>
 	    </div>
 	
@@ -342,6 +344,45 @@
 				<label>-a</label>
 				<input id="-a-chk" type="checkbox"/>
 				<input id="-a" type="text"/>
+			</div>
+		</div>
+	</div>
+</script>
+
+<script id="trimmomatic-template" type="text/template">
+	<div class="form-field">
+		<label class="col-md-2">Trimmomatic: (<a href="http://www.usadellab.org/cms/?page=trimmomatic" target="_blank" class="small link">docs</a>)</label>
+		<div class="form-group">
+			<div class="form-entry" title="Perform a sliding window trimming, cutting once the average quality within the window falls
+below a threshold.">
+		        <label>SLIDINGWINDOW</label>
+		        <input id="SLIDINGWINDOW"/>
+		    </div>
+			<div class="form-entry" title="Performs an adaptive quality trim, balancing the benefits of retaining longer reads against the
+costs of retaining bases with errors. ">
+				<label>MAXINFO</label>
+				<input id="MAXINFO"/>
+			</div>
+			<div class="form-entry" title="Remove low quality bases from the beginning.">
+				<label>LEADING</label>
+				<input id="LEADING"/>
+			</div>
+			<div class="form-entry" title="Remove low quality bases from the end.">
+				<label>TRAILING</label>
+				<input id="TRAILING"/>
+			</div>
+			<div class="form-entry" title="Remove bases regardless of quality from the end of the read, so that the read has maximally
+the specified length after this step has been performed.">
+				<label>CROP</label>
+				<input id="CROP"/>
+			</div>
+			<div class="form-entry" title="Remove the specified number of bases, regardless of quality, from the beginning of the read.">
+				<label>HEADCROP</label>
+				<input id="HEADCROP"/>
+			</div>
+			<div class="form-entry" title="Remove reads that fall below the specified minimal length.">
+				<label>MINLEN</label>
+				<input id="MINLEN"/>
 			</div>
 		</div>
 	</div>
