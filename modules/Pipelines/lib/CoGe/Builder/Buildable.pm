@@ -60,7 +60,11 @@ sub user    { shift->request->user }
 sub db      { shift->request->db   }
 sub conf    { shift->request->conf }
 
-sub get_site_url { # override this or use default in pre_build
+sub get_name { # override this
+    return '';
+}
+
+sub get_site_url { # override this
     return '';
 }
 
