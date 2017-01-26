@@ -15,6 +15,7 @@ use CoGe::Exception::MissingField;
 sub build {
     my $self = shift;
     my %opts = @_;
+    my $fasta = $opts{fasta_file}; # reheadered fasta file
     my $fastq = $opts{data_files}; # array ref of FASTQ files
     unless ($fastq && @$fastq) {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
@@ -24,7 +25,7 @@ sub build {
 
     # Add index task
     $self->add(
-        $self->bowtie2_index()
+        $self->bowtie2_index($fasta)
     );
 
     # Add one or more alignment tasks

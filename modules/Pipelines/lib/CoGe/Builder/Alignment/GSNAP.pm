@@ -9,20 +9,22 @@ use File::Basename qw(basename);
 use CoGe::Accessory::Utils qw(to_filename to_filename_base to_filename_without_extension);
 use CoGe::Accessory::Web qw(get_command_path);
 use CoGe::Core::Storage qw(get_genome_file get_genome_cache_path);
+use CoGe::Exception::MissingField;
 
 sub build {
     my $self = shift;
     my %opts = @_;
+    my $fasta = $opts{fasta_file}; # reheadered fasta file
     my $fastq = $opts{data_files}; # array ref of FASTQ files
     unless ($fastq && @$fastq) {
-        CoGe::Exception::Generic->throw(message => 'Missing fastq');
+        CoGe::Exception::MissingField->throw(message => 'Missing fastq');
     }
 
     my $doSeparately = $self->params->{chipseq_params};
 
     # Generate index
     $self->add(
-        $self->gmap_index()
+        $self->gmap_index($fasta)
     );
     $self->index([$self->previous_output->[0]]);
 
@@ -60,14 +62,14 @@ sub build {
 
 sub gmap_index {
     my $self = shift;
+    my $fasta = shift;
+
     my $gid = $self->request->genome->id;
-    my $fasta = get_genome_file($gid);
     my $name = to_filename($fasta);
     my $GMAP_CACHE_DIR = catdir(get_genome_cache_path($gid), "gmap_index");
 
     return {
         cmd => get_command_path('GMAP_BUILD'),
-        script => undef,
         args => [
             ["-D", ".", 0],
             ["-d", $name . "-index", 0],
@@ -135,7 +137,6 @@ sub gsnap_alignment {
 
     return {
         cmd => $cmd,
-        script => undef,
 # mdb removed 2/2/15 -- fails on zero-length validation input
 #        options => {
 #            "allow-zero-length" => JSON::false,
@@ -162,7 +163,6 @@ sub filter_sam {
 
     return {
         cmd => "$cmd $filename $filename.processed",
-        script => undef,
         args => [],
         inputs => [
             $samfile

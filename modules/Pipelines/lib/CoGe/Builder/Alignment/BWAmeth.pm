@@ -15,6 +15,7 @@ use CoGe::Exception::MissingField;
 sub build {
     my $self = shift;
     my %opts = @_;
+    my $fasta = $opts{fasta_file}; # reheadered fasta file
     my $fastq = $opts{data_files}; # array ref of FASTQ files
     unless ($fastq && @$fastq) {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
@@ -22,7 +23,7 @@ sub build {
 
     # Add index task
     $self->add(
-        $self->bwameth_index()
+        $self->bwameth_index($fasta)
     );
 
     $self->add_to_previous(
@@ -33,12 +34,13 @@ sub build {
 
 sub bwameth_index {
     my $self = shift;
+    my $fasta = shift;
+
+    my $name = to_filename($fasta);
 
     my $gid = $self->request->genome->id;
-    my $fasta = get_genome_file($gid);
     my $cache_dir = catdir(get_genome_cache_path($gid), "bwameth_index");
 	make_path($cache_dir) unless (-d $cache_dir);
-    my $name = catfile($cache_dir, 'genome.reheader');
 
     my $done_file = 'bwameth_index.done';
 
@@ -50,12 +52,12 @@ sub bwameth_index {
            "touch $done_file";
 
     $self->index([
-        "$name.bwameth.c2t",
-        "$name.bwameth.c2t.amb",
-        "$name.bwameth.c2t.ann",
-        "$name.bwameth.c2t.bwt",
-        "$name.bwameth.c2t.pac",
-        "$name.bwameth.c2t.sa"
+        catfile($cache_dir, "$name.bwameth.c2t"),
+        catfile($cache_dir, "$name.bwameth.c2t.amb"),
+        catfile($cache_dir, "$name.bwameth.c2t.ann"),
+        catfile($cache_dir, "$name.bwameth.c2t.bwt"),
+        catfile($cache_dir, "$name.bwameth.c2t.pac"),
+        catfile($cache_dir, "$name.bwameth.c2t.sa")
     ]);
 
     return {
