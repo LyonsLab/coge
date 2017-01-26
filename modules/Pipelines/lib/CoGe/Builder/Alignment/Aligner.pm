@@ -35,7 +35,7 @@ sub build {
     my %opts = @_;
     my $fastq = $opts{data_files}; # array ref of FASTQ files
     unless ($fastq && @$fastq) {
-        CoGe::Exception::Generic->throw(message => 'Missing fastq');
+        CoGe::Exception::MissingField->throw(message => 'Missing fastq');
     }
 
     # Validate inputs not already checked in Request
@@ -90,6 +90,7 @@ sub build {
     $self->add(
         $self->reheader_fasta($gid)
     );
+    my $reheader_fasta = $self->previous_output;
 
     # Index the fasta file
     $self->add_to_previous(
@@ -109,7 +110,7 @@ sub build {
             CoGe::Exception::Generic->throw(message => 'Invalid aligner');
         }
     }
-    $aligner->build(data_files => \@trimmed);
+    $aligner->build(fasta_file => $reheader_fasta, data_files => \@trimmed);
     $self->add_to_all($aligner);
     push @{$self->raw_bam}, @{$aligner->bam};
 
@@ -166,9 +167,9 @@ sub validate_fastq {
 
 sub bowtie2_index { # shared between Bowtie and Tophat
     my $self = shift;
+    my $fasta = shift;
 
     my $gid = $self->request->genome->id;
-    my $fasta = get_genome_file($gid);
     my $cache_dir = catdir(get_genome_cache_path($gid), "bowtie_index");
 	make_path($cache_dir) unless (-d $cache_dir);
     my $name = catfile($cache_dir, 'genome.reheader');

@@ -15,6 +15,7 @@ use CoGe::Exception::MissingField;
 sub build {
     my $self = shift;
     my %opts = @_;
+    my $fasta = $opts{fasta_file}; # reheadered fasta file
     my $fastq = $opts{data_files}; # array ref of FASTQ files
     unless ($fastq && @$fastq) {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
@@ -24,7 +25,7 @@ sub build {
 
     # Add index task
     $self->add(
-        $self->hisat2_index()
+        $self->hisat2_index($fasta)
     );
 
     # Add one or more alignment tasks
@@ -55,9 +56,9 @@ sub build {
 
 sub hisat2_index {
     my $self  = shift;
+    my $fasta = shift;
 
     my $gid = $self->request->genome->id;
-    my $fasta = get_genome_file($gid);
     my $cache_dir = catdir(get_genome_cache_path($gid), "hisat2_index");
 	make_path($cache_dir) unless (-d $cache_dir);
     my $name = catfile($cache_dir, 'genome.reheader');
