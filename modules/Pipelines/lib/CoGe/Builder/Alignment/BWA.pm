@@ -64,8 +64,6 @@ sub bwa_index {
     my $name = catfile($cache_dir, 'genome.reheader');
     my $done_file = "$name.done";
 
-    my $cmd = 'nice ' . get_command_path('BWA', 'bwa') . " index $fasta -p $name && touch $done_file";
-
     $self->index([
         $name . ".amb",
         $name . ".ann",
@@ -75,8 +73,13 @@ sub bwa_index {
     ]);
 
     return {
-        cmd => $cmd,
-        args => [],
+        cmd => 'nice ' . get_command_path('BWA', 'bwa') . ' index',
+        args => [
+            [ '-a', 'bwtsw', 0 ],
+            [ '',   $fasta,  1 ],
+            [ '-p', $name,   0 ],
+            [ '&&', "touch $done_file", 0 ],
+        ],
         inputs => [ $fasta ],
         outputs => [
             @{$self->index},
@@ -91,9 +94,10 @@ sub bwa_alignment {
     my $fastq = shift;
 
     my $gid         = $self->request->genome->id;
-    my $read_params = $self->params->{read_params} // {};
-    my $encoding    = $read_params->{encoding} // 33;
-    my $read_type   = $read_params->{read_type} // 'single';
+    
+    #my $read_params = $self->params->{read_params} // {};
+    #my $encoding    = $read_params->{encoding} // 33;
+    #my $read_type   = $read_params->{read_type} // 'single';
 
     my $alignment_params = $self->params->{alignment_params} // {};
     my $M = $alignment_params->{'-M'} // 0;
