@@ -73,12 +73,12 @@ sub build {
     push @tasks, create_platypus_job(
         bam   => $sorted_bam_file,
         fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta),
-        vcf   => catfile($staging_dir, 'snps.vcf')
+        vcf   => catfile($staging_dir, "$sorted_bam_file.vcf")
     );
     
     my $load_vcf_task = create_load_vcf_job({
         staging_dir => $staging_dir,
-        vcf         => catfile($staging_dir, 'snps.vcf'),
+        vcf         => catfile($staging_dir, "$sorted_bam_file.vcf"),
         annotations => $annotations,
         username    => $user->name,
         metadata    => $metadata,
