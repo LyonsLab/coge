@@ -5,6 +5,7 @@ extends 'CoGe::Builder::Methylation::Analyzer';
 
 use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);
+use String::ShellQuote;
 
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
@@ -15,13 +16,17 @@ use CoGe::Exception::Generic;
 sub build {
     my $self = shift;
     my %opts = @_;
-    my ($bam_file) = @{$opts{data_files}};
-    unless ($bam_file) { # for when called from ExperimentView
-        my $experiment = $self->request->experiment;
-        $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
-    }
 
-    my $genome = $self->request->genome;
+    my ($bam_file, $genome, $experiment);
+    if ($opts{data_files}) {
+        $genome = $self->request->genome;
+        ($bam_file) = @{$opts{data_files}};
+    }
+    else { # for when called from ExperimentView
+        $genome     = $self->request->genome;
+        $experiment = $self->request->experiment;
+        $bam_file   = get_experiment_files($experiment->id, $experiment->data_type)->[0];
+    }
 
     # Make sure genome is annotated as is required by metaplot script
     my $isAnnotated = $genome->has_gene_features;
@@ -50,25 +55,22 @@ sub build {
     # Generate metaplot
     $self->add(
         $self->metaplot(
-            bam_file => $bam_file,
-            gff_file => $gff_file,
+            bam_file  => $bam_file,
+            gff_file  => $gff_file,
             feat_type => 'gene'
         )
     );
 
-    # Add metadata -- #FIXME!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#    my $annotations = generate_additional_metadata($self->previous_outputs->[1]);
-#    my $metadata_task = add_metadata_to_results_job(
-#        user => $user,
-#        wid => $wid,
-#        annotations => $annotations,
-#        staging_dir => $staging_dir,
-#        done_files => \@done_files,
-#        item_id => $experiment_id,
-#        item_type => 'experiment',
-#        locked => 0
-#    );
-#    push @tasks, $metadata_task;
+    # Add metadata to results
+    my $annotations = $self->generate_additional_metadata($self->previous_outputs->[1]);
+    $self->add_to_previous(
+        $self->add_metadata_to_results(
+            annotations => $annotations,
+            item_id     => ($experiment ? $experiment->id : undef),
+            item_type   => 'experiment',
+            locked      => 0
+        )
+    );
 }
 
 sub generate_additional_metadata {
@@ -101,16 +103,16 @@ sub metaplot {
     return {
         cmd => $cmd,
         args => [
-            ['-o', $output_name, 0],
-            ['-gff', $gff_file, 0],
-            ['-outside', $outer, 0],
-            ['-inside', $inner, 0],
-            ['-w', $window_size, 0],
-            ['-outRange', '', 0],
-            ['-featType', $feat_type, 0],
-            ['-cpu', 8, 0],
-            ['-quiet', '', 0], # disable frequent printing of feature ID
-            ['-bam', $bam_file, 0]
+            ['-o',        $output_name, 0],
+            ['-gff',      $gff_file,    0],
+            ['-outside',  $outer,       0],
+            ['-inside',   $inner,       0],
+            ['-w',        $window_size, 0],
+            ['-outRange', '',           0],
+            ['-featType', $feat_type,   0],
+            ['-cpu',      8,            0],
+            ['-quiet',    '',           0], # disable frequent printing of feature ID
+            ['-bam',      $bam_file,    0]
         ],
         inputs => [
             $bam_file,
@@ -122,6 +124,44 @@ sub metaplot {
             catfile($self->staging_dir, "$output_name.png")
         ],
         description => "Generating metaplot"
+    };
+}
+
+sub add_metadata_to_results {
+    my $self = shift;
+    my %opts = @_;
+    my $item_id     = $opts{item_id};
+    my $item_type   = $opts{item_type};
+    my $annotations = $opts{annotations}; # array ref
+    my $locked      = $opts{locked} // 1;
+
+    my $cmd = catfile($self->conf->{SCRIPTDIR}, "add_metadata_to_results.pl");
+
+    my $log_file = catfile($self->staging_dir, "add_metadata_to_results", "log.txt");
+
+    my $annotations_str = '';
+    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+
+    my $args = [
+        ['-uid',         $self->user->id,               0],
+        ['-wid',         $self->workflow->id,           0],
+        ['-locked',      $locked,                       0],
+        ['-annotations', shell_quote($annotations_str), 0],
+        ['-config',      $self->conf->{_CONFIG_PATH},   0],
+        ['-log',         $log_file,                     0]
+    ];
+
+    if ($item_id && $item_type) {
+        push @$args, ['-item_id',   $item_id,   0];
+        push @$args, ['-item_type', $item_type, 0];
+    }
+
+    return {
+        cmd => $cmd,
+        args => $args,
+        inputs => [],
+        outputs => [ $log_file ],
+        description => "Adding metadata to results"
     };
 }
 

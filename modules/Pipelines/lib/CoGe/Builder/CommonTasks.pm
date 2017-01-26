@@ -1,7 +1,7 @@
 package CoGe::Builder::CommonTasks;
 
 #######################################################################################
-# LEGACY MODULE: continue to move out functions out and eventually remove this module
+# LEGACY MODULE: continue to move functions out and eventually remove this module
 #######################################################################################
 
 use strict;
@@ -20,9 +20,7 @@ use CoGe::Core::Storage;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
-    generate_gff generate_features copy_and_mask
-    create_gff_generation_job
-    add_workflow_result add_metadata_to_results_job
+    generate_gff generate_features copy_and_mask create_gff_generation_job add_workflow_result
     create_transdecoder_longorfs_job create_transdecoder_predict_job
 );
 
@@ -234,53 +232,5 @@ sub create_transdecoder_predict_job {
     };
 }
 
-sub add_metadata_to_results_job {
-    my %opts = @_;
-    my $user = $opts{user};
-    my $wid = $opts{wid};
-    my $item_id = $opts{item_id};
-    my $item_type = $opts{item_type};
-    my $annotations = $opts{annotations}; # array ref
-    my $locked = $opts{locked} // 1;
-    my $staging_dir = $opts{staging_dir};
-    my $done_files = $opts{done_files};
-    
-    my $cmd = catfile($CONF->{SCRIPTDIR}, "add_metadata_to_results.pl");
-    die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
-
-    my $result_file = get_workflow_results_file($user->name, $wid);
-    
-    my $log_file = catfile($staging_dir, "add_metadata_to_results", "log.txt");
-    
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
-    
-    my $args = [
-        ['-uid', $user->id, 0],
-        ['-wid', $wid, 0],
-        ['-locked', $locked, 0],
-        ['-annotations', qq{"$annotations_str"}, 0],
-        ['-config', $CONF->{_CONFIG_PATH}, 0],
-        ['-log', $log_file, 0]
-    ];
-    
-    if ($item_id && $item_type) {
-        push @$args, ['-item_id', $item_id, 0];
-        push @$args, ['-item_type', $item_type, 0];  
-    }
-
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => $args,
-        inputs => [ 
-            @$done_files
-        ],
-        outputs => [ 
-            $log_file
-        ],
-        description => "Adding metadata to results"
-    };
-}
 
 1;
