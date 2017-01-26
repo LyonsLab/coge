@@ -5,12 +5,14 @@ extends 'CoGe::Builder::Methylation::Analyzer';
 
 use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);
+use Clone qw(clone);
 
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage;
 use CoGe::Core::Metadata;
 use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
 my ($PICARD, $PILEOMETH);
 sub BUILD { # called immediately after constructor
@@ -27,6 +29,9 @@ sub build {
     my $self = shift;
     my %opts = @_;
     my ($bam_file) = @{$opts{data_files}};
+    unless ($bam_file) {
+        CoGe::Exception::MissingField->throw(message => 'Missing bam');
+    }
 
     # Validate inputs not already checked in Request
     my $metadata = $self->params->{metadata};
@@ -70,7 +75,7 @@ sub build {
         my ($name) = $file =~ /(CHG|CHH|CpG)/;
 
         $self->add_to_previous(
-            $self->create_pileometh_import_job(
+            $self->pileometh_import(
                 input_file => $file,
                 name => $name
             ),
@@ -119,35 +124,35 @@ sub picard_deduplicate {
     };
 }
 
-sub pileometh_plot {
-    my $self = shift;
-    my %opts = @_;
-    my $bam_file = $opts{bam_file};
-    my $gid = $opts{gid};
-
-    my $BWAMETH_CACHE_FILE = catfile(get_genome_cache_path($gid), 'bwameth_index', 'genome.faa.reheader.faa');
-    my $output_prefix = 'pileometh';
-    
-    return {
-        cmd => $PILEOMETH,
-        args => [
-            ['mbias', '', 0],
-            ['--CHG', '', 0],
-            ['--CHH', '', 0],
-            ['', $BWAMETH_CACHE_FILE, 0],
-            ['', $bam_file, 0],
-            [$output_prefix, '', 0]
-        ],
-        inputs => [
-            $bam_file
-        ],
-        outputs => [
-            catfile($self->staging_dir, $output_prefix . '_OB.svg'),
-            catfile($self->staging_dir, $output_prefix . '_OT.svg')
-        ],
-        description => "Plotting methylation bias with PileOMeth"
-    };
-}
+#sub pileometh_plot {
+#    my $self = shift;
+#    my %opts = @_;
+#    my $bam_file = $opts{bam_file};
+#    my $gid = $opts{gid};
+#
+#    my $BWAMETH_CACHE_FILE = catfile(get_genome_cache_path($gid), 'bwameth_index', 'genome.faa.reheader.faa');
+#    my $output_prefix = 'pileometh';
+#
+#    return {
+#        cmd => $PILEOMETH,
+#        args => [
+#            ['mbias', '', 0],
+#            ['--CHG', '', 0],
+#            ['--CHH', '', 0],
+#            ['', $BWAMETH_CACHE_FILE, 0],
+#            ['', $bam_file, 0],
+#            [$output_prefix, '', 0]
+#        ],
+#        inputs => [
+#            $bam_file
+#        ],
+#        outputs => [
+#            catfile($self->staging_dir, $output_prefix . '_OB.svg'),
+#            catfile($self->staging_dir, $output_prefix . '_OT.svg')
+#        ],
+#        description => "Plotting methylation bias with PileOMeth"
+#    };
+#}
 
 sub pileometh_extraction {
     my $self = shift;
@@ -165,7 +170,6 @@ sub pileometh_extraction {
     
     return {
         cmd => $PILEOMETH,
-        script => undef,
         args => [
             ['extract', '', 0],
             ['--methylKit', '', 0],
@@ -202,7 +206,6 @@ sub pileometh_import {
     
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, 'methylation', 'coge-import_pileometh.py'),
-        script => undef,
         args => [
             ['-u', 'f', 0],
             ['-c', $c, 0],
