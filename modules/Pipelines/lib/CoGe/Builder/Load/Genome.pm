@@ -4,11 +4,12 @@ use Moose;
 extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
+use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
 use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils;
-use CoGe::Accessory::Web qw(get_command_path);
+use CoGe::Accessory::Web qw(get_command_path url_for);
 use CoGe::Core::Storage;
 use CoGe::Core::Metadata;
 use CoGe::Exception::Generic;
@@ -63,10 +64,6 @@ sub build {
     # Build workflow
     #
     
-    # Create tasks to retrieve files #TODO move to Buildable::pre_build()
-    my $dr = CoGe::Builder::Common::DataRetrieval->new($self);
-    $dr->build();
-
     # Build steps to add genome
     if (@$ncbi_accns) { # NCBI-based load
         $self->add(
@@ -87,7 +84,7 @@ sub build {
                     output_file => catfile($self->staging_dir, 'concatenated_genome.fasta'),
                 )
             );
-            $fasta_file = $self->previous_output();
+            $fasta_file = $self->previous_output;
         }
     
         # Sort FASTA by length (for trimming in next step)
@@ -99,16 +96,14 @@ sub build {
         my $processed_fasta_file = catdir($self->staging_dir, 'genome.faa');
         $self->add_to_previous(
             $self->process_fasta(
-                input_file => $self->previous_output(),
+                input_file => $self->previous_output,
                 output_file => $processed_fasta_file,
             )
         );
         
         # Index processed FASTA file
         $self->add_to_previous(
-            create_fasta_index_job(
-                fasta => $self->previous_output()
-            )
+            $self->index_fasta($self->previous_output)
         );
     
         # Create genome in DB
@@ -201,10 +196,10 @@ sub process_fasta {
 
 sub load_genome {
     my ($self, %params) = @_;
-
-    my $metadata    = $self->params->metadata;
     my $organism_id = $params{organism_id};
     my $fasta_file  = $params{fasta_file};
+
+    my $metadata    = $self->params->{metadata};
     
 #    my $result_file = get_workflow_results_file($user->name, $wid);
 
