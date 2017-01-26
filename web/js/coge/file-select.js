@@ -389,7 +389,7 @@ var coge = window.coge = (function(namespace) {
 				var tr = $('<tr class="note middle" style="height:1em;"><td style="padding-right:15px;">' +
 						   '<span class="text">Name:</span> ' + filename +
 						   '</td>' + '</tr>');
-				var td = $('<td style="float:right;">'+SPINNER_HTML+'</td>');
+				var td = $('<td style="float:right;">'+SPINNER_SMALL_HTML+'</td>');
 				$(tr).append(td).fadeIn();
 
 				if (self.fileSelectSingle)
@@ -803,7 +803,7 @@ var coge = window.coge = (function(namespace) {
 				.done(function(result) {
 					var filelist = result.items;
 					self.filecount = filelist.length;
-					$('#ftp_status').html(SPINNER_HTML+' Retrieving '+self.filecount+' file');
+					$('#ftp_status').html(SPINNER_SMALL_HTML+' Retrieving '+self.filecount+' file');
 
 					var count = 0;
 					filelist.forEach(
