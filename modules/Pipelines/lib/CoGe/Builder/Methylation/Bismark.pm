@@ -11,14 +11,14 @@ use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Storage;
 use CoGe::Core::Metadata;
-use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
 sub build {
     my $self = shift;
     my %opts = @_;
     my ($bam_file) = @{$opts{data_files}}; # IMPORTANT: this should be the unsorted version, see COGE-706 and http://seqanswers.com/forums/showthread.php?t=45192
     unless ($bam_file) {
-        CoGe::Exception::Generic->throw(message => 'Missing bam');
+        CoGe::Exception::MissingField->throw(message => 'Missing bam');
     }
 
     # Validate inputs not already checked in Request
