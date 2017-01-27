@@ -164,10 +164,11 @@ sub create_annotations {
 
 sub delete_annotation {
     my ($aid, $object_id, $object_type, $db) = @_;
-    return unless $aid && $object_id && $object_type && $db;
+    return 'delete_annotation: missing parameter' unless $aid && $object_id && $object_type && $db;
 
     my $annotation = $db->resultset($object_type . 'Annotation')->find( { lc($object_type) . '_annotation_id' => $aid } );
     $annotation->delete();
+    return undef;
 }
 
 sub export_annotations {

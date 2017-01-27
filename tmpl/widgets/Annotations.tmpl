@@ -76,9 +76,24 @@ class Annotations {
 		}
 	}
 
-	get_type_groups () {
+	delete(aid) {
+		if (confirm('Delete this annotation?')) {
+			var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations/' + aid;
+			$.ajax({
+				type: 'DELETE',
+				url: url
+			}).done(function() {
+				annotations.show_table();
+			}).fail(function(jqXHR, textStatus, errorThrown) { 
+				console.log('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
+			});
+		}
+	}
+
+	get_type_groups() {
+		var url = this.base_url + 'annotations/type_groups';
 		$.ajax({
-				url: this.base_url + 'annotations/type_groups',
+				url: url,
 				dataType: "json",
 				contentType: "application/json"
 			}).done(function(items){
@@ -113,8 +128,9 @@ class Annotations {
 		var type_group  = $("#edit_annotation_type_group").val();
 		var search_term = $("#edit_annotation_type").val();
 		if (search_term.length > 2) {
+			var url = this.base_url + 'annotations/search_types';
 			$.ajax({
-				url: this.base_url + 'annotations/search_types',
+				url: url,
 				data: {
 					type_group: type_group,
 					search_term: search_term
@@ -141,8 +157,9 @@ class Annotations {
 	}
 
 	show_edit_dialog(aid) {
+		var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations/' + aid;
 		$.ajax({
-			url: this.base_url + this.api_path + '/' + parent_id + '/annotations/' + aid,
+			url: url,
 			dataType: "json",
 			contentType: "application/json"
 		}).done(function(obj) {
@@ -166,8 +183,9 @@ class Annotations {
 		var thead = $('<thead style="display:none"></thead>').appendTo(table);
 		var tbody = $('<tbody></tbody>').appendTo(table);
 		var user_can_edit = this.user_can_edit;
+		var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations';
 		$.ajax({
-			url: this.base_url + this.api_path + '/' + parent_id + '/annotations',
+			url: url,
 			dataType: "json",
 			contentType: "application/json"
 		}).done(function(json){
