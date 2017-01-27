@@ -52,9 +52,7 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     add_tag_to_experiment      => \&add_tag_to_experiment,
     get_experiment_tags        => \&get_experiment_tags,
     remove_experiment_tag      => \&remove_experiment_tag,
-    add_annotation             => \&add_annotation,
     update_annotation          => \&update_annotation,
-    remove_annotation          => \&remove_annotation,
     search_annotation_types    => \&search_annotation_types,
     check_login                => \&check_login,
     export_experiment_irods    => \&export_experiment_irods,
@@ -244,26 +242,6 @@ sub toggle_favorite {
     return $is_favorited;
 }
 
-sub add_annotation {
-    my %opts = @_;
-    my $fh = $FORM->upload('edit_annotation_image');
- 
-    return CoGe::Core::Metadata::create_annotation(
-        db => $DB,
-        fh => $fh,
-        filename => $opts{edit_annotation_image},
-        group_name => $opts{type_group},
-        image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
-        link => $opts{link},
-        locked => 0,
-        target_id => $opts{parent_id},
-        target_type => 'experiment',
-        text => $opts{annotation},
-        type_name => $opts{type},
-        user => $USER
-    ) ? 1 : 0;
-}
-
 sub update_annotation {
     my %opts = @_;
     my $fh = $FORM->upload('edit_annotation_image');
@@ -345,20 +323,6 @@ sub get_file_urls {
     };
 
     return encode_json({ error => 1 });
-}
-
-sub remove_annotation {
-    my %opts = @_;
-    my $eid  = $opts{eid};
-    return "No experiment ID specified" unless $eid;
-    my $eaid = $opts{eaid};
-    return "No experiment annotation ID specified" unless $eaid;
-    #return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-
-    my $ea = $DB->resultset('ExperimentAnnotation')->find( { experiment_annotation_id => $eaid } );
-    $ea->delete();
-
-    return 1;
 }
 
 sub gen_html {

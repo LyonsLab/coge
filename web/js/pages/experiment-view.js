@@ -647,19 +647,6 @@ function remove_experiment_tag (opts) {
     });
 }
 
-function remove_annotation (eaid) {
-    $.ajax({
-        data: {
-            fname: 'remove_annotation',
-            eid: EXPERIMENT_ID,
-            eaid: eaid,
-        },
-        success : function() {
-            //get_annotations();
-        },
-    });
-}
-
 function get_experiment_tags () {
     $.ajax({
         data: {

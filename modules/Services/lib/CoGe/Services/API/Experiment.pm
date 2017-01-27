@@ -7,7 +7,7 @@ use CoGeX;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Experiment qw( delete_experiment );
 use CoGe::Core::Favorites;
-use CoGe::Core::Metadata qw( create_annotation get_annotation get_annotations );
+use CoGe::Core::Metadata qw( create_annotation delete_annotation get_annotation get_annotations );
 use CoGe::Services::Auth;
 use CoGe::Services::API::Job;
 
@@ -180,6 +180,20 @@ sub add_annotation {
         text => $text,
         type_name => $type_name
     );
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
+sub delete_annotation {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my $aid = int($self->stash('aid'));
+
+    my ($db) = CoGe::Services::Auth::init($self);
+    my $error = CoGe::Core::Metadata::delete_annotation($aid, $id, 'Experiment', $db);
+    if ($error) {
+        $self->render(status => 400, json => { error => { Error => $error} });
+        return;
+    }
     $self->render(json => { success => Mojo::JSON->true });
 }
 

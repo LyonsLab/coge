@@ -1,7 +1,4 @@
 <script language="JavaScript">
-// Required user-defined Perl AJAX functions:
-//		add_annotation
-//		update_annotation
 // use: var annotations=new Annotations(div_id, parent_type, parent_id, user_can_edit, default_type); on page load
 
 class Annotations {
@@ -12,6 +9,8 @@ class Annotations {
 		this.parent_id = parent_id;
 		this.user_can_edit = user_can_edit;
 		this.default_type = default_type;
+
+		this.base_url = '<TMPL_VAR NAME="API_BASE_URL">';
 		this.images = [];
 		this.timers = {};
 		this.show_table();
@@ -60,30 +59,34 @@ class Annotations {
 				form_data.append('link', link);
 			form_data.append('target_id', this.parent_id);
 			form_data.append('type_name', type);
-			var url = '<TMPL_VAR NAME="API_BASE_URL">' + this.api_path + '/' + this.parent_id + '/annotations';
+			var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations';
 			$.ajax({
 				type: 'PUT',
 				url: url,
     			data: form_data,
 				contentType: false,
     			processData: false
-			})
-			.done(function() {
+			}).done(function() {
 				annotations.show_table();
 				$("#wait_annotation").hide();
 				$("#annotation_dialog").dialog('close');
-			})
-			.fail(function(jqXHR, textStatus, errorThrown) { 
+			}).fail(function(jqXHR, textStatus, errorThrown) { 
 				console.log('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
 			});
 		}
 	}
 
 	get_type_groups () {
-		coge.services.fetch_annotation_type_groups().done(function(items){
-			$("#edit_annotation_type_group").autocomplete("option", "source", items);
-			$("#edit_annotation_type_group").autocomplete("search");
-		});
+		$.ajax({
+				url: this.base_url + 'annotations/type_groups',
+				dataType: "json",
+				contentType: "application/json"
+			}).done(function(items){
+				$("#edit_annotation_type_group").autocomplete("option", "source", items);
+				$("#edit_annotation_type_group").autocomplete("search");
+			}).fail(function(jqXHR, textStatus, errorThrown) { 
+				console.error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
+			});
 	}
 
 	image_preview(obj, preview) {
@@ -111,16 +114,17 @@ class Annotations {
 		var search_term = $("#edit_annotation_type").val();
 		if (search_term.length > 2) {
 			$.ajax({
-				url: '<TMPL_VAR NAME="API_BASE_URL">annotations/search_types',
+				url: this.base_url + 'annotations/search_types',
 				data: {
 					type_group: type_group,
 					search_term: search_term
 				},
-				dataType: 'json',
-				success : function(items) {
-					$("#edit_annotation_type").autocomplete("option", "source", items);
-					$("#edit_annotation_type").autocomplete("search");
-				},
+				dataType: 'json'
+			}).done(function(items) {
+				$("#edit_annotation_type").autocomplete("option", "source", items);
+				$("#edit_annotation_type").autocomplete("search");
+			}).fail(function(jqXHR, textStatus, errorThrown) { 
+				console.error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
 			});
 		}
 	}
@@ -137,7 +141,11 @@ class Annotations {
 	}
 
 	show_edit_dialog(aid) {
-		coge.services.fetch_annotation(this.api_path, this.parent_id, aid).done(function(obj) {
+		$.ajax({
+			url: this.base_url + this.api_path + '/' + parent_id + '/annotations/' + aid,
+			dataType: "json",
+			contentType: "application/json"
+		}).done(function(obj) {
 			$('#edit_annotation').val(obj.annotation);
 			$('#edit_annotation_link').val(obj.link);
 			$('#edit_annotation_type').val(obj.type);
@@ -146,6 +154,8 @@ class Annotations {
 			$('#add_annotation_button').hide();
 			$('#update_annotation_button').data({annotation_id: aid}).show();
 			$("#annotation_dialog").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
+		}).fail(function(jqXHR, textStatus, errorThrown) { 
+			console.error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
 		});
 	}
 
@@ -156,7 +166,11 @@ class Annotations {
 		var thead = $('<thead style="display:none"></thead>').appendTo(table);
 		var tbody = $('<tbody></tbody>').appendTo(table);
 		var user_can_edit = this.user_can_edit;
-		coge.services.fetch_annotations(this.api_path, this.parent_id).done(function(json){
+		$.ajax({
+			url: this.base_url + this.api_path + '/' + parent_id + '/annotations',
+			dataType: "json",
+			contentType: "application/json"
+		}).done(function(json){
 			var groups = Object.keys(json);
 			if (groups.length) {
 				var prev_group = '';
@@ -189,7 +203,7 @@ class Annotations {
 							if (annotation.link)
 								td.append($('<span class="link" onclick="window.open(\'' + annotation.link + '\')">Link</span>'));
 							if (user_can_edit && !annotation.locked)
-								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="$(this).fadeOut(); remove_annotation(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
+								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="$(this).fadeOut(); annotations.delete(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
 							else
 								$('<th></th>').appendTo(tr);
 						});
@@ -199,6 +213,8 @@ class Annotations {
 				$('<tr><td class="padded note">There are no metadata items for this ' + annotations.parent_type + '.</td></tr>').appendTo(tbody);
 			table.appendTo(div);
 			$('<div class="padded"><span onClick="annotations.show_add_dialog();" class="coge-button">Add</span></div>').appendTo(div);
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			console.error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
 		});
 	}
 

@@ -19,7 +19,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotation create_annotations export_annotations get_annotation get_annotations get_type_groups search_annotation_types tags_to_string to_annotations update_annotation );
+    @EXPORT = qw( create_annotation create_annotations delete_annotation export_annotations get_annotation get_annotations get_type_groups search_annotation_types tags_to_string to_annotations update_annotation );
 }
 
 sub create_annotation {
@@ -160,6 +160,14 @@ sub create_annotations {
     }
 
     return \@result;
+}
+
+sub delete_annotation {
+    my ($aid, $object_id, $object_type, $db) = @_;
+    return unless $aid && $object_id && $object_type && $db;
+
+    my $annotation = $db->resultset($object_type . 'Annotation')->find( { lc($object_type) . '_annotation_id' => $aid } );
+    $annotation->delete();
 }
 
 sub export_annotations {

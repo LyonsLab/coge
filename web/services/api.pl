@@ -177,6 +177,10 @@ $r->put("/experiments/:id/annotations" => [id => qr/\d+/])
     ->name("experiments-add_annotation")
     ->to("experiment#add_annotation", namespace => 'CoGe::Services::API');
 
+$r->delete("/experiments/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/]])
+    ->name("experiments-delete-annotation")
+    ->to("experiment#delete_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
 # Notebook routes
 $r->get("/notebooks/search/#term")
     ->name("notebooks-search")
