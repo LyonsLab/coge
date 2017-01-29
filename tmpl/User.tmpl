@@ -95,7 +95,7 @@ div.deleted { display: none; }
 	</div>
 
 	<div id="contents_panel" class="small panel">
-		<div class="noselect" style="height:24px">
+		<div class="noselect" style="overflow:auto">
 			<span id="contents_title" style="float:left;min-width:130px;font-weight:bold;margin-right:20px;"></span>
 			<span id="add_button" onClick="add_dialog();" class="add coge-icon glyphicon glyphicon-plus item-button invisible" style="margin-right:5px;" title="Create New Item"></span>
 			<span id="share_button" onClick="share_dialog();" class="share coge-icon coge-disabled glyphicon glyphicon-user item-button invisible" style="margin-right:5px;" title="Share Selected Items"></span>
@@ -105,7 +105,7 @@ div.deleted { display: none; }
 			<span id="delete_button" onClick="delete_items();" class="delete coge-icon coge-disabled glyphicon glyphicon-trash item-button invisible" style="margin-right:5px;" title="Delete Selected Items"></span>
 			<span id="send_button" onClick="send_menu();" class="sendto coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
 			<span id="undelete_button" onClick="undelete_items();" class="undelete coge-icon coge-disabled glyphicon glyphicon-asterisk item-button invisible" style="margin-right:5px;" title="Undelete Selected Items"></span>
-			<input id="search_input" type="search" placeholder="Filter" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" />
+			<input id="search_input" type="search" placeholder="Filter" size="25" style="margin-right:15px;vertical-align:top;border:1px solid lightgray;" />
 			<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
 		</div>
 		<div class="grid hidden noselect" style="overflow:auto;border-top:1px solid lightgray;border-bottom:none !important;"></div>
