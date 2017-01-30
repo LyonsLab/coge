@@ -97,33 +97,6 @@ sub build {
     }
 }
 
-sub picard_deduplicate {
-    my $self = shift;
-    my $bam_file = shift;
-
-    my $cmd = 'java -jar ' . $PICARD;
-    
-    my $output_file = $bam_file . '-deduplicated.bam';
-    
-    return {
-        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp ; mv $output_file.tmp $output_file",
-        args => [
-#            ['MarkDuplicates', '', 0],
-#            ['REMOVE_DUPLICATES=true', '', 0],
-#            ["INPUT=$bam_file", '', 0],
-#            ["METRICS_FILE=$bam_file.metrics", '', 0],
-#            ["OUTPUT=$output_file", '', 0],
-        ],
-        inputs => [
-            $bam_file
-        ],
-        outputs => [
-            $output_file
-        ],
-        description => "Deduplicating PCR artifacts using Picard"
-    };
-}
-
 #sub pileometh_plot {
 #    my $self = shift;
 #    my %opts = @_;
