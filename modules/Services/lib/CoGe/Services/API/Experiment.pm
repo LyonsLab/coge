@@ -161,24 +161,18 @@ sub add {
 
 sub add_annotation {
     my $self = shift;
-    my $id = int($self->stash('id'));
-
-    my $group_name = $self->param('group_name');
-    my $image = $self->param('edit_annotation_image');
-    my $link = $self->param('link');
-    my $text = $self->param('annotation');
-    my $type_name = $self->param('type_name');
-
-    my ($db) = CoGe::Services::Auth::init($self);
-
+    my ($db, $user) = CoGe::Services::Auth::init($self);
     create_annotation(
         db => $db,
-        group_name => $group_name,
-        link => $link,
-        target_id => $id,
+        filename => $self->param('filename'),
+        group_name => $self->param('group_name'),
+        image => $self->param('image'),
+        link => $self->param('link'),
+        target_id => int($self->stash('id')),
         target_type => 'experiment',
-        text => $text,
-        type_name => $type_name
+        text => $self->param('annotation'),
+        type_name => $self->param('type_name'),
+        user => $user
     );
     $self->render(json => { success => Mojo::JSON->true });
 }

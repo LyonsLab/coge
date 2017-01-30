@@ -186,7 +186,7 @@ sub irods_iput {
     return $cmd if $no_execute;
     #print STDERR "cmd: $cmd\n";
     my @result = `$cmd`;
-    #print STDERR "@result";
+    warn Dumper \@result;
 
     return;
 }

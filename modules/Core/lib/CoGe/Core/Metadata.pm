@@ -275,8 +275,8 @@ sub get_type_groups {
     my %unique;
 
     my $rs = $db->resultset('AnnotationTypeGroup');
-    while ($rs->next) {
-        $unique{ $_->name }++;
+    while (my $atg = $rs->next) {
+        $unique{ $atg->name }++;
     }
     return [ sort keys %unique ];
 }
@@ -393,6 +393,25 @@ sub tags_to_string {
     return $tags_str;
 }
 
+sub _create_bisque_image {
+    my ($upload, $user) = @_;
+
+    my $dest = catfile(dirname(irods_get_base_path($user->name)), 'bisque_data', basename($upload->filename));
+    warn $dest;
+    warn $upload->asset->path;
+    irods_iput($upload->asset->path, $dest);
+    for my $i (0..9) {
+        sleep 5;
+        my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
+        if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
+            my $bisque_id = substr($result->[2], 7);
+            chomp $bisque_id;
+            return $bisque_id;
+        }
+    }
+    warn 'unable to get bisque id';
+}
+
 sub _create_image { # mdb: don't have a better place for this atm
     my %opts = @_;
     my $fh = $opts{fh};
@@ -418,24 +437,6 @@ sub _create_image { # mdb: don't have a better place for this atm
         image    => $contents
     });
     return unless $image;
-}
-
-sub _create_bisque_image {
-    my %opts = @_;
-    my $filename = $opts{filename};
-
-    my $dest = catfile(dirname(irods_get_base_path($opts{user}->name)), 'bisque_data', basename($filename));
-    irods_iput($opts{tmp_filename}, $dest);
-    for my $i (0..9) {
-        sleep 5;
-        my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
-        if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
-            my $bisque_id = substr($result->[2], 7);
-            chomp $bisque_id;
-            return $bisque_id;
-        }
-    }
-    warn 'unable to get bisque id';
 }
 
 sub _get_object {
@@ -471,15 +472,15 @@ sub _init {
 
     my $image_id;
     my $bisque_id;
-    my $fh = $opts->{fh};
     my $filename = $opts->{filename};
     if ($filename) {
-        if ($fh) {
-            $bisque_id = _create_bisque_image(fh => $fh, filename => $filename, tmp_filename => $opts->{image_tmp_file}, db => $db, user => $opts->{user});
+        my $upload = $opts->{image};
+        if ($upload) {
+            $bisque_id = _create_bisque_image($upload, $opts->{user});
             return 'error creating image' unless $bisque_id;
         }
         else {
-            my $image = _create_image(filename => $filename, db => $db);
+            my $image = _create_image($opts);
             return 'error creating image' unless $image;
             $image_id = $image->id;
         }
