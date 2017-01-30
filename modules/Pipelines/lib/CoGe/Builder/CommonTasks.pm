@@ -629,9 +629,9 @@ sub create_load_vcf_job {
     my $cmd = catfile($CONF->{SCRIPTDIR}, "load_experiment.pl");
     die "ERROR: SCRIPTDIR not specified in config" unless $cmd;
     
-    my $output_path = catdir($staging_dir, "load_vcf");
+    my $output_path = 'load_vcf_' . to_filename_base($vcf);
     
-    my $result_file = get_workflow_results_file($username, $wid);
+    #my $result_file = get_workflow_results_file($username, $wid);
     
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
@@ -656,7 +656,7 @@ sub create_load_vcf_job {
             ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
             ['-tags',        shell_quote($tags_str), 0],
             ['-annotations', shell_quote($annotations_str), 0],
-            ['-staging_dir', "./load_vcf", 0],
+            ['-staging_dir', $output_path, 0],
             ['-file_type',   "vcf", 0],
             ['-data_file',   $vcf, 0],
             ['-config',      $CONF->{_CONFIG_PATH}, 0]
@@ -665,8 +665,8 @@ sub create_load_vcf_job {
             $opts->{vcf},
         ],
         outputs => [
-            [$output_path, '1'],
-            catfile($output_path, "log.done"),
+            [catdir($staging_dir, $output_path), '1'],
+            catfile($staging_dir, $output_path, "log.done"),
             #$result_file
         ],
         description => "Loading SNPs as new experiment"

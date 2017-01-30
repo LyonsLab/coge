@@ -83,7 +83,7 @@ sub build {
         result_dir => $result_dir,
         wid => $wid,
         gid => $gid,
-        vcf => catfile($staging_dir, 'snps.vcf'),
+        vcf => catfile($staging_dir, "$input_file.vcf"),
         metadata => $metadata,
         annotations => $annotations
     });
@@ -123,7 +123,7 @@ sub create_samtools_job {
     $filter_script .= ' min_allele_count=' . $min_allele_count;
     $filter_script .= ' quality_scale=' . $scale;
     
-    my $output_name = 'snps.vcf';
+    my $output_name = "$bam_file.vcf";
 
     return {
         cmd => $samtools,

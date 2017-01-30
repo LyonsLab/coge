@@ -45,7 +45,7 @@ sub build {
     # Get experiment input file
     my $processed_bam_file = to_filename($input_file) . '.processed.bam';
     my $processed_bam_file2 = to_filename($input_file) . '.processed2.bam';
-    my $output_vcf_file = 'snps.flt.vcf';
+    my $output_vcf_file = "$processed_bam_file2.flt.vcf";
 
     # Build all the jobs -- TODO create cache for processed bam files
     my @tasks = (

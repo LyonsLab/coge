@@ -56,8 +56,8 @@ sub build {
 
         bam         => $input_file,
         fasta       => catfile($FASTA_CACHE_DIR, $reheader_fasta),
-        bcf         => catfile($staging_dir, qq[snps.raw.bcf]),
-        vcf         => catfile($staging_dir, qq[snps.flt.vcf]),
+        bcf         => catfile($staging_dir, qq[$input_file.raw.bcf]),
+        vcf         => catfile($staging_dir, qq[$input_file.flt.vcf]),
 
         username    => $user->name,
         metadata    => $metadata,
