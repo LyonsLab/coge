@@ -51,17 +51,12 @@ $node_types = $DB->node_types();
     add_item_to_list           => \&add_item_to_list,
     remove_list_item           => \&remove_list_item,
     toggle_favorite            => \&toggle_favorite,
-    get_annotations            => \&get_annotations,
-    add_annotation             => \&add_annotation,
-    update_annotation          => \&update_annotation,
-    remove_annotation          => \&remove_annotation,
     search_mystuff             => \&search_mystuff,
     search_genomes             => \&search_genomes,
     search_experiments         => \&search_experiments,
     search_features            => \&search_features,
     search_lists               => \&search_lists,
     search_users               => \&search_users,
-    search_annotation_types    => \&search_annotation_types,
     delete_list                => \&delete_list,
     send_to_genomelist         => \&send_to_genomelist,
     send_to_experimentlist     => \&send_to_experimentlist,
@@ -128,19 +123,19 @@ sub gen_body {
 
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
-        MAIN         => 1,
-        EMBED        => $EMBED,
-        PAGE_NAME    => $PAGE_TITLE . '.pl',
-        NOTEBOOK_ID  => $lid,
-        DEFAULT_TYPE => 'note',
-        API_BASE_URL => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
-        USER         => $USER->user_name,
+        MAIN           => 1,
+        EMBED          => $EMBED,
+        PAGE_NAME      => $PAGE_TITLE . '.pl',
+        NOTEBOOK_ID    => $lid,
+        DEFAULT_TYPE   => 'note',
+        API_BASE_URL   => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
+        USER           => $USER->user_name,
         NOTEBOOK_TITLE => $title,
         FAVORITED      => int($favorites->is_favorite($list)),
+        USER_CAN_EDIT  => $list->is_editable($USER)
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( LIST_INFO => get_list_info( lid => $lid ) );
-    $template->param( LIST_ANNOTATIONS => get_annotations( lid => $lid ) );
     $template->param( LIST_CONTENTS => get_list_contents( lid => $lid ) );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
@@ -318,147 +313,6 @@ sub toggle_favorite {
 sub linkify {
     my ( $link, $desc ) = @_;
     return "<span class='small link' onclick=\"window.open('$link')\">" . $desc . "</span>";
-}
-
-sub get_annotations {
-    my %opts = @_;
-    my $lid  = $opts{lid};
-    return unless ($lid);
-    my ($list) = $DB->resultset('List')->find($lid);
-    return unless $USER->has_access_to_list($list);
-
-    my $user_can_edit = $list->is_editable($USER);
-
-    my %groups;
-    my $num_annot = 0;
-    foreach my $a ( $list->annotations ) {
-        my $group = (
-            defined $a->type->group
-            ? $a->type->group->name . ' ' . $a->type->name
-            : $a->type->name
-        );
-        push @{ $groups{$group} }, $a;
-        $num_annot++;
-    }
-    return unless ( $num_annot or $user_can_edit );
-
-    my $html;
-    if ($num_annot) {
-        my $num_rows = 0;
-        $html .= '<table id="list_annotation_table" class="dataTable compact hover stripe border-top border-bottom" style="max-width:400px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
-        foreach my $group ( sort keys %groups ) {
-            my $first = 1;
-            foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
-                $html .= "<tr style='vertical-align:top;' class='" . ($num_rows++ % 2 ? 'odd' : 'even') . "'>"
-                  . (
-                    $first-- > 0
-                    ? "<th align='right' class='title5' rowspan='"
-                      . @{ $groups{$group} }
-                      . "' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;'>$group</th>"
-                    : ''
-                  );
-
-                $html .= "<td>";
-                my $image_link =
-                  ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
-                my $image_info = (
-                    $a->image
-                    ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='padding:1px;border:1px solid lightgray;vertical-align:text-top;'></a>"
-                    : ''
-                );
-                $html .= $image_info if $image_info;
-                $html .= "</td>";
-
-                $html .= "<td class='data5'>" . $a->info . "</td>";
-                $html .= "<td style='padding-left:5px;'>";
-                $html .= linkify( $a->link, "Link" ) if $a->link;
-                $html .= "</td>";
-                if ($a->locked) {
-                    $html .=
-                        '<td style="padding-left:20px;white-space:nowrap;">'
-                      . "<span onClick=\"alert('This item is locked and cannot be edited or removed.');\" class='link ui-icon ui-icon-locked'></span>"
-                      . '</td>';
-                }
-                elsif ($user_can_edit) {
-                    my $aid = $a->id;
-                    $html .=
-                        '<td style="padding-left:20px;white-space:nowrap;">'
-                      . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
-                      . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
-                      . '</td>';
-                }
-                $html .= '</tr>';
-            }
-        }
-        $html .= '</tbody></table>';
-    }
-    elsif ($user_can_edit) {
-        $html .= '<table class="border-top border-bottom small padded note"><tr><td>There are no additional metadata items for this notebook.</tr></td></table>';
-    }
-
-    if ($user_can_edit) {
-        $html .= qq{<div class="panel"><span onClick="add_annotation_dialog();" class='coge-button'>Add</span></div>};
-    }
-
-    return $html;
-}
-
-sub add_annotation {
-    my %opts = @_;
-    my $fh = $FORM->upload('edit_annotation_image');
- 
-    return CoGe::Core::Metadata::create_annotation(
-        db => $DB,
-        fh => $fh,
-        filename => $opts{edit_annotation_image},
-        group_name => $opts{type_group},
-        image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
-        link => $opts{link},
-        locked => 0,
-        target_id => $opts{parent_id},
-        target_type => 'notebook',
-        text => $opts{annotation},
-        type_name => $opts{type},
-        user => $USER
-    ) ? 1 : 0;
-}
-
-sub update_annotation {
-    my %opts = @_;
-    my $fh = $FORM->upload('edit_annotation_image');
-    CoGe::Core::Metadata::update_annotation(
-        annotation_id => $opts{aid},
-        db => $DB,
-        fh => $fh,
-        filename => $opts{edit_annotation_image},
-        group_name => $opts{type_group},
-        image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
-        link => $opts{link},
-        target_type => 'notebook',
-        text => $opts{annotation},
-        type_name => $opts{type},
-        user => $USER
-    );
-    return 1;
-}
-
-sub remove_annotation {
-    my %opts = @_;
-    my $lid  = $opts{lid};
-    return "No notebook ID specified" unless $lid;
-    my $laid = $opts{laid};
-    return "No notebook annotation ID specified" unless $laid;
-
-#return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-
-    my $list = $DB->resultset('List')->find($lid);
-    return 0 if ( $list->locked && !$USER->is_admin );
-
-    my $la = $DB->resultset('ListAnnotation')->find( { list_annotation_id => $laid } );
-    return 0 unless $la;
-    $la->delete();
-
-    return 1;
 }
 
 sub get_list_contents {
@@ -1035,51 +889,6 @@ sub search_users {
             items     => [ sort map { $_->user_name } @users ]
         }
     );
-}
-
-sub search_annotation_types {
-    my %opts        = @_;
-    my $type_group  = $opts{type_group};
-    my $search_term = $opts{search_term};
-
-    #	print STDERR "search_annotation_types: $search_term $type_group\n";
-    return '' unless $search_term;
-
-    $search_term = '%' . $search_term . '%';
-
-    my $group;
-    if ($type_group) {
-        $group =
-          $DB->resultset('AnnotationTypeGroup')
-          ->find( { name => $type_group } );
-    }
-
-    my @types;
-    if ($group) {
-
-        #		print STDERR "type_group=$type_group " . $group->id . "\n";
-        @types = $DB->resultset("AnnotationType")->search(
-            \[
-'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
-                [ 'annotation_type_group_id', $group->id ],
-                [ 'name',                     $search_term ],
-                [ 'description',              $search_term ]
-            ]
-        );
-    }
-    else {
-        @types = $DB->resultset("AnnotationType")->search(
-            \[
-                'name LIKE ? OR description LIKE ?',
-                [ 'name',        $search_term ],
-                [ 'description', $search_term ]
-            ]
-        );
-    }
-
-    my %unique;
-    map { $unique{ $_->name }++ } @types;
-    return encode_json( [ sort keys %unique ] );
 }
 
 sub featurecmp {

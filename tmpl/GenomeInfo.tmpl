@@ -56,8 +56,8 @@ var download_error = $("<p></p>")
     .addClass("alert");
 var spinner = $("<img></img>").attr("src", "picts/ajax-loader.gif");
 var message = $("<div></div>").text("Please wait...  ").append(spinner.clone());
-var note = $("<p></p>").addClass("small")
-        .text("(This may take several minutes)");
+var note = $("<p></p>").addClass("small").text("(This may take several minutes)");
+var annotations;
 
 $(document).ready(function() {
     pageObj = new Object();
@@ -79,10 +79,6 @@ $(document).ready(function() {
 
     $("#export_dialog").dialog({modal: true});
 
-    set_annotation_table();
-
-    init_annotation_dialog('genomes', GENOME_ID, "<TMPL_VAR NAME=DEFAULT_TYPE>");
-    
     $("#edit_user").autocomplete({
         source:[],
         focus: function() { return false; },
@@ -114,6 +110,7 @@ $(document).ready(function() {
     	baseUrl: API_BASE_URL,
     	userName: pageObj.user
     });
+    annotations = new Annotations('genome_annotations', 'genome', GENOME_ID, '<TMPL_VAR NAME="USER_CAN_EDIT">', '<TMPL_VAR NAME="DEFAULT_TYPE">');
 });
 
 </script>
@@ -170,14 +167,10 @@ $(document).ready(function() {
                 <span class='coge-button' onclick='location.href="GenomeView.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>"'>Browse</span>
             </div>
 
-            <TMPL_IF NAME="GENOME_ANNOTATIONS">
             <div style="padding-top:1em;">
 	            <div class="bold text">Metadata</div>
-	            <div id="genome_annotations">
-	            	<TMPL_VAR NAME="GENOME_ANNOTATIONS">
-	            </div>
+	            <div id="genome_annotations"></div>
             </div>
-            </TMPL_IF>
 
             <div class="bold text" style="padding-top:1em;">Sequence & Gene Annotation</div>
             <TMPL_IF NAME='DATASETS'>

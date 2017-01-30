@@ -76,11 +76,6 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     copy_genome                => \&copy_genome,
     export_fasta		       => \&export_fasta,
     export_file_chr		       => \&export_file_chr,
-    get_annotations            => \&get_annotations,
-    add_annotation             => \&add_annotation,
-    update_annotation          => \&update_annotation,
-    remove_annotation          => \&remove_annotation,
-    search_annotation_types    => \&search_annotation_types,
     annotate                   => \&annotate,
     get_datasets               => \&get_datasets,
     get_bed                    => \&get_bed,
@@ -1644,172 +1639,6 @@ sub linkify { # FIXME: this routine should be moved into the Utils module
     return "<span class='link' onclick=\"window.open('$link')\">$desc</span>";
 }
 
-sub get_annotations {
-    my %opts = @_;
-    my $gid  = $opts{gid};
-    return "Must have valid genome id\n" unless ($gid);
-    
-    my $genome = $DB->resultset('Genome')->find($gid);
-    return "Genome not found\n" unless $genome;
-    return "Access denied\n" unless $USER->has_access_to_genome($genome);
-
-    my $user_can_edit = $genome->is_editable($USER);
-
-    my %groups;
-    my $num_annot = 0;
-    foreach my $a ( $genome->annotations ) {
-        my $group = (
-            defined $a->type->group
-            ? $a->type->group->name . ' ' . $a->type->name
-            : $a->type->name
-        );
-        push @{ $groups{$group} }, $a;
-        $num_annot++;
-    }
-
-    my $html;
-    if ($num_annot) {
-        $html .= '<table id="genome_annotation_table" class="border-top border-bottom small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"><thead style="display:none"></thead><tbody>';
-        foreach my $group ( sort keys %groups ) {
-            my $first = 1;
-            foreach my $a ( sort { $a->id <=> $b->id } @{ $groups{$group} } ) {
-                $html .= "<tr style='vertical-align:top;'>";
-                $html .= "<th align='right' class='title5' style='padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white;' rowspan="
-                  . @{ $groups{$group} }
-                  . ">$group</th>"
-                  if ( $first-- > 0 );
-                #$html .= '<td>';
-                my $image_link =
-                  ( $a->image ? 'image.pl?id=' . $a->image->id : '' );
-                my $image_info = (
-                    $a->image
-                    ? "<a href='$image_link' target='_blank' title='click for full-size image'><img height='40' width='40' src='$image_link' onmouseover='image_preview(this, 1);' onmouseout='image_preview(this, 0);' style='float:left;padding:1px;border:1px solid lightgray;margin-right:5px;'></a>"
-                    : ''
-                );
-                #$html .= $image_info if $image_info;
-                #$html .= "</td>";
-                $html .= "<td class='data5'>" . $image_info . $a->info . '</td>';
-                $html .= '<td style="padding-left:5px;">';
-                $html .= linkify( $a->link, 'Link' ) if $a->link;
-                $html .= '</td>';
-                if ($user_can_edit  && !$a->locked) {
-                    my $aid = $a->id;
-                    $html .=
-                        '<td style="padding-left:20px;white-space:nowrap;">'
-                      . "<span onClick=\"edit_annotation_dialog($aid);\" class='link ui-icon ui-icon-gear'></span>"
-                      . "<span onClick=\"\$(this).fadeOut(); remove_annotation($aid);\" class='link ui-icon ui-icon-trash'></span>"
-                      . '</td>';
-                }
-                $html .= '</tr>';
-            }
-        }
-        $html .= '</tbody></table>';
-    }
-    elsif ($user_can_edit) {
-        $html .= '<table class="border-top border-bottom small padded note"><tr><td>There are no additional metadata items for this genome.</tr></td></table>';
-    }
-
-    if ($user_can_edit) {
-        $html .= qq{<div class="panel"><span onClick="add_annotation_dialog();" class='coge-button'>Add</span></div>};
-    }
-
-    return $html;
-}
-
-sub add_annotation {
-    my %opts = @_;
-    my $fh = $FORM->upload('edit_annotation_image');
- 
-    return CoGe::Core::Metadata::create_annotation(
-        db => $DB,
-        fh => $fh,
-        filename => $opts{edit_annotation_image},
-        group_name => $opts{type_group},
-        image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
-        link => $opts{link},
-        locked => 0,
-        target_id => $opts{parent_id},
-        target_type => 'genome',
-        text => $opts{annotation},
-        type_name => $opts{type},
-        user => $USER
-    ) ? 1 : 0;
-}
-
-sub update_annotation {
-    my %opts = @_;
-    my $fh = $FORM->upload('edit_annotation_image');
-    CoGe::Core::Metadata::update_annotation(
-        annotation_id => $opts{aid},
-        db => $DB,
-        fh => $fh,
-        filename => $opts{edit_annotation_image},
-        group_name => $opts{type_group},
-        image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
-        link => $opts{link},
-        target_type => 'genome',
-        text => $opts{annotation},
-        type_name => $opts{type},
-        user => $USER
-    );
-    return 1;
-}
-
-sub remove_annotation {
-    my %opts = @_;
-    my $gid  = $opts{gid};
-    return "No genome ID specified" unless $gid;
-    my $gaid = $opts{gaid};
-    return "No genome annotation ID specified" unless $gaid;
-    #return "Permission denied" unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-
-    my $ga = $DB->resultset('GenomeAnnotation')->find( { genome_annotation_id => $gaid } );
-    $ga->delete();
-
-    return 1;
-}
-
-sub search_annotation_types {
-    my %opts        = @_;
-    my $type_group  = $opts{type_group};
-    my $search_term = $opts{search_term};
-
-    #print STDERR "search_annotation_types: $search_term $type_group\n";
-    return '' unless $search_term;
-
-    $search_term = '%' . $search_term . '%';
-
-    my $group;
-    if ($type_group) {
-        $group = $DB->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
-    }
-
-    my @types;
-    if ($group) {
-        #print STDERR "type_group=$type_group " . $group->id . "\n";
-        @types = $DB->resultset("AnnotationType")->search(
-            \[ 'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
-                [ 'annotation_type_group_id', $group->id ],
-                [ 'name',                     $search_term ],
-                [ 'description',              $search_term ]
-            ]
-        );
-    }
-    else {
-        @types = $DB->resultset("AnnotationType")->search(
-            \[
-                'name LIKE ? OR description LIKE ?',
-                [ 'name',        $search_term ],
-                [ 'description', $search_term ]
-            ]
-        );
-    }
-
-    my %unique;
-    map { $unique{ $_->name }++ } @types;
-    return encode_json( [ sort keys %unique ] );
-}
-
 #
 # TBL FILE
 #
@@ -2090,7 +1919,6 @@ sub generate_body {
         GENOME_INFO     => get_genome_info( genome => $genome ) || undef,
         GENOME_DATA     => get_genome_info_details( dsgid => $genome->id) || undef,
         LOGON           => ( $USER->user_name ne "public" ),
-        GENOME_ANNOTATIONS => get_annotations( gid => $gid ) || undef,
         DEFAULT_TYPE    => 'note', # default annotation type
         EXP_COUNT       => $exp_count,
         EXPERIMENTS     => $experiments || undef,

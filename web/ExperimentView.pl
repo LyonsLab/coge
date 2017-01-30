@@ -52,8 +52,6 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     add_tag_to_experiment      => \&add_tag_to_experiment,
     get_experiment_tags        => \&get_experiment_tags,
     remove_experiment_tag      => \&remove_experiment_tag,
-    update_annotation          => \&update_annotation,
-    search_annotation_types    => \&search_annotation_types,
     check_login                => \&check_login,
     export_experiment_irods    => \&export_experiment_irods,
     get_file_urls              => \&get_file_urls,
@@ -240,25 +238,6 @@ sub toggle_favorite {
     );
     
     return $is_favorited;
-}
-
-sub update_annotation {
-    my %opts = @_;
-    my $fh = $FORM->upload('edit_annotation_image');
-    CoGe::Core::Metadata::update_annotation(
-        annotation_id => $opts{aid},
-        db => $DB,
-        fh => $fh,
-        filename => $opts{edit_annotation_image},
-        group_name => $opts{type_group},
-        image_tmp_file => $FORM->tmpFileName($opts{edit_annotation_image}),
-        link => $opts{link},
-        target_type => 'experiment',
-        text => $opts{annotation},
-        type_name => $opts{type},
-        user => $USER
-    );
-    return 1;
 }
 
 #XXX: Move to a module
@@ -479,49 +458,6 @@ sub get_experiment_info {
     $info_table->param(restricted => $data->{restricted});
 
     return $info_table->output;
-}
-
-sub search_annotation_types {
-    my %opts        = @_;
-    my $type_group  = $opts{type_group};
-    my $search_term = $opts{search_term};
-
-    #print STDERR "search_annotation_types: $search_term $type_group\n";
-    return '' unless $search_term;
-
-    $search_term = '%' . $search_term . '%';
-
-    my $group;
-    if ($type_group) {
-        $group =
-          $DB->resultset('AnnotationTypeGroup')->find( { name => $type_group } );
-    }
-
-    my @types;
-    if ($group) {
-        #print STDERR "type_group=$type_group " . $group->id . "\n";
-        @types = $DB->resultset("AnnotationType")->search(
-            \[
-                'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
-                [ 'annotation_type_group_id', $group->id ],
-                [ 'name',                     $search_term ],
-                [ 'description',              $search_term ]
-            ]
-        );
-    }
-    else {
-        @types = $DB->resultset("AnnotationType")->search(
-            \[
-                'name LIKE ? OR description LIKE ?',
-                [ 'name',        $search_term ],
-                [ 'description', $search_term ]
-            ]
-        );
-    }
-
-    my %unique;
-    map { $unique{ $_->name }++ } @types;
-    return encode_json( [ sort keys %unique ] );
 }
 
 sub get_progress_log {

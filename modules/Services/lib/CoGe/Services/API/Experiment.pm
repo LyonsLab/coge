@@ -229,6 +229,24 @@ sub update {
 	$self->render(json => { success => Mojo::JSON->true });
 }
 
+sub update_annotation {
+    my $self = shift;
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    CoGe::Core::Metadata::update_annotation(
+        annotation_id => int($self->stash('aid')),
+        db => $db,
+        filename => $self->param('filename'),
+        group_name => $self->param('group_name'),
+        image => $self->param('image'),
+        link => $self->param('link'),
+        target_type => 'experiment',
+        text => $self->param('annotation'),
+        type_name => $self->param('type_name'),
+        user => $user
+    );
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
 sub _get_experiment {
     my ($self, $id, $own_or_edit, $db, $user) = @_;
     my $experiment = $db->resultset("Experiment")->find($id);
