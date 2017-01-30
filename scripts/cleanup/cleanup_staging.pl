@@ -14,6 +14,7 @@
 use strict;
 use warnings;
 
+use Data::Dumper;
 use Getopt::Long;
 use File::Find;
 use File::Path qw(remove_tree);
@@ -23,17 +24,15 @@ use CoGe::JEX::Jex;
 
 $| = 1;
 
-my ($conf_file, $max_size, $older_than, $job_id, $debug);
+our ($conf_file, $max_size, $older_than, $job_id, $debug);
 GetOptions(
     "conf=s"     => \$conf_file,  # CoGe configuration file
-    "max_size"   => \$max_size,   # max size of staging directory (in bytes)
-    "older_than" => \$older_than, # maximum age of subdirectories (in days)
-    "job_id"     => \$job_id,     # only delete directory for job ID
+    "max_size=i"   => \$max_size,   # max size of staging directory (in bytes)
+    "older_than=i" => \$older_than, # maximum age of subdirectories (in days)
+    "job_id=i"     => \$job_id,     # only delete directory for job ID
     "debug"      => \$debug       # set to 1 to only show output without deleting
 );
 die "Missing 'conf' argument\n" unless $conf_file;
-
-print "Settings: conf_file=$conf_file max_size=$max_size older_than=$older_than\n";
 
 # Load config file
 unless ($conf_file) {
@@ -70,15 +69,16 @@ unless ($jex) {
     exit(-1);
 }
 
+# Delete directories that do not meet constraints
 my $staging_size = get_dir_size($staging_root_path);
-print "Staging size: $staging_size\n";
+print "Staging: $staging_root_path, size=$staging_size bytes\n";
 
 my $num_deleted = 0;
 foreach my $d (sort { (stat $a)[9] <=> (stat $b)[9] } @dirs) { # sort directories by time
     my $dir_size = get_dir_size($d);
     my $dir_age = (stat $d)[9];
     my $id = $d =~ /\/(\d+)$/;
-    next if ($job_id && $id != $job_id);
+    next if ($job_id && $id ne $job_id);
     print "$d $dir_age $dir_size\n";
 
     # Check if directory should be deleted
@@ -91,7 +91,7 @@ foreach my $d (sort { (stat $a)[9] <=> (stat $b)[9] } @dirs) { # sort directorie
         print "   DELETE due to age\n";
         $delete = 1;
     }
-    next unless $delete;
+    next unless ($delete || $job_id);
 
     # Check if job is still running
     my $job = $jex->get_job($id);
