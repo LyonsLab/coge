@@ -12,6 +12,7 @@ use CoGe::Core::Storage;
 use CoGe::Core::Metadata;
 use CoGe::Exception::Generic;
 
+my $JAVA_MAX_MEM = '8g';
 
 my $PICARD;
 sub BUILD { # called immediately after constructor
@@ -47,11 +48,15 @@ sub build {
     );
 
     $self->add(
-        $self->fasta_dict($gid)
+        $self->fasta_dict($reheader_fasta, $gid)
     );
 
     $self->add(
-        $self->add_readgroups($bam_file)
+        $self->picard_deduplicate($bam_file)
+    );
+
+    $self->add(
+        $self->add_readgroups($self->previous_output)
     );
 
     $self->add_to_previous(
@@ -60,9 +65,25 @@ sub build {
             input_bam   => $self->previous_output
         )
     );
+    my $reordered_bam = $self->previous_output;
 
     $self->add_to_previous(
-        $self->gatk(
+        $self->gatk_RealignerTargetCreator(
+            input_fasta => $reheader_fasta,
+            input_bam   => $reordered_bam
+        )
+    );
+
+    $self->add_to_previous(
+        $self->gatk_Realign(
+            input_fasta     => $reheader_fasta,
+            input_bam       => $reordered_bam,
+            input_intervals => $self->previous_output
+        )
+    );
+
+    $self->add_to_previous(
+        $self->gatk_HaplotypeCaller(
             input_fasta => $reheader_fasta,
             input_bam   => $self->previous_output
         )
@@ -81,9 +102,9 @@ sub build {
 
 sub fasta_dict {
     my $self = shift;
+    my $fasta = shift;
     my $gid = shift;
-
-    my $fasta     = get_genome_file($gid);
+#    my $fasta     = get_genome_file($gid);
     my $cache_dir = get_genome_cache_path($gid);
 
     my $fasta_name = to_filename($fasta);
@@ -111,8 +132,9 @@ sub reorder_sam {
     my $output_bam  = qq[$input_bam.reordered.bam];
     
     # mdb added 9/20/16 -- Picard expects the filename to end in .fa or .fasta
-    my $fasta_name = to_filename($input_fasta);
-    my $renamed_fasta = qq[$fasta_name.fa];
+    #my $fasta_name = to_filename($input_fasta);
+    #my $renamed_fasta = qq[$fasta_name.fa];
+    my $renamed_fasta = qq[$input_fasta.fa];
     
     my $done_file = qq[$output_bam.reorder.done];
 
@@ -121,7 +143,8 @@ sub reorder_sam {
         args => [],
         inputs => [
             $input_fasta,
-            $input_bam
+            $input_bam,
+            qq[$input_fasta.dict]
         ],
         outputs => [
             $output_bam,
@@ -151,7 +174,7 @@ sub add_readgroups {
     };
 }
 
-sub gatk {
+sub gatk_HaplotypeCaller {
     my $self = shift;
     my %opts = @_;
     my $input_fasta = $opts{input_fasta};
@@ -175,7 +198,7 @@ sub gatk {
     }
 
     return {
-        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.fai $renamed_fasta.fai && ln -s $input_fasta.dict $fasta_name.dict && java -jar $GATK -T HaplotypeCaller --genotyping_mode DISCOVERY --filter_reads_with_N_cigar --fix_misencoded_quality_scores],
+        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.fai $renamed_fasta.fai && ln -s $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller --genotyping_mode DISCOVERY --filter_reads_with_N_cigar --fix_misencoded_quality_scores],
         args =>  [
             ["-R", $renamed_fasta, 0],
             ["-I", $input_bam, 0],
@@ -193,6 +216,91 @@ sub gatk {
             catfile($self->staging_dir, $output_vcf),
         ],
         description => "Identifying SNPs using GATK method"
+    };
+}
+
+sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar –T RealignerTargetCreator –R Sbicolor_313_v3.0.fa –I SAMPLEA.dedup.bam –o SAMPLEA.realignment.intervals
+    my $self = shift;
+    my %opts = @_;
+    my $input_fasta = $opts{input_fasta};
+    my $input_bam   = $opts{input_bam};
+
+    my $params      = $self->params->{snp_params};
+
+    my $output_file = to_filename_base($input_bam) . '.realignment.intervals';
+
+    my $fasta_index = qq[$input_fasta.fai];
+
+    # mdb added 9/20/16 -- GATK expects the filename to end in .fa or .fasta
+    my $fasta_name = to_filename($input_fasta);
+    my $renamed_fasta = qq[$fasta_name.fa];
+
+    my $GATK = $self->conf->{GATK};
+    unless ($GATK) {
+        CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
+    }
+
+    return {
+        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.fai $renamed_fasta.fai && ln -s $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T RealignerTargetCreator],
+        args =>  [
+            ["-R", $renamed_fasta, 0],
+            ["-I", $input_bam,     0],
+            ["-o", $output_file,   1]
+        ],
+        inputs => [
+            $input_bam,
+            "$input_bam.reorder.done", # from create_reorder_sam_job
+            $input_fasta,
+            $fasta_index,
+        ],
+        outputs => [
+            catfile($self->staging_dir, $output_file),
+        ],
+        description => "Finding intervals to analyze"
+    };
+}
+
+sub gatk_Realign { # java –Xmx8g –jar GenomeAnalysisTK.jar –T IndelRealigner –R Sbicolor_313_v3.0.fa –I SAMPLEA.dedup.bam –targetIntervals SAMPLEA.realignment.intervals –o SAMPLEA.dedup.realigned.bam
+    my $self = shift;
+    my %opts = @_;
+    my $input_fasta     = $opts{input_fasta};
+    my $input_bam       = $opts{input_bam};
+    my $input_intervals = $opts{input_intervals};
+
+    my $params      = $self->params->{snp_params};
+
+    my $output_file = to_filename_base($input_bam) . '.realigned.bam';
+
+    my $fasta_index = qq[$input_fasta.fai];
+
+    # mdb added 9/20/16 -- GATK expects the filename to end in .fa or .fasta
+    my $fasta_name = to_filename($input_fasta);
+    my $renamed_fasta = qq[$fasta_name.fa];
+
+    my $GATK = $self->conf->{GATK};
+    unless ($GATK) {
+        CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
+    }
+
+    return {
+        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.fai $renamed_fasta.fai && ln -s $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T IndelRealigner],
+        args =>  [
+            ["-R",               $renamed_fasta,   0],
+            ["-I",               $input_bam,       0],
+            ["-targetIntervals", $input_intervals, 0],
+            ["-o",               $output_file,     1]
+        ],
+        inputs => [
+            $input_bam,
+            "$input_bam.reorder.done", # from create_reorder_sam_job
+            $input_fasta,
+            $fasta_index,
+            $input_intervals
+        ],
+        outputs => [
+            catfile($self->staging_dir, $output_file),
+        ],
+        description => "Realigning"
     };
 }
 
