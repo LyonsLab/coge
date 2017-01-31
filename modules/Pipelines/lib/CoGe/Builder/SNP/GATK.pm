@@ -51,14 +51,17 @@ sub build {
         $self->fasta_dict($reheader_fasta, $gid)
     );
 
+    # Mark duplicates
     $self->add(
         $self->picard_deduplicate($bam_file)
     );
 
+    # Add read groups
     $self->add(
         $self->add_readgroups($self->previous_output)
     );
 
+    # Reorder BAM
     $self->add_to_previous(
         $self->reorder_sam(
             input_fasta => $reheader_fasta,
@@ -67,6 +70,7 @@ sub build {
     );
     my $reordered_bam = $self->previous_output;
 
+    # Find intervals to analyze
     $self->add_to_previous(
         $self->gatk_RealignerTargetCreator(
             input_fasta => $reheader_fasta,
@@ -74,6 +78,7 @@ sub build {
         )
     );
 
+    # Realign
     $self->add_to_previous(
         $self->gatk_Realign(
             input_fasta     => $reheader_fasta,
@@ -82,6 +87,7 @@ sub build {
         )
     );
 
+    # Variant calling with GATK HaplotypeCaller
     $self->add_to_previous(
         $self->gatk_HaplotypeCaller(
             input_fasta => $reheader_fasta,
@@ -89,8 +95,10 @@ sub build {
         )
     );
 
+    # Set pipeline output
     $self->vcf($self->previous_output);
 
+    # Load VCF experiment
     $self->add(
         $self->load_vcf(
             annotations => $annotations,
@@ -112,7 +120,7 @@ sub fasta_dict {
     my $fasta_dict = qq[$fasta_name.dict];
     
     return {
-        cmd => qq[ln -s $fasta $renamed_fasta && java -jar $PICARD CreateSequenceDictionary REFERENCE=$renamed_fasta OUTPUT=$fasta_dict],
+        cmd => qq[ln -sf $fasta $renamed_fasta && java -jar $PICARD CreateSequenceDictionary REFERENCE=$renamed_fasta OUTPUT=$fasta_dict],
         args => [],
         inputs => [
             $fasta
@@ -139,7 +147,7 @@ sub reorder_sam {
     my $done_file = qq[$output_bam.reorder.done];
 
     return {
-        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.dict $renamed_fasta.dict && java -jar $PICARD ReorderSam REFERENCE=$renamed_fasta INPUT=$input_bam OUTPUT=$output_bam CREATE_INDEX=true VERBOSITY=ERROR && touch $done_file],
+        cmd => qq[ln -sf $input_fasta $renamed_fasta && ln -sf $input_fasta.dict $renamed_fasta.dict && java -jar $PICARD ReorderSam REFERENCE=$renamed_fasta INPUT=$input_bam OUTPUT=$output_bam CREATE_INDEX=true VERBOSITY=ERROR && touch $done_file],
         args => [],
         inputs => [
             $input_fasta,
@@ -198,7 +206,7 @@ sub gatk_HaplotypeCaller {
     }
 
     return {
-        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.fai $renamed_fasta.fai && ln -s $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller --genotyping_mode DISCOVERY --filter_reads_with_N_cigar --fix_misencoded_quality_scores],
+        cmd => qq[ln -sf $input_fasta $renamed_fasta && ln -sf $input_fasta.fai $renamed_fasta.fai && ln -sf $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller --genotyping_mode DISCOVERY --filter_reads_with_N_cigar --fix_misencoded_quality_scores],
         args =>  [
             ["-R", $renamed_fasta, 0],
             ["-I", $input_bam, 0],
@@ -225,8 +233,6 @@ sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar �
     my $input_fasta = $opts{input_fasta};
     my $input_bam   = $opts{input_bam};
 
-    my $params      = $self->params->{snp_params};
-
     my $output_file = to_filename_base($input_bam) . '.realignment.intervals';
 
     my $fasta_index = qq[$input_fasta.fai];
@@ -241,11 +247,12 @@ sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar �
     }
 
     return {
-        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.fai $renamed_fasta.fai && ln -s $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T RealignerTargetCreator],
+        cmd => qq[ln -sf $input_fasta $renamed_fasta && ln -sf $input_fasta.fai $renamed_fasta.fai && ln -sf $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T RealignerTargetCreator],
         args =>  [
-            ["-R", $renamed_fasta, 0],
-            ["-I", $input_bam,     0],
-            ["-o", $output_file,   1]
+            ['-U', 'ALLOW_N_CIGAR_READS', 0], # fixed "ERROR MESSAGE: Unsupported CIGAR operator N in read"
+            ['-R', $renamed_fasta,        0],
+            ['-I', $input_bam,            0],
+            ['-o', $output_file,          1]
         ],
         inputs => [
             $input_bam,
@@ -267,8 +274,6 @@ sub gatk_Realign { # java –Xmx8g –jar GenomeAnalysisTK.jar –T IndelRealign
     my $input_bam       = $opts{input_bam};
     my $input_intervals = $opts{input_intervals};
 
-    my $params      = $self->params->{snp_params};
-
     my $output_file = to_filename_base($input_bam) . '.realigned.bam';
 
     my $fasta_index = qq[$input_fasta.fai];
@@ -283,7 +288,7 @@ sub gatk_Realign { # java –Xmx8g –jar GenomeAnalysisTK.jar –T IndelRealign
     }
 
     return {
-        cmd => qq[ln -s $input_fasta $renamed_fasta && ln -s $input_fasta.fai $renamed_fasta.fai && ln -s $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T IndelRealigner],
+        cmd => qq[ln -sf $input_fasta $renamed_fasta && ln -sf $input_fasta.fai $renamed_fasta.fai && ln -sf $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T IndelRealigner],
         args =>  [
             ["-R",               $renamed_fasta,   0],
             ["-I",               $input_bam,       0],
