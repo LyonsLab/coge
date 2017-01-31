@@ -45,6 +45,7 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     get_experiment_info        => \&get_experiment_info,
     edit_experiment_info       => \&edit_experiment_info,
     update_experiment_info     => \&update_experiment_info,
+    delete_experiment          => \&delete_experiment,
     get_sources                => \&get_sources,
     toggle_favorite            => \&toggle_favorite,
     make_experiment_public     => \&make_experiment_public,
@@ -113,6 +114,25 @@ sub update_experiment_info {
     $exp->update;
 
     return 1;
+}
+
+sub delete_experiment {
+    my %opts = @_;
+    my $eid  = $opts{eid};
+    return 0 unless $eid;
+
+    my $exp = $DB->resultset('Experiment')->find($eid);
+    return 0 unless $exp;
+
+    my $success;
+    if ($exp->deleted) {
+        $success = CoGe::Core::Experiment::undelete_experiment($eid, $DB, $USER);
+    }
+    else {
+        $success = CoGe::Core::Experiment::delete_experiment($eid, $DB, $USER);
+    }
+   
+    return $success;
 }
 
 sub get_sources {
@@ -390,7 +410,7 @@ sub _get_experiment_info {
     return "Access denied\n" unless $USER->has_access_to_experiment($exp);
     return "Unable to find an entry for $eid" unless $exp;
 
-    my $allow_edit = $USER->is_admin || $USER->is_owner_editor( experiment => $eid );
+    my $allow_edit = $exp->is_editable($USER);
     my $gid = $exp->genome->id;
 
     my $tags;
@@ -441,6 +461,8 @@ sub _get_experiment_info {
     return {
         fields => $fields,
         genome_view_url  => "GenomeView.pl?embed=$EMBED&gid=$gid&tracks=experiment$eid",
+        deleted => $exp->deleted,
+        deletable => $exp->is_deletable($USER),
         editable => $allow_edit,
         restricted => $exp->restricted
     };
@@ -454,6 +476,8 @@ sub get_experiment_info {
 
     $info_table->param(fields => $data->{fields});
     $info_table->param(genome_view_url => $data->{genome_view_url});
+    $info_table->param(DELETE_BUTTON_TEXT => $data->{deleted} ? 'Undelete' : 'Delete');
+    $info_table->param(deletable => $data->{deletable});
     $info_table->param(editable => $data->{editable});
     $info_table->param(restricted => $data->{restricted});
 

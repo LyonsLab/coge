@@ -20,7 +20,7 @@ class Annotations {
 	}
 
 	delete(aid) {
-		if (confirm('Delete this annotation?')) {
+		coge.utils.confirm('Delete this annotation?', null, function() {
 			var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations/' + aid;
 			$.ajax({
 				type: 'DELETE',
@@ -30,7 +30,7 @@ class Annotations {
 			}).fail(function(jqXHR, textStatus, errorThrown) { 
 				console.log('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
 			});
-		}
+		}.bind(this));
 	}
 
 	get_type_groups() {
@@ -91,12 +91,12 @@ class Annotations {
 	send() {
 		var annotation = $('#annotation').val();
 		if (!annotation) {
-			alert('Please enter some annotation text.');
+			coge.utils.alert('Please enter some annotation text.');
 			return;
 		}
 		var type = $('#annotation_type').val();
 		if (!type) {
-			alert('Please specify a type.');
+			coge.utils.alert('Please specify a type.');
 			return;
 		}
 		var form_data = new FormData();
@@ -229,7 +229,7 @@ class Annotations {
 	verify_image_file(file) {
 		var ext = file.name.split('.').pop().toLowerCase();
 		if (ext != 'jpg' && ext != 'jpeg' && ext != 'gif' && ext != 'png' && ext != 'svg' ) {
-			alert('Error: specified file is not an image');
+			coge.utils.alert('Error: specified file is not an image');
 			return false;
 		}
 		return true;

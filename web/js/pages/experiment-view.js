@@ -62,6 +62,20 @@ function update_experiment_info () {
     });
 }
 
+function delete_experiment (action) {
+	coge.utils.confirm(action + ' experiment?', null, function() {
+		$.ajax({
+			data: {
+				fname: 'delete_experiment',
+				eid: EXPERIMENT_ID
+			},
+			success : function(val) {
+				get_experiment_info();
+			},
+		});
+	});
+}
+
 function get_sources () {
     $.ajax({
         data: {

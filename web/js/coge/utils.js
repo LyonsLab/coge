@@ -195,7 +195,34 @@ var coge = window.coge = (function(ns) {
                     return response;
     	        }
             );
-    	}
+    	},
+
+        alert: function(msg, title) {
+            var div = $('<div></div>').appendTo(document.body);
+            if (title)
+                div.prop('title') = title;
+            $('<p>' + msg + '</p>').appendTo(div);
+            div.dialog({
+                modal: true,
+                buttons: {
+                    Ok: function() { div.remove(); }
+                }
+            });
+        },
+
+        confirm: function(msg, title, on_ok) {
+            var div = $('<div></div>').appendTo(document.body);
+            if (title)
+                div.prop('title') = title;
+            $('<p>' + msg + '</p>').appendTo(div);
+            div.dialog({
+                modal: true,
+                buttons: {
+                    Ok: function() { div.remove(); on_ok(); },
+                    Cancel: function() { div.remove(); }
+                }
+            });
+        }
     };
 
     return ns;
