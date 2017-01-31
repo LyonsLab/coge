@@ -21,7 +21,7 @@ BEGIN {
     );
     
     # Setup supported experiment file types
-    @QUANT_TYPES        = qw(csv tsv bed wig bw);
+    @QUANT_TYPES        = qw(csv tsv bed wig bw seg);
     @MARKER_TYPES       = qw(gff gtf gff3);
     @POLYMORPHISM_TYPES = qw(vcf gvcf); # mdb added 11/22/16
     @ALIGNMENT_TYPES    = qw(bam);      # mdb added 11/22/16
@@ -77,6 +77,9 @@ sub undelete_experiment {
 sub detect_data_type {
     my $filetype = shift;
     my $filepath = shift;
+    warn $filetype;
+    warn $filepath;
+    warn Dumper \@QUANT_TYPES;
     #print STDOUT "detect_data_type: $filepath\n";
 
     # Try to determine type based on file extension

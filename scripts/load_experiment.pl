@@ -159,6 +159,7 @@ if ( $staged_data_file =~ /\.gz$/ ) {
 }
 
 # Determine file type
+warn Dumper \@SUPPORTED_TYPES;
 my ($file_type, $data_type) = detect_data_type($file_type, $staged_data_file);
 if ( !$file_type or !$data_type ) {
     my $types = join ",", sort {$a cmp $b} @SUPPORTED_TYPES;
