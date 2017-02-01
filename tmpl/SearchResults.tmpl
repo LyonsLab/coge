@@ -29,9 +29,6 @@ const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 		
 		<div id="info_panel" class="small panel coge-border-top" style="overflow:none;margin-left:10px;margin-top:29px;color:gray;">
 		</div>
-		
-		<div id="info_panel" class="small panel coge-border-top" style="overflow:none;margin-left:10px;margin-top:29px;color:gray;">
-		</div>
 	</div>
 
 	<div style="float:left;margin-right:5px;">
@@ -45,6 +42,7 @@ const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 					<li><span data-type="experiment"><img src="picts/testtube-icon.png" width="15" height="15"/> Experiments </span></li>
 					<li><span data-type="notebook"><img src="picts/notebook-icon.png" width="15" height="15"/> Notebooks </span></li>
 					<li><span data-type="group"><img src="picts/group-icon.png" width="15" height="15"/> User Groups </span></li>
+					<li><span data-type="group"><img src="picts/info-icon.png" width="15" height="15"/> Info </span></li>
 				</ul>
             </div>
 		</div>
@@ -65,7 +63,6 @@ const USER_ID       = '<TMPL_VAR NAME="USER_ID">';
 			<span id="send_button" onClick="send_menu();" class="sendto coge-icon coge-disabled glyphicon glyphicon-arrow-right item-button invisible" style="margin-right:5px;" title="Send Selected Items to ..."></span>
 			<input id="search_input" type="search" placeholder="Filter" size="25" class="coge-border" style="float:right;margin-right:15px;vertical-align:top;" />
 			<input id="i_button" onClick="open_close_info();" class="info coge-icon coge-disabled glyphicon glyphicon-info-sign item-button invisible" style="margin-right:5px;" title="Hide/View Info"></span>
-			
 			<span id="refresh_label" class="xsmall hidden info" style="float:right;padding-right:25px;">Refreshing...</span>
 		</div>
 		<div class="grid hidden noselect coge-border-top" style="overflow:auto;border-bottom:none !important;"></div>
