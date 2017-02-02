@@ -432,7 +432,7 @@ my $cmd = "cp -r $staging_dir/* $storage_path"; #FIXME use perl copy and detect 
 print STDOUT "$cmd\n";
 `$cmd`;
 
-# Make sure file permissions are set properly (added for qTeller pipeline)
+# Make sure file permissions are set properly (added for Cufflinks pipeline)
 $cmd = "chmod -R a+r $storage_path";
 print STDOUT "$cmd\n";
 `$cmd`;

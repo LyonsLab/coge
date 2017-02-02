@@ -4,7 +4,7 @@
 # Usage:    samtools depth file.bam | normalize_bed.pl
 #           Note: used to accept output from "samtools mpileup"
 # Author:   mdb
-# Created:  2/24/14 for qTeller integration pipeline
+# Created:  2/24/14 for qTeller (Cufflinks) integration pipeline
 #-------------------------------------------------------------------------------
 
 use strict;

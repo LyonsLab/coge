@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #-------------------------------------------------------------------------------
-# Purpose:  Strip "gi|" and "lcl|" off of input filename.  Used by qTeller pipeline.
+# Purpose:  Strip "gi|" and "lcl|" off of input filename.  Used by Cufflinks pipeline.
 # Author:   mdb
 # Created:  2/10/14
 #------------------------------------------------------------------------------
