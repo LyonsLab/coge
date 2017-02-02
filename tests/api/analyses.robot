@@ -10,7 +10,7 @@ Resource	resource.robot
 *** Test Cases ***
 Export FASTA to Data Store
 	[Tags]  auth-required
-	Create Session  coge    ${API_URL}
+	Create Session  coge    ${API_URL}  verify=true
 	${document1}=	Catenate
 	...	{ 
 	...		"type": "export_fasta", 
@@ -32,7 +32,7 @@ Export FASTA to Data Store
 
 Export GFF to Data Store
         [Tags]  auth-required
-        Create Session  coge    ${API_URL}
+        Create Session  coge    ${API_URL}  verify=true
         ${document2}=   Catenate
         ...     {
         ...             "type": "export_gff",
@@ -54,7 +54,7 @@ Export GFF to Data Store
 
 Export Experiment to Data Store
         [Tags]  auth-required
-        Create Session  coge    ${API_URL}
+        Create Session  coge    ${API_URL}  verify=true
         ${document3}=   Catenate
         ...     {
         ...             "type": "export_experiment",

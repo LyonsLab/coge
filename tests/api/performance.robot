@@ -10,7 +10,7 @@ Resource	resource.robot
 *** Test Cases ***
 Export GFF to Data Store
         [Tags]  auth-required
-        Create Session  coge    ${API_URL}
+        Create Session  coge    ${API_URL}  verify=true
         ${document0}=   Catenate
         ...     {
         ...             "type": "export_gff",
@@ -31,8 +31,8 @@ Export GFF to Data Store
         Log     ${id0}
 
 Genome Add 1
-	[Tags]	auth-required 
-	Create Session  coge    ${API_URL}
+	[Tags]	auth-required
+	Create Session  coge    ${API_URL}  verify=true
         ${content1}=	Evaluate        json.load(open('${DATA_PATH}/genome_add_16911.json', 'r'))       json
 	${headers1}=	Create Dictionary	Content-Type=application/json
 	${resp1}=	Put Request	coge	${GENOMES}/${AUTH_PARAMS}	data=${content1}	headers=${headers1}
@@ -44,7 +44,7 @@ Genome Add 1
 
 Genome Add 2
         [Tags]  auth-required
-        Create Session  coge    ${API_URL}
+        Create Session  coge    ${API_URL}  verify=true
         ${content2}=     Evaluate        json.load(open('${DATA_PATH}/genome_add_16911.json', 'r'))       json
         ${headers2}=     Create Dictionary       Content-Type=application/json
         ${resp2}=        Put Request     coge    ${GENOMES}/${AUTH_PARAMS}       data=${content2}	headers=${headers2}
@@ -56,7 +56,7 @@ Genome Add 2
 
 Annotation Add 1
         [Tags]  auth-required
-        Create Session  coge    ${API_URL}
+        Create Session  coge    ${API_URL}  verify=true
         ${content3}=    Evaluate        json.load(open('${DATA_PATH}/load_annotation.json', 'r'))       json
         ${headers3}=    Create Dictionary       Content-Type=application/json
 	Set To Dictionary	${content3["parameters"]}	genome_id=28114
@@ -69,7 +69,7 @@ Annotation Add 1
 
 Annotation Add 2
         [Tags]  auth-required
-        Create Session  coge    ${API_URL}
+        Create Session  coge    ${API_URL}  verify=true
         ${content4}=    Evaluate        json.load(open('${DATA_PATH}/load_annotation.json', 'r'))       json
         ${headers4}=    Create Dictionary       Content-Type=application/json
         Set To Dictionary       ${content4["parameters"]}       genome_id=28115
