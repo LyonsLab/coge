@@ -38,6 +38,7 @@ sub build {
     # Build workflow
     #
 
+    # Index reference FASTA
     $self->add(
         $self->reheader_fasta($gid)
     );
@@ -70,7 +71,7 @@ sub build {
     );
     my $reordered_bam = $self->previous_output;
 
-    # Find intervals to analyze
+    # Find intervals to analyze for realignment
     $self->add_to_previous(
         $self->gatk_RealignerTargetCreator(
             input_fasta => $reheader_fasta,
@@ -78,7 +79,7 @@ sub build {
         )
     );
 
-    # Realign
+    # Realign reads around INDELS
     $self->add_to_previous(
         $self->gatk_Realign(
             input_fasta     => $reheader_fasta,
@@ -86,12 +87,18 @@ sub build {
             input_intervals => $self->previous_output
         )
     );
+    my $realigned_bam = $self->previous_output;
+
+    # Index realigned bam
+    $self->add_to_previous(
+        $self->index_bam($realigned_bam)
+    );
 
     # Variant calling with GATK HaplotypeCaller
     $self->add_to_previous(
         $self->gatk_HaplotypeCaller(
             input_fasta => $reheader_fasta,
-            input_bam   => $self->previous_output
+            input_bam   => $realigned_bam
         )
     );
 
@@ -126,7 +133,7 @@ sub fasta_dict {
             $fasta
         ],
         outputs => [
-            catfile($cache_dir, $fasta_dict),
+            catfile($cache_dir, $fasta_dict)
         ],
         description => "Generate fasta dictionary"
     };
@@ -182,56 +189,14 @@ sub add_readgroups {
     };
 }
 
-sub gatk_HaplotypeCaller {
-    my $self = shift;
-    my %opts = @_;
-    my $input_fasta = $opts{input_fasta};
-    my $input_bam   = $opts{input_bam};
-
-    my $output_vcf = 'snps.flt.vcf';
-
-    my $params      = $self->params->{snp_params};
-    my $stand_call_conf = $params->{'-stand_call_conf'} // 30;
-    my $stand_emit_conf = $params->{'-stand_emit_conf'} // 10;
-
-    my $fasta_index = qq[$input_fasta.fai];
-    
-    # mdb added 9/20/16 -- GATK expects the filename to end in .fa or .fasta
-    my $fasta_name = to_filename($input_fasta);
-    my $renamed_fasta = qq[$fasta_name.fa];
-    
-    my $GATK = $self->conf->{GATK};
-    unless ($GATK) {
-        CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
-    }
-
-    return {
-        cmd => qq[ln -sf $input_fasta $renamed_fasta && ln -sf $input_fasta.fai $renamed_fasta.fai && ln -sf $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller --genotyping_mode DISCOVERY --filter_reads_with_N_cigar --fix_misencoded_quality_scores],
-        args =>  [
-            ["-R", $renamed_fasta, 0],
-            ["-I", $input_bam, 0],
-            ["-stand_emit_conf", $stand_emit_conf, 0],
-            ["-stand_call_conf", $stand_call_conf, 0],
-            ["-o", $output_vcf, 1]
-        ],
-        inputs => [
-            $input_bam,
-            "$input_bam.reorder.done", # from create_reorder_sam_job
-            $input_fasta,
-            $fasta_index,
-        ],
-        outputs => [
-            catfile($self->staging_dir, $output_vcf),
-        ],
-        description => "Identifying SNPs using GATK method"
-    };
-}
-
 sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar –T RealignerTargetCreator –R Sbicolor_313_v3.0.fa –I SAMPLEA.dedup.bam –o SAMPLEA.realignment.intervals
     my $self = shift;
     my %opts = @_;
     my $input_fasta = $opts{input_fasta};
     my $input_bam   = $opts{input_bam};
+
+    my $read_params = $self->params->{read_params} // {};
+    my $encoding    = $read_params->{encoding} // 33;
 
     my $output_file = to_filename_base($input_bam) . '.realignment.intervals';
 
@@ -246,14 +211,17 @@ sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar �
         CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
     }
 
+    my $args = [
+        ['-U', 'ALLOW_N_CIGAR_READS', 0], # fixed "ERROR MESSAGE: Unsupported CIGAR operator N in read"
+        ['-R', $renamed_fasta,        0],
+        ['-I', $input_bam,            0],
+        ['-o', $output_file,          1]
+    ];
+    #push @$args, ['-fixMisencodedQuals', '', 0] if ($encoding == 64);
+
     return {
         cmd => qq[ln -sf $input_fasta $renamed_fasta && ln -sf $input_fasta.fai $renamed_fasta.fai && ln -sf $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T RealignerTargetCreator],
-        args =>  [
-            ['-U', 'ALLOW_N_CIGAR_READS', 0], # fixed "ERROR MESSAGE: Unsupported CIGAR operator N in read"
-            ['-R', $renamed_fasta,        0],
-            ['-I', $input_bam,            0],
-            ['-o', $output_file,          1]
-        ],
+        args =>  $args,
         inputs => [
             $input_bam,
             "$input_bam.reorder.done", # from create_reorder_sam_job
@@ -261,7 +229,7 @@ sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar �
             $fasta_index,
         ],
         outputs => [
-            catfile($self->staging_dir, $output_file),
+            catfile($self->staging_dir, $output_file)
         ],
         description => "Finding intervals to analyze"
     };
@@ -273,6 +241,9 @@ sub gatk_Realign { # java –Xmx8g –jar GenomeAnalysisTK.jar –T IndelRealign
     my $input_fasta     = $opts{input_fasta};
     my $input_bam       = $opts{input_bam};
     my $input_intervals = $opts{input_intervals};
+
+    my $read_params = $self->params->{read_params} // {};
+    my $encoding    = $read_params->{encoding} // 33;
 
     my $output_file = to_filename_base($input_bam) . '.realigned.bam';
 
@@ -287,14 +258,17 @@ sub gatk_Realign { # java –Xmx8g –jar GenomeAnalysisTK.jar –T IndelRealign
         CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
     }
 
+    my $args = [
+        ["-R",               $renamed_fasta,   0],
+        ["-I",               $input_bam,       0],
+        ["-targetIntervals", $input_intervals, 0],
+        ["-o",               $output_file,     1]
+    ];
+    #push @$args, ['-fixMisencodedQuals', '', 0] if ($encoding == 64);
+
     return {
         cmd => qq[ln -sf $input_fasta $renamed_fasta && ln -sf $input_fasta.fai $renamed_fasta.fai && ln -sf $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T IndelRealigner],
-        args =>  [
-            ["-R",               $renamed_fasta,   0],
-            ["-I",               $input_bam,       0],
-            ["-targetIntervals", $input_intervals, 0],
-            ["-o",               $output_file,     1]
-        ],
+        args =>  $args,
         inputs => [
             $input_bam,
             "$input_bam.reorder.done", # from create_reorder_sam_job
@@ -303,9 +277,54 @@ sub gatk_Realign { # java –Xmx8g –jar GenomeAnalysisTK.jar –T IndelRealign
             $input_intervals
         ],
         outputs => [
-            catfile($self->staging_dir, $output_file),
+            catfile($self->staging_dir, $output_file)
         ],
-        description => "Realigning"
+        description => "Realigning reads"
+    };
+}
+
+sub gatk_HaplotypeCaller {
+    my $self = shift;
+    my %opts = @_;
+    my $input_fasta = $opts{input_fasta};
+    my $input_bam   = $opts{input_bam};
+
+    my $output_vcf = 'snps.flt.vcf';
+
+    my $params      = $self->params->{snp_params};
+    my $stand_call_conf = $params->{'-stand_call_conf'} // 30;
+    my $stand_emit_conf = $params->{'-stand_emit_conf'} // 10;
+
+    my $GATK = $self->conf->{GATK};
+    unless ($GATK) {
+        CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
+    }
+
+    return {
+        cmd => "ln -sf $input_fasta $input_fasta.fa && " . # mdb added 9/20/16 -- GATK expects the filename to end in .fa or .fasta
+               "ln -sf $input_fasta.fai $input_fasta.fa.fai && " .
+               "ln -sf $input_fasta.dict $input_fasta.fa.dict && " .
+               qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller --genotyping_mode DISCOVERY --filter_reads_with_N_cigar --fix_misencoded_quality_scores],
+        args =>  [
+            ['-R',                  qq[$input_fasta.fa], 0],
+            ['-I',                  $input_bam,          1],
+            ['-stand_emit_conf',    $stand_emit_conf,    0],
+            ['-stand_call_conf',    $stand_call_conf,    0],
+            ['--emitRefConfidence', 'GVCF',              0],
+            ['--pcr_indel_model',   'NONE',              0],
+            ['-o',                  $output_vcf,         1]
+        ],
+        inputs => [
+            $input_bam,
+            qq[$input_bam.bai],
+            $input_fasta,
+            qq[$input_fasta.fai],
+            qq[$input_fasta.dict]
+        ],
+        outputs => [
+            catfile($self->staging_dir, $output_vcf)
+        ],
+        description => "Identifying SNPs using GATK method"
     };
 }
 
