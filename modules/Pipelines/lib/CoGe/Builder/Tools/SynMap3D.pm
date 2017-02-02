@@ -37,6 +37,7 @@ sub pre_build { # override superclass method
         $self->page($page) if $page;
     }
 
+	return;
 }
 
 sub build {

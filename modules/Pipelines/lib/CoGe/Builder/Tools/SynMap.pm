@@ -56,6 +56,8 @@ sub pre_build { # override superclass method for reusable workflow ID, custom si
 	# Set workflow log file path
 	my $log_path = get_log_file_path($result_path, $self->site_url);
 	$self->workflow->logfile($log_path);
+
+	return;
 }
 
 sub test {
