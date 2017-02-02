@@ -27,12 +27,12 @@ sub build {
     my $self = shift;
     my %opts = @_;
     my $bam_files = $opts{data_files};
-    unless ($bam_files && @$bam_files == 3) { # use input experiment's bam file (for MeasureExpression)
+    unless ($bam_files && @$bam_files == 3) { # use input experiment's bam file
         CoGe::Exception::Generic->throw(message => 'Missing bam inputs');
     }
 
     my $metadata = $self->params->{metadata};
-    unless ($metadata) { # use input experiment's metadata (for MeasureExpression)
+    unless ($metadata) { # use input experiment's metadata
         my $experiment = $self->request->experiment;
         $self->params->{metadata} = { # could almost use experiment->to_hash here except for source_name
             name       => $experiment->name,
