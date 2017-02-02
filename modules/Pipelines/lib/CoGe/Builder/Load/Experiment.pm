@@ -8,7 +8,7 @@ use Data::Dumper qw(Dumper);
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Core::Experiment qw(detect_data_type);
 use CoGe::Builder::Alignment::Aligner;
-use CoGe::Builder::Expression::qTeller;
+use CoGe::Builder::Expression::Analyzer;
 use CoGe::Builder::SNP::SNPFinder;
 use CoGe::Builder::Methylation::Analyzer;
 use CoGe::Builder::Protein::ChIPseq;
@@ -88,7 +88,7 @@ sub build {
         
         # Add expression workflow (if specified)
         if ( $self->params->{expression_params} ) {
-            my $expr = CoGe::Builder::Expression::qTeller->new($self);
+            my $expr = CoGe::Builder::Expression::Analyzer->new($self);
             $expr->build(data_files => \@bam_files);
             $self->add($expr);
         }

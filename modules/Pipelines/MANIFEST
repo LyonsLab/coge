@@ -24,8 +24,8 @@ lib/CoGe/Builder/SNP/CoGeSNPs.pm
 lib/CoGe/Builder/SNP/GATK.pm
 lib/CoGe/Builder/SNP/Platypus.pm
 lib/CoGe/Builder/SNP/Samtools.pm
-lib/CoGe/Builder/Expression/qTeller.pm
-lib/CoGe/Builder/Expression/MeasureExpression.pm
+lib/CoGe/Builder/Expression/Cufflinks.pm
+lib/CoGe/Builder/Expression/Analyzer.pm
 lib/CoGe/Builder/PopGen/SummaryStats.pm
 lib/CoGe/Builder/PopGen/MeasureDiversity.pm
 lib/CoGe/Builder/Tools/CoGeBlast.pm

@@ -175,8 +175,8 @@ Pipelines/lib/CoGe/Builder/SNP/CoGeSNPs.pm
 Pipelines/lib/CoGe/Builder/SNP/GATK.pm
 Pipelines/lib/CoGe/Builder/SNP/Platypus.pm
 Pipelines/lib/CoGe/Builder/SNP/Samtools.pm
-Pipelines/lib/CoGe/Builder/Expression/qTeller.pm
-Pipelines/lib/CoGe/Builder/Expression/MeasureExpression.pm
+Pipelines/lib/CoGe/Builder/Expression/Cufflinks.pm
+Pipelines/lib/CoGe/Builder/Expression/Analyzer.pm
 Pipelines/lib/CoGe/Builder/PopGen/SummaryStats.pm
 Pipelines/lib/CoGe/Builder/PopGen/MeasureDiversity.pm
 Pipelines/lib/CoGe/Builder/Tools/CoGeBlast.pm

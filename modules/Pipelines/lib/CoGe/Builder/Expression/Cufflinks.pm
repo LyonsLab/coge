@@ -1,4 +1,4 @@
-package CoGe::Builder::Expression::qTeller;
+package CoGe::Builder::Expression::Cufflinks;
 
 use Moose;
 extends 'CoGe::Builder::Buildable';
@@ -16,20 +16,9 @@ use CoGe::Exception::Generic;
 sub build {
     my $self = shift;
     my %opts = @_;
-    my ($bam_file) = @{$opts{data_files}};
-    unless ($bam_file) { # use input experiment's bam file (for MeasureExpression)
-        my $experiment = $self->request->experiment;
-        $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
-    }
-
-    unless ($self->params->{metadata}) { # use input experiment's metadata (for MeasureExpression)
-        my $experiment = $self->request->experiment;
-        $self->params->{metadata} = { # could almost use experiment->to_hash here except for source_name
-            name       => $experiment->name,
-            version    => $experiment->version,
-            source     => $experiment->source->name,
-            restricted => $experiment->restricted
-        };
+    my ($bam_file) = @{$opts{data_files}}; # IMPORTANT: this should be the unsorted version, see COGE-706 and http://seqanswers.com/forums/showthread.php?t=45192
+    unless ($bam_file) {
+        CoGe::Exception::MissingField->throw(message => 'Missing bam');
     }
 
     my $genome = $self->request->genome;
@@ -53,12 +42,6 @@ sub build {
     my $reheader_fasta = $self->previous_output;
     
     # Generate cached gff if genome is annotated
-#    my $gff_file;
-#    if ($isAnnotated) {
-#        my $gff = create_gff_generation_job(gid => $gid, organism_name => $genome->organism->name);
-#        $gff_file = $gff->{outputs}->[0];
-#        push @tasks, $gff;
-#    }
     my $gff_file;
     if ( $isAnnotated ) {
         $self->add(

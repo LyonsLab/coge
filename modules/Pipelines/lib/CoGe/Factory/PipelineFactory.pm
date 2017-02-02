@@ -19,7 +19,8 @@ use CoGe::Builder::Tools::NucCounter;
 use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Tools::SynMap3D;
-use CoGe::Builder::Expression::qTeller;
+use CoGe::Builder::Expression::Analyzer;
+use CoGe::Builder::Methylation::Analyzer;
 use CoGe::Builder::Methylation::Metaplot;
 use CoGe::Builder::PopGen::SummaryStats;
 use CoGe::Exception::Generic;
@@ -38,7 +39,8 @@ my %typeToClass = (
     'analyze_snps'          => 'CoGe::Builder::SNP::SNPFinder',
     'synmap'                => 'CoGe::Builder::Tools::SynMap',
     'synmap3d'              => 'CoGe::Builder::Tools::SynMap3D',
-    'analyze_expression'    => 'CoGe::Builder::Expression::qTeller',
+    'analyze_expression'    => 'CoGe::Builder::Expression::Analyzer',
+    'analyze_methylation'   => 'CoGe::Builder::Methylation::Analyzer',
     'analyze_metaplot'      => 'CoGe::Builder::Methylation::Metaplot',
     'analyze_diversity'     => 'CoGe::Builder::PopGen::SummaryStats',
     'analyze_nucleotides'   => 'CoGe::Builder::Tools::NucCounter'
