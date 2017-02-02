@@ -6,6 +6,11 @@ extends 'CoGe::Builder::Buildable';
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use File::Spec::Functions;
 
+sub get_name {
+	my $self = shift;
+    return 'NucCounter | ' . $self->params->{'gid'} . ' | ' . $self->params->{'chr'};
+}
+
 sub build {
 	my $self = shift;
 
@@ -39,13 +44,8 @@ sub build {
             )
         );
     }
-
-	return 1;
 }
 
-sub get_name {
-	my $self = shift;
-    return 'NucCounter | ' . $self->params->{'gid'} . ' | ' . $self->params->{'chr'};
-}
+__PACKAGE__->meta->make_immutable;
 
 1;
