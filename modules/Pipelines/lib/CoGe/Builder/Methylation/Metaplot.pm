@@ -17,16 +17,16 @@ sub build {
     my $self = shift;
     my %opts = @_;
 
-    my ($bam_file, $genome, $experiment);
+    my ($bam_file, $experiment);
     if ($opts{data_files}) {
-        $genome = $self->request->genome;
         ($bam_file) = @{$opts{data_files}};
     }
     else { # for when called from ExperimentView
-        $genome     = $self->request->genome;
         $experiment = $self->request->experiment;
         $bam_file   = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     }
+
+    my $genome = $self->request->genome;
 
     # Make sure genome is annotated as is required by metaplot script
     my $isAnnotated = $genome->has_gene_features;
