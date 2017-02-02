@@ -1,0 +1,4 @@
+requests==2.12.4
+robotframework==3.0.1
+robotframework-httplibrary==0.4.2
+robotframework-requests==0.4.6
