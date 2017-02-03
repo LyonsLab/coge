@@ -467,7 +467,8 @@ $.extend(FindSNPView.prototype, {
                 this.data.snp_params = {
                     method: method,
                     '-stand_call_conf': this.el.find("[id='-stand_call_conf']").val(),
-                    '-stand_emit_conf': this.el.find("[id='-stand_emit_conf']").val()
+                    '-stand_emit_conf': this.el.find("[id='-stand_emit_conf']").val(),
+                    'realign':          this.el.find("#realign").is(":checked")
                 };
             }
         }
