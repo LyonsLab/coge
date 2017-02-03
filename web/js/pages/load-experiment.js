@@ -525,6 +525,7 @@ $.extend(TrimmingView.prototype, {
             cutadapt:    $($("#cutadapt-template").html()),
             trimgalore:  $($("#trimgalore-template").html()),
             trimmomatic: $($("#trimmomatic-template").html()),
+            bbduk:       $($("#bbduk-template").html()),
         };
     },
 
@@ -574,6 +575,11 @@ $.extend(TrimmingView.prototype, {
                 	'HEADCROP':      this.el.find("[id='HEADCROP']").val(),
                 	'MINLEN':        this.el.find("[id='MINLEN']").val(),
                 }
+            };
+        }
+        else if (trimmer === "bbduk") {
+            this.data = {
+                trimming_params: { 'trimmer': 'bbduk' }
             };
         }
         else {

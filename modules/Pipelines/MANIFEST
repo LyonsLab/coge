@@ -35,6 +35,8 @@ lib/CoGe/Builder/Tools/SynMap3D.pm
 lib/CoGe/Builder/Trimming/Trimmer.pm
 lib/CoGe/Builder/Trimming/Cutadapt.pm
 lib/CoGe/Builder/Trimming/TrimGalore.pm
+lib/CoGe/Builder/Trimming/Trimmomatic.pm
+lib/CoGe/Builder/Trimming/BBDuk.pm
 lib/CoGe/Request/Request.pm
 lib/CoGe/Request/CoGeBlast.pm
 lib/CoGe/Request/Empty.pm

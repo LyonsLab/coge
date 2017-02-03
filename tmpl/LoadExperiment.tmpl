@@ -299,6 +299,8 @@
 	            <label for="trimgalore">Trim Galore</label>
 				<input name="trimmer" type="radio" value="trimmomatic">
 	            <label for="trimmomatic">Trimmomatic</label>
+				<input name="trimmer" type="radio" value="bbduk">
+	            <label for="bbduk">BBDuk</label>
 	        </div>
 	    </div>
 	
@@ -388,6 +390,15 @@ the specified length after this step has been performed.">
 				<label>MINLEN</label>
 				<input id="MINLEN"/>
 			</div>
+		</div>
+	</div>
+</script>
+
+<script id="bbduk-template" type="text/template">
+	<div class="form-field">
+		<label class="col-md-2">BBDuk: (<a href="http://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/" target="_blank" class="small link">docs</a>)</label>
+		<div class="form-group italic">
+			No options
 		</div>
 	</div>
 </script>
