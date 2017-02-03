@@ -2,6 +2,7 @@ package CoGe::Builder::Buildable;
 
 use Moose;
 
+use Array::Utils qw(array_minus);
 use File::Basename qw(basename dirname);
 use File::Spec::Functions qw(catdir catfile);
 use File::Path qw(make_path);
@@ -12,8 +13,10 @@ use Data::Dumper;
 
 use CoGe::Accessory::IRODS qw(irods_set_env irods_iput);
 use CoGe::Accessory::Web qw(get_command_path get_tiny_link url_for);
-use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Core::Storage qw(get_workflow_paths get_workflow_results_file);
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata qw(tags_to_string);
+use CoGe::Builder::Data::Extractor;
 use CoGe::Exception::Generic;
 
 # Public attributes
@@ -22,39 +25,87 @@ has 'jex'           => ( is => 'rw', isa => 'CoGe::JEX::Jex' );
 has 'workflow'      => ( is => 'rw', isa => 'CoGe::JEX::Workflow' );
 has 'site_url'      => ( is => 'rw' );
 has 'page'          => ( is => 'rw' );
-has 'inputs'        => ( is => 'ro', default => sub { [] } ); # mdb added 12/7/16 for SRA.pm
-has 'outputs'       => ( is => 'rw', default => sub { [] } );
-has 'assets'        => ( is => 'rw', default => sub { [] } );
-has 'errors'        => ( is => 'rw', default => sub { [] } );
 
 # Private attributes
+has 'tasks'         => ( is => 'rw', isa => 'ArrayRef', default => sub { [] });
 has 'staging_dir'   => ( is => 'rw');#, traits => ['Private'] );
 has 'result_dir'    => ( is => 'rw');#, traits => ['Private'] );
 
+# requires 'build'; # must be implemented in sub-class
+
 my $previous_outputs = [];
 
-sub type    { shift->request->payload->{type} }
+my $PICARD;
+sub BUILD { # called immediately after constructor
+    my $self = shift;
+    $PICARD = $self->conf->{PICARD};
+    unless ($PICARD) {
+        CoGe::Exception::Generic->throw(message => 'Missing PICARD in config file');
+    }
+}
+
+# This allows us to instantiate subclasses with a single arg $self.
+# Called before constructor.
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $class = shift;
+
+    if ( @_ == 1 && ref $_[0]) { # $self is only argument
+        return $class->$orig(
+            request     => $_[0]->request,
+            workflow    => $_[0]->workflow,
+            staging_dir => $_[0]->staging_dir,
+            result_dir  => $_[0]->result_dir
+        );
+    }
+    else { # canonical arguments
+        return $class->$orig(@_);
+    }
+};
+
+sub type    { shift->request->payload->{type}       }
 sub params  { shift->request->payload->{parameters} }
 sub user    { shift->request->user }
-sub db      { shift->request->db }
+sub db      { shift->request->db   }
 sub conf    { shift->request->conf }
 
-sub get_site_url { # override this or use default in pre_build
+sub get_name { # override this
+    return '';
+}
+
+sub get_site_url { # override this
     return '';
 }
 
 sub submit {
     my $self = shift;
 
-    # Check for workflow
-    my $workflow = $self->workflow;
-    return {
-        success => JSON::false,
-        error => { Error => "failed to build workflow" }
-    } unless $workflow;
+    # Add tasks to workflow
+    unless ($self->workflow->add_jobs($self->tasks)) {
+        return {
+            success => JSON::false,
+            error   => { Error => "failed to build workflow" }
+        };
+    }
+
+    # Dump info to file for debugging
+    if ($self->result_dir) {
+        #my $cmd = 'chmod g+rw ' . $self->result_dir;
+        #`$cmd`;
+
+        # Dump raw workflow
+        open(my $fh, '>', catfile($self->result_dir, 'workflow.log'));
+        print $fh Dumper $self->workflow, "\n";
+        close($fh);
+
+        # Dump params
+        open($fh, '>', catfile($self->result_dir, 'params.log'));
+        print $fh Dumper $self->request->payload, "\n";
+        close($fh);
+    }
 
     # Submit workflow to JEX
-    my $resp = $self->jex->submit_workflow($workflow);
+    my $resp = $self->jex->submit_workflow($self->workflow);
     my $success = $self->jex->is_successful($resp);
     unless ($success) {
         print STDERR 'JEX response: ', Dumper $resp, "\n";
@@ -65,6 +116,7 @@ sub submit {
         }
     }
 
+    # Success
     my $response = {
         id => $resp->{id},
         success => JSON::true
@@ -109,26 +161,33 @@ sub pre_build { # Default method, SynMap & SynMap3D override this
             $site_url = url_for($url, wid => $self->workflow->id);
         }
     }
-
     $self->site_url( get_tiny_link(url => $site_url) ) if $site_url;
+
+    # Add data retrieval tasks
+    my $data = $self->params->{source_data};
+    if ($data) {
+        my $dr = CoGe::Builder::Data::Extractor->new($self);
+        $dr->build($data);
+        $self->add($dr);
+        return $dr;
+    }
+
+    return;
 }
 
 sub post_build {
     my $self = shift;
 
-    # Capture outputs from legacy pipelines
-    $self->sync_outputs();
-
     # Add task to add results to notebook
     if ($self->params->{notebook} || $self->params->{notebook_id}) {
         #TODO add_items_to_notebook_job and create_notebook_job and their respective scripts can be consolidated
         if ($self->params->{notebook_id}) { # Use existing notebook
-            $self->add_task_chain_all(
+            $self->add_to_all(
                 $self->add_items_to_notebook( notebook_id => $self->params->{notebook_id} )
             );
         }
         else { # Create new notebook
-            $self->add_task_chain_all(
+            $self->add_to_all(
                 $self->create_notebook( metadata => $self->params->{metadata} )
             );
         }
@@ -139,7 +198,7 @@ sub post_build {
         my $email = $self->params->{email};
         $email = $self->user->email if ((!$email || length($email) < 3) && $self->user && $self->user->email);
         if ($email && length($email) >= 3) {
-            $self->add_task_chain_all(
+            $self->add_to_all(
                 $self->send_email(
                     to      => $email,
                     subject => 'CoGe Workflow Notification',
@@ -154,44 +213,63 @@ sub post_build {
 
     # Add task to send notification to callback url
     if ( $self->params->{callback_url} ) {
-        $self->add_task_chain_all(
+        $self->add_to_all(
             $self->curl_get( url => $self->params->{callback_url} )
         );
     }
 }
 
-# Add independent task
-sub add_task {
-    my ($self, $task) = @_;
-    return unless $task;
-    
-    push @{$self->outputs}, @{$task->{outputs}};
-    $previous_outputs = $task->{outputs};
-    
-    return $self->workflow->add_job($task);    
+# Add independent task(s)
+sub add {
+    my ($self, $tasks, $dependencies) = @_;
+    unless ($tasks) {
+        CoGe::Exception::Generic->throw(message => "Missing tasks");
+    }
+
+    if (ref($tasks) eq 'HASH') { # single task hash ref
+        $tasks = [ $tasks ];
+    }
+    elsif (ref($tasks) eq 'ARRAY') { # array of task hash refs
+        # nothing to do
+    }
+    else { # assume Buildable object
+        unless ($tasks->can('tasks')) {
+            CoGe::Exception::Generic->throw(message => "Invalid tasks", details => Dumper $tasks);
+        }
+        $tasks = $tasks->tasks;
+    }
+
+    # Chain task(s) to given dependencies
+    if ($dependencies) {
+        $dependencies = [ $dependencies ] unless (ref($dependencies) eq 'ARRAY');
+        foreach (@$tasks) {
+            my @new_dep = array_minus(@$dependencies, @{$_->{inputs}}); # prevent duplicates
+            push @{$_->{inputs}}, @new_dep;
+        }
+    }
+
+    # Add tasks
+    push @{$self->tasks}, @$tasks;
+
+    # Save outputs
+    $previous_outputs = [];
+    foreach (@$tasks) {
+        push @$previous_outputs, @{$_->{outputs}};
+    }
+
+    return wantarray ? @$previous_outputs : $previous_outputs;
 }
 
-# Chain this task to the previous task assuming add_task*() routines were used
-sub add_task_chain {
-    my ($self, $task) = @_;
-
-    push @{$task->{inputs}}, @{$previous_outputs} if $previous_outputs;
-    return $self->add_task($task);
+# Chain task(s) to the previous task's outputs
+sub add_to_previous {
+    my ($self, $tasks) = @_;
+    return $self->add($tasks, $previous_outputs);
 }
 
-# Chain this task to all previous tasks
-sub add_task_chain_all {
-    my ($self, $task) = @_;
-    
-    # Chain this task to all previous tasks
-    push @{$task->{inputs}}, @{$self->outputs} if $self->outputs;
-    return $self->add_task($task);
-}
-
-sub add_output {
-    my ($self, $output) = @_;
-    push @{$self->outputs}, $output;
-    $previous_outputs = [$output];
+# Chain task(s) to all previous outputs
+sub add_to_all {
+    my ($self, $tasks) = @_;
+    return $self->add($tasks, $self->outputs);
 }
 
 sub previous_output {
@@ -205,74 +283,73 @@ sub previous_output {
     return;
 }
 
-# Copies unknown ouputs from workflow into outputs array.  For legacy pipelines that don't use
-# the add_task*() routines in this module.
-sub sync_outputs {
+sub previous_outputs {
     my $self = shift;
-
-    my %seen;
-    my @merged = grep( !$seen{$_}++, $self->workflow->get_outputs(), @{$self->outputs});
-    $self->outputs(\@merged);
-}
-
-# Add a pipeline asset.  An asset is a file produced by the pipeline for use by downstream pipelines.
-# The words input and output were purposely avoided.
-sub add_asset {
-    my ($self, $name, $value) = @_;
-    return unless $name;
-    push @{$self->assets}, [ $name, $value ];
-}
-
-sub get_asset {
-    my ($self, $match_name) =  @_;
-    
-    foreach (@{$self->assets}) {
-        my ($name, $value) = @{$_};
-        if ($name eq $match_name) {
-            return $value;
-        }
+    if ($previous_outputs && @$previous_outputs) {
+        return wantarray ? @$previous_outputs : $previous_outputs;
     }
-    
     return;
 }
 
-sub get_assets {
-    my ($self, $match_name) =  @_;
-    
+sub outputs {
+    my $self = shift;
     my @outputs;
-    foreach (@{$self->assets}) {
-        my ($name, $value) = @{$_};
-        if ($name eq $match_name) {
-            push @outputs, $value;
-        }
+    foreach (@{$self->tasks}) {
+        push @outputs, @{$_->{outputs}} if $_->{outputs};
     }
-    
-    return wantarray ? @outputs : \@outputs;
+    return \@outputs;
 }
 
-
 ###############################################################################
-# Task Library (replaces CommonTasks.pm)
+# Common Tasks
 ###############################################################################
 
 # Generate synchronization dependency for chaining pipelines
-sub create_wait {
+sub wait {
     my $self = shift;
+    my $dependencies = shift // [];
 
     my $wait_file = catfile($self->staging_dir, 'wait_' . get_unique_id() . '.done');
 
     return {
         cmd     => "touch $wait_file",
         args    => [],
-        inputs  => [],
+        inputs  => [ @$dependencies ],
         outputs => [ $wait_file ],
         description => 'Waiting for tasks to complete'
     };
 }
 
+# Generate gunzip task
+sub gunzip {
+    my $self = shift;
+    my $input_file = shift;
+
+    my $output_file = $input_file;
+    $output_file =~ s/\.gz$//;
+
+    my $cmd = get_command_path('GUNZIP');
+
+    return {
+        cmd => "$cmd -c $input_file > $output_file && touch $output_file.decompressed",
+        script => undef,
+        args => [],
+        inputs => [
+            $input_file,
+            #$input_file . '.done' # ensure file is done transferring
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.decompressed"
+        ],
+        description => "Decompressing " . basename($input_file)
+    };
+}
+
 # Generate GFF file of genome annotations
 sub create_gff {
-    my ($self, %params) = @_;
+    my $self = shift;
+    my %params = @_;
     
     # Build argument list
     my $args = [
@@ -343,7 +420,7 @@ sub export_to_irods {
     };
 }
 
-sub create_irods_imeta_add {
+sub irods_imeta {
     my ($self, %params) = @_;
     
     my $done_file = catfile($self->staging_dir, basename($params{dest_file})) . '.imeta_add.done';
@@ -386,30 +463,6 @@ sub untar {
             $done_file
         ],
         description => "Unarchiving " . basename($input_file)
-    };
-}
-
-sub gunzip {
-    my ($self, %params) = @_;
-    my $input_file = $params{input_file};
-    my $output_file = $input_file;
-    $output_file =~ s/\.gz$//;
-
-    my $cmd = get_command_path('GUNZIP');
-    
-    return {
-        cmd => "$cmd -c $input_file > $output_file && touch $output_file.decompressed",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_file,
-#            $input_file . '.done' # ensure file is done transferring
-        ],
-        outputs => [
-            $output_file,
-            "$output_file.decompressed"
-        ],
-        description => "Decompressing " . basename($input_file)
     };
 }
 
@@ -483,43 +536,135 @@ sub curl_get {
     };
 }
 
-sub fastq_dump {
-    my ($self, %params) = @_;
-    my $accn = $params{accn};
-    my $dest_path = $params{dest_path};
-    my $read_type = $self->params->{read_params}{read_type} // 'single';
+sub reheader_fasta {
+    my $self = shift;
+    my $gid = shift;
 
-    my $cmd = $self->conf->{FASTQ_DUMP} || 'fastq-dump';
-    $cmd .= ' --split-files' if ($read_type eq 'paired');
+    my $fasta     = get_genome_file($gid);
+    my $cache_dir = get_genome_cache_path($gid);
 
-    my $output_filepath = catfile($dest_path, $accn);
-
-    my (@output_files, @done_files);
-    if ($read_type eq 'paired') {
-        @output_files = (
-            $output_filepath . '_1.fastq',
-            $output_filepath . '_2.fastq'
-        );
-        @done_files = (
-            $output_filepath . '_1.fastq.done',
-            $output_filepath . '_2.fastq.done'
-        );
-    }
-    else {
-        @output_files = ( $output_filepath . '.fastq');
-        @done_files   = ( $output_filepath . '.fastq.done' );
-    }
+    my $output_file = to_filename($fasta) . '.reheader.faa';
 
     return {
-        cmd => "mkdir -p $dest_path && $cmd --outdir $dest_path " . shell_quote($accn) . " && touch " . join(' ', @done_files),
-        script => undef,
-        args => [],
-        inputs => [],
-        outputs => [
-            @output_files,
-            @done_files
+        cmd => catfile($self->conf->{SCRIPTDIR}, "fasta_reheader.pl"),
+        args => [
+            ["", $fasta, 1],
+            ["", $output_file, 0]
         ],
-        description => "Fetching $accn from NCBI-SRA"
+        inputs => [
+            $fasta
+        ],
+        outputs => [
+            catfile($cache_dir, $output_file)
+        ],
+        description => "Reheader fasta file",
+    };
+}
+
+sub index_fasta {
+    my $self = shift;
+    my $fasta = shift;
+
+    return {
+        cmd => get_command_path('SAMTOOLS'),
+        args => [
+            ["faidx", $fasta, 1],
+        ],
+        inputs => [
+            $fasta,
+        ],
+        outputs => [
+            $fasta . '.fai',
+        ],
+        description => "Indexing FASTA file",
+    };
+}
+
+sub sam_to_bam {
+    my $self = shift;
+    my $samfile = shift;
+
+    my $filename = to_filename($samfile);
+    my $cmd = get_command_path('SAMTOOLS');
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ["view", '', 0],
+            ["-bS", $samfile, 1],
+            [">", $filename . ".bam", 0]
+        ],
+        inputs => [
+            $samfile
+        ],
+        outputs => [
+            catfile($self->staging_dir, $filename . ".bam")
+        ],
+        description => "Converting SAM to BAM"
+    };
+}
+
+sub index_bam {
+    my $self = shift;
+    my $bamfile = shift;
+
+    return {
+        cmd => get_command_path('SAMTOOLS'),
+        args => [
+            ["index", $bamfile, 1],
+        ],
+        inputs => [
+            $bamfile,
+        ],
+        outputs => [
+            $bamfile . '.bai'
+        ],
+        description => "Indexing BAM file",
+    };
+}
+
+sub bgzip {
+    my $self = shift;
+    my $input_file = shift;
+    my $output_file = $input_file . '.bgz';
+
+    my $cmd = get_command_path('BGZIP');
+
+    return {
+        cmd => "$cmd -c $input_file > $output_file && touch $output_file.done",
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.done"
+        ],
+        description => "Compressing " . basename($input_file) . " with bgzip"
+    };
+}
+
+sub tabix_index {
+    my $self = shift;
+    my $input_file = shift;
+    my $index_type = shift;
+    my $output_file = $input_file . '.tbi';
+
+    my $cmd = $self->conf->{TABIX} || 'tabix';
+
+    return {
+        cmd => "$cmd -p $index_type $input_file && touch $output_file.done",
+        args => [],
+        inputs => [
+            $input_file,
+            $input_file . '.done'
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.done"
+        ],
+        description => "Indexing " . basename($input_file)
     };
 }
 
@@ -529,7 +674,7 @@ sub add_result {
     my $wid      = $self->workflow->id;
     my $result   = encode_json($params{result});
     
-    my $result_file = get_workflow_results_file($username, $wid);
+#    my $result_file = get_workflow_results_file($username, $wid);
 
     return {
         cmd  => catfile($self->conf->{SCRIPTDIR}, "add_workflow_result.pl"),
@@ -605,6 +750,188 @@ sub create_notebook {
             $log_file
         ],
         description => "Creating notebook of results"
+    };
+}
+
+sub picard_deduplicate {
+    my $self = shift;
+    my $bam_file = shift;
+
+    my $cmd = 'java -jar ' . $PICARD;
+
+    my $output_file = $bam_file . '-deduplicated.bam';
+
+    return {
+        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp ; mv $output_file.tmp $output_file",
+        args => [
+#            ['MarkDuplicates', '', 0],
+#            ['REMOVE_DUPLICATES=true', '', 0],
+#            ["INPUT=$bam_file", '', 0],
+#            ["METRICS_FILE=$bam_file.metrics", '', 0],
+#            ["OUTPUT=$output_file", '', 0],
+        ],
+        inputs => [
+            $bam_file
+        ],
+        outputs => [
+            $output_file
+        ],
+        description => "Deduplicating PCR artifacts using Picard"
+    };
+}
+
+sub sort_bam {
+    my $self = shift;
+    my $bam_file = shift;
+
+    my $filename = to_filename($bam_file);
+    my $cmd = get_command_path('SAMTOOLS');
+
+    return {
+        cmd => $cmd,
+        script => undef,
+        args => [
+            ["sort", '', 0],
+            ["", $bam_file, 1],
+            ["-o", $filename . "-sorted.bam", 1] # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
+        ],
+        inputs => [
+            $bam_file
+        ],
+        outputs => [
+            catfile($self->staging_dir, $filename . "-sorted.bam")
+        ],
+        description => "Sorting BAM file"
+    };
+}
+
+sub load_bam { #TODO combine with create_load_experiment_job
+    my $self = shift;
+    my %opts = @_;
+#    my $annotations = $opts{annotations};
+    my $bam_file = $opts{bam_file};
+    my $metadata = $opts{metadata} || $self->params->{metadata};
+    my $additional_metadata = $self->params->{additional_metadata};
+
+    my $cmd = 'perl ' . catfile($self->conf->{SCRIPTDIR}, "load_experiment.pl");
+
+    my $output_name = "load_bam_" . to_filename_base($bam_file);
+    my $output_path = catdir($self->staging_dir, $output_name);
+
+    my $result_file = get_workflow_results_file($self->user->name, $self->workflow->id);
+
+    # Add tags
+    my @tags = ( 'BAM' ); # add BAM tag
+    push @tags, @{$metadata->{tags}} if $metadata->{tags};
+    my $tags_str = tags_to_string(\@tags);
+
+    my $args = [
+        ['-user_name',   $self->user->name, 0],
+        ['-name',        ($metadata->{name} ? shell_quote($metadata->{name} . " (BAM alignment)") : '""'), 0],
+        ['-desc',        shell_quote($metadata->{description}), 0],
+        ['-version',     shell_quote($metadata->{version}), 0],
+        ['-link',        shell_quote($metadata->{link}), 0],
+        ['-restricted',  shell_quote($metadata->{restricted}), 0],
+        ['-gid',         $self->request->genome->id, 0],
+        ['-wid',         $self->workflow->id, 0],
+        ['-source_name', shell_quote($metadata->{source_name}), 0],
+        ['-tags',        shell_quote($tags_str), 0],
+        ['-staging_dir', $output_name, 0],
+        ['-file_type',   'bam', 0],
+        ['-data_file',   $bam_file, 0],
+        ['-config',      $self->conf->{_CONFIG_PATH}, 0]
+    ];
+
+    # Add additional metadata
+    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
+        my $metadata_file = catfile($output_path, 'metadata.dump');
+        make_path($output_path);
+        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
+        push @$args, ['-metadata_file', $metadata_file, 0];
+    }
+#    if ($annotations && @$annotations) { # legacy method
+#        my $annotations_str = join(';', @$annotations);
+#        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
+#    }
+
+    return {
+        cmd => $cmd,
+        args => $args,
+        inputs => [
+            $bam_file
+        ],
+        outputs => [
+            [$output_path, '1'],
+            catfile($output_path, "log.done"),
+            $result_file
+        ],
+        description => "Loading alignment as new experiment"
+    };
+}
+
+sub load_experiment {
+    my $self = shift;
+    my %opts = @_;
+    my $metadata = $opts{metadata} || $self->params->{metadata};
+    my $additional_metadata = $self->params->{additional_metadata};
+    my $annotations = $opts{annotations};
+    my $gid = $opts{gid};
+    my $input_file = $opts{input_file};
+    my $normalize = $opts{normalize} || 0;
+    my $name = $opts{name} || to_filename_base($input_file); # optional name for this load
+
+    my $output_name = "load_experiment_$name";
+    my $output_path = catdir($self->staging_dir, $output_name);
+
+
+    my $args = [
+        ['-gid',         $gid,                0],
+        ['-wid',         $self->workflow->id, 0],
+        ['-user_name',   $self->user->name,   0],
+        ['-name',        ($metadata->{name}        ? shell_quote($metadata->{name}) : '""'),        0],
+        ['-desc',        ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
+        ['-version',     ($metadata->{version}     ? shell_quote($metadata->{version}) : '""'),     0],
+        ['-link',        ($metadata->{link}        ? shell_quote($metadata->{link}) : '""'),        0],
+        ['-restricted',  shell_quote($metadata->{restricted}), 0],
+        ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
+        ['-staging_dir', $output_name, 0],
+        ['-data_file',   $input_file,  0],
+        ['-normalize',   $normalize,   0],
+        ['-disable_range_check', '',   0], # mdb added 8/26/16 COGE-270 - allow values outside of [-1, 1]
+        ['-config',      $self->conf->{_CONFIG_PATH}, 0]
+    ];
+
+    # Add tags
+    if ($metadata->{tags}) {
+        my $tags_str = tags_to_string($metadata->{tags});
+        push @$args, ['-tags', shell_quote($tags_str), 0];
+    }
+
+    # Add additional metadata
+    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
+        my $metadata_file = catfile($output_path, 'metadata.dump');
+        make_path($output_path); #TODO maybe this file should be located somewhere else
+        open(my $fh, ">$metadata_file");
+        print $fh Dumper $additional_metadata;
+        close($fh);
+        push @$args, ['-metadata_file', $metadata_file, 0];
+    }
+    if ($annotations && @$annotations) { # legacy method
+        my $annotations_str = join(';', @$annotations);
+        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
+    }
+
+    return {
+        cmd => catfile($self->conf->{SCRIPTDIR}, "load_experiment.pl"),
+        args => $args,
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            [$output_path, '1'],
+            catfile($output_path, "log.done")
+        ],
+        description => "Loading" . ($name ? " $name" : '') . " experiment"
     };
 }
 

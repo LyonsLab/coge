@@ -39,10 +39,10 @@ foreach my $orig_file (@files) {
 if ($read_type eq 'paired') {
     my ($m1, $m2) = detect_paired_end([keys %verified_files]);
     die "error: invalid paired-end files" unless (@$m1 and @$m2);
-    $cmd_args .= join(' ', sort @$m1) . ' ' . join(' ', sort @$m2);
+    $cmd_args .= ' ' . join(' ', sort @$m1) . ' ' . join(' ', sort @$m2);
 }
 else {
-    $cmd_args .= join(' ', keys %verified_files);
+    $cmd_args .= ' ' . join(' ', keys %verified_files);
 }
 
 # Execute cutadapt
@@ -55,7 +55,6 @@ foreach my $new_file (keys %verified_files) {
     if ($orig_file ne $new_file) {
         move($new_file, $orig_file);
     }
-    touch(catfile($output_path, to_filename($orig_file) . '.trimmed.fastq.done')); # kludge for JEX
 }
 
 exit($rc);

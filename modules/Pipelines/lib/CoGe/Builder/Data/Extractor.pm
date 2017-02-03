@@ -1,4 +1,4 @@
-package CoGe::Builder::Common::DataRetrieval;
+package CoGe::Builder::Data::Extractor;
 
 use Moose;
 extends 'CoGe::Builder::Buildable';
@@ -11,49 +11,70 @@ use String::ShellQuote qw(shell_quote);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Accessory::Web qw(split_url);
 use CoGe::Accessory::IRODS qw(irods_iget irods_set_env);
-use CoGe::Core::Storage qw(get_upload_path get_sra_cache_path);
-use CoGe::Exception::MissingField;
+use CoGe::Core::Storage qw(get_upload_path);
+use CoGe::Exception::Generic;
+
+# Outputs
+has data_files => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # input files
+has data_dir   => (is => 'ro', isa => 'Str'); # input directory
+has ncbi_accns => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # GenBank accessions
+
+my $MAX_DATA_ITEMS = 100;
 
 sub build {
     my $self = shift;
-    my $data = $self->params->{source_data};
-    unless (defined $data && @$data) {
-        CoGe::Exception::MissingField->throw(message => "Missing source_data");
+    my $data = shift;
+
+    # Validate inputs
+    unless ($data && @$data) {
+        CoGe::Exception::Generic->throw(message => 'Empty source_data');
     }
+    if (@$data > $MAX_DATA_ITEMS) {
+        CoGe::Exception::Generic->throw(message => "Too many data items given (" . scalar(@$data) . " > $MAX_DATA_ITEMS)");
+    }
+
     my $load_id = $self->params->{load_id} || get_unique_id();
-    
-    # Create tasks to retrieve files
+
     my $upload_dir = get_upload_path($self->user->name, $load_id);
+
+    #
+    # Build workflow
+    #
+
+    # Add retrieval tasks
+    my @input_files;
     foreach my $item (@$data) {
         my $type = lc($item->{type});
-        #print STDERR Dumper $item, "\n";
-        
+
         # Check if NCBI accession input
-        if ($type eq 'ncbi') {
+        if ($type eq 'ncbi' || $type eq 'sra') {
             #TODO move file retrieval from genbank_genome_loader.pl to here
-            $self->add_asset(ncbi_accn => $item->{path});
+            #TODO move file retrieval from SRA.pm to here
+            push @{$self->ncbi_accns}, $item->{path};
             next;
         }
         
         # Retrieve file based on source type (Upload, IRODS, HTTP, FTP)
+        my $input_file;
         if ($type eq 'file') {  # upload
             my $filepath = catfile($upload_dir, $item->{path});
             if (-r $filepath) {
-                $self->add_output($filepath);
+                $input_file = $filepath;
             }
         }
         elsif ($type eq 'irods') {
             my $irods_path = $item->{path};
-            $irods_path =~ s/^irods//; # strip of leading "irods" from LoadExperiment page # FIXME remove this in FileSelect
-            $self->add_task(
+            $irods_path =~ s/^irods//; # strip of leading "irods" from LoadExperiment page # FIXME remove this into FileSelect
+            $self->add(
                 $self->iget(
                     irods_path => $irods_path, 
                     local_path => $upload_dir
                 )                
             );
+            $input_file = $self->previous_output();
         }
         elsif ($type eq 'http' or $type eq 'ftp') {
-            $self->add_task(
+            $self->add(
                 $self->ftp_get(
                     url => $item->{url} || $item->{path},
                     username => $item->{username},
@@ -61,40 +82,39 @@ sub build {
                     dest_path => $upload_dir
                 )
             );
+            $input_file = $self->previous_output();
         }
-        elsif ($type eq 'sra') {
-            $self->add_task(
-                $self->fastq_dump(
-                    accn => $item->{path},
-                    dest_path => get_sra_cache_path()
-                )
-            );
-        }
-        
-        # Process input files
-        my $input_file = $self->previous_output();
-        if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) { # Untar if necessary
+
+        push @input_files, $input_file;
+    }
+
+    # Add processing tasks
+    foreach my $input_file (@input_files) {
+        # Decompress file
+        if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) {
+            # Untar file
             my $output_dir = catdir($self->staging_dir, 'untarred');
-            $self->add_task_chain(
+            $self->add(
                 $self->untar(
-                    input_file => $input_file, 
+                    input_file => $input_file,
                     output_path => $output_dir
-                )
+                ),
+                "$input_file.done"
             );
-            $self->add_asset( data_dir => $output_dir );
+            $self->data_dir($output_dir);
         }
-        elsif ( $input_file =~ /\.gz$/ ) { # Decompress if necessary
-            $self->add_task_chain(
-                $self->gunzip( input_file => $input_file )
+        elsif ( $input_file =~ /\.gz$/ ) {
+            # Decompress file
+            $self->add(
+                $self->gunzip($input_file),
+                "$input_file.done"
             );
-            $self->add_asset( data_file => $self->previous_output() );
+            push @{$self->data_files}, $self->previous_output;
         }
         else {
-            $self->add_asset( data_file => $self->previous_output() );
+            push @{$self->data_files}, $input_file;
         }
     }
-    
-    return 1;
 }
 
 sub iget {
@@ -157,7 +177,5 @@ sub ftp_get {
         description => "Fetching $url"
     };
 }
-
-__PACKAGE__->meta->make_immutable;
 
 1;

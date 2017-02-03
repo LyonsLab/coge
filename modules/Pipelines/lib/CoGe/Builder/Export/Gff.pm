@@ -7,7 +7,7 @@ use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Accessory::Web qw(download_url_for);
 use CoGe::Core::Genome qw(get_irods_metadata);
-use CoGe::Core::Storage qw(get_genome_cache_path);
+use CoGe::Core::Storage qw(get_genome_cache_path get_gff_cache_path);
 use CoGe::Exception::MissingField;
 use CoGe::Exception::Generic;
 
@@ -22,21 +22,10 @@ sub get_name {
 sub build {
     my $self = shift;
     
-    # Verify required parameters and set defaults
     my $dest_type = $self->params->{dest_type};
     $dest_type = "http" unless $dest_type;
 
-    my $gid = $self->params->{gid} || $self->params->{genome_id};
-    $self->params->{gid} = $gid; # required by create_gff() call below
-    unless ($gid) {
-        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
-    }
-
-    # Get genome
-    my $genome = $self->db->resultset("Genome")->find($gid);
-    unless ($genome) {
-        CoGe::Exception::Generic->throw(message => "Genome $gid not found");
-    }
+    my $genome = $self->request->genome;
     my $genome_name = $self->params->{basename} = sanitize_name($genome->organism->name);
 
     # Parse output types
@@ -48,18 +37,16 @@ sub build {
     # Generate GFF/BED/TBL generation and export tasks
     foreach my $output_type (keys %outputs) {
         # Generate output filename based on params
-        my $param_string = join( "-", map { $_ . ($self->params->{$_} // 0) } qw(annos cds id_type nu upa add_chr) );
-        my $output_filename = $genome_name . "_" . $param_string;
-        $output_filename .= "_" . $self->params->{chr} if $self->params->{chr};
-        $output_filename .= ".gid" . $gid;
-        $output_filename =~ s/\s+/_/g;
-        $output_filename =~ s/\)|\(/_/g;
-        $output_filename .= $output_type;
-        $output_filename = catfile( get_genome_cache_path($gid), $output_filename );
+        my $output_filename = get_gff_cache_path(
+            gid => $genome->id,
+            genome_name => $genome_name,
+            output_type => $output_type,
+            params => $self->params
+        );
 
         # Add task to generate output file(s)
         if ($output_type eq 'gff') {
-            $self->add_task(
+            $self->add(
                 $self->create_gff(
                     %{$self->params},
                     output_file => $output_filename
@@ -67,7 +54,7 @@ sub build {
             );
         }
         if ($output_type eq 'bed') {
-            $self->add_task(
+            $self->add(
                 $self->create_bed(
                     %{$self->params},
                     output_file => $output_filename
@@ -75,7 +62,7 @@ sub build {
             );
         }
         if ($output_type eq 'tbl') {
-            $self->add_task(
+            $self->add(
                 $self->create_tbl(
                     %{$self->params},
                     output_file => $output_filename
@@ -91,7 +78,7 @@ sub build {
             my $irods_dest = catfile($irods_base, basename($output_filename));
 
             # Export file task
-            $self->add_task_chain(
+            $self->add_to_previous(
                 $self->export_to_irods(
                     src_file  => $output_filename,
                     dest_file => $irods_dest,
@@ -103,15 +90,15 @@ sub build {
             my $md = get_irods_metadata($genome);
             my $md_file = catfile($self->staging_dir, 'irods_metadata.json');
             CoGe::Accessory::TDS::write($md_file, $md);
-            $self->add_task_chain(
-                $self->create_irods_imeta_add(
+            $self->add_to_previous(
+                $self->create_irods_imeta(
                     dest_file     => $irods_dest,
                     metadata_file => $md_file
                 )
             );
 
             # Add to results
-            $self->add_task_chain(
+            $self->add_to_previous(
                 $self->add_result(
                     result => {
                         type => 'irods',
@@ -121,7 +108,7 @@ sub build {
             );
         }
         else { # http download
-            $self->add_task_chain(
+            $self->add_to_previous(
                 $self->add_result(
                     result => {
                         type => 'url',

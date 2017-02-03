@@ -1,154 +1,167 @@
 package CoGe::Builder::Methylation::Metaplot;
 
-use v5.14;
-use strict;
-use warnings;
+use Moose;
+extends 'CoGe::Builder::Methylation::Analyzer';
 
-use Data::Dumper qw(Dumper);
-use File::Spec::Functions qw(catfile);
-use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Core::Storage qw(get_workflow_paths);
-use CoGe::Builder::CommonTasks qw(create_gff_generation_job add_metadata_to_results_job);
+use Data::Dumper;
+use File::Spec::Functions qw(catdir catfile);
+use String::ShellQuote;
 
-our $CONF = CoGe::Accessory::Web::get_defaults();
-
-BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK);
-    require Exporter;
-
-    $VERSION = 0.1;
-    @ISA     = qw(Exporter);
-    @EXPORT  = qw(build);
-}
+use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
+use CoGe::Exception::Generic;
 
 sub build {
-    my $opts = shift;
-    my $genome = $opts->{genome};
-    my $user = $opts->{user};
-    my $bam_file = $opts->{bam_file}; # path to sorted & indexed bam file
-    my $experiment_id = $opts->{experiment_id}; # for when called from ExperimentView
-#    my $metadata = $opts->{metadata};
-#    my $additional_metadata = $opts->{additional_metadata};
-    my $wid = $opts->{wid};
-    my $methylation_params = $opts->{methylation_params};
-    my $metaplot_params = $methylation_params->{metaplot_params};
-    unless ($genome && $user && $bam_file && $wid && $methylation_params && $metaplot_params) {
-        print STDERR " CoGe::Builder::Methylation::Metaplot ERROR, missing inputs: ",
-            ($genome ? '' : ' genome '),
-            ($user ? '' : ' user '),
-            ($bam_file ? '' : ' bam_file '),
-            ($wid ? '' : ' wid '),
-            ($methylation_params ? '' : ' methylation_params '),
-            ($metaplot_params ? '' : ' metaplot_params '),
-            "\n";
-        return;
+    my $self = shift;
+    my %opts = @_;
+
+    my ($bam_file, $experiment);
+    if ($opts{data_files}) {
+        ($bam_file) = @{$opts{data_files}};
+    }
+    else { # for when called from ExperimentView
+        $experiment = $self->request->experiment;
+        $bam_file   = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     }
 
-    # Setup paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
+    my $genome = $self->request->genome;
 
     # Make sure genome is annotated as is required by metaplot script
     my $isAnnotated = $genome->has_gene_features;
     unless ($isAnnotated) {
-        print STDERR "CoGe::Builder::Methylation::Metaplot ERROR, genome must be annotated to generate metaplot\n";
-        return;
+        CoGe::Exception::Generic->throw(message => 'Genome must be annotated to generate metaplot');
     }
 
     #
     # Build the workflow
     #
-    my (@tasks, @done_files);
-    
+
     # Generate cached gff
-    my $gff_task = create_gff_generation_job(
-        gid => $genome->id,
-        organism_name => $genome->organism->name
+    $self->add(
+        $self->create_gff( #FIXME simplify this
+            gid => $genome->id,
+            output_file => get_gff_cache_path(
+                gid => $genome->id,
+                genome_name => sanitize_name($genome->organism->name),
+                output_type => 'gff',
+                params => {}
+            )
+        )
     );
-    my $gff_file = $gff_task->{outputs}->[0];
-    push @tasks, $gff_task;
+    my $gff_file = $self->previous_output;
     
     # Generate metaplot
-    my $metaplot_task = create_metaplot_job(
-        bam_file => $bam_file,
-        gff_file => $gff_file,
-        outer => $metaplot_params->{outer},
-        inner => $metaplot_params->{inner},
-        window_size => $metaplot_params->{window},
-        feat_type => 'gene',
-        staging_dir => $staging_dir
+    $self->add(
+        $self->metaplot(
+            bam_file  => $bam_file,
+            gff_file  => $gff_file,
+            feat_type => 'gene'
+        )
     );
-    push @done_files, @{$metaplot_task->{outputs}};
-    push @tasks, $metaplot_task;
-    
-    # Add metadata
-    my $annotations = generate_additional_metadata($metaplot_params, $metaplot_task->{outputs}[1]);
-    my $metadata_task = add_metadata_to_results_job(
-        user => $user,
-        wid => $wid,
-        annotations => $annotations,
-        staging_dir => $staging_dir,
-        done_files => \@done_files,
-        item_id => $experiment_id,
-        item_type => 'experiment',
-        locked => 0
-    );
-    push @tasks, $metadata_task;
 
-    return {
-        tasks => \@tasks,
-        done_files => \@done_files
-    };
+    # Add metadata to results
+    my $annotations = $self->generate_additional_metadata($self->previous_outputs->[1]);
+    $self->add_to_previous(
+        $self->add_metadata_to_results(
+            annotations => $annotations,
+            item_id     => ($experiment ? $experiment->id : undef),
+            item_type   => 'experiment',
+            locked      => 0
+        )
+    );
 }
 
 sub generate_additional_metadata {
-    my $metaplot_params = shift;
+    my $self = shift;
     my $metaplot_image_path = shift;
-    
+    my $metaplot_params = $self->params->{metaplot_params};
+
     my @annotations;
     push @annotations, "$metaplot_image_path|||metaplot|parameters: " . join(' ', map { $_.' '.$metaplot_params->{$_} } ('outer', 'inner', 'window'));
     
     return \@annotations;
 }
 
-sub create_metaplot_job {
+sub metaplot {
+    my $self = shift;
     my %opts = @_;
     my $bam_file    = $opts{bam_file};
     my $gff_file    = $opts{gff_file};
-    my $outer       = $opts{outer} // 2000;
-    my $inner       = $opts{inner} // 5000;
-    my $window_size = $opts{window} // 100;
     my $feat_type   = $opts{feat_type};
-    my $staging_dir = $opts{staging_dir};
 
-    my $cmd = catfile($CONF->{SCRIPTDIR}, 'methylation', 'makeMetaplot.pl');
+    my $params = $self->params->{metaplot_params};
+    my $outer       = $params->{outer}  // 2000;
+    my $inner       = $params->{inner}  // 5000;
+    my $window_size = $params->{window} // 100;
+
+    my $cmd = catfile($self->conf->{SCRIPTDIR}, 'methylation', 'makeMetaplot.pl');
     $cmd = 'nice ' . $cmd;
     my $output_name = 'metaplot';
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
-            ['-o', $output_name, 0],
-            ['-gff', $gff_file, 0],
-            ['-outside', $outer, 0],
-            ['-inside', $inner, 0],
-            ['-w', $window_size, 0],
-            ['-outRange', '', 0],
-            ['-featType', $feat_type, 0],
-            ['-cpu', 8, 0],
-            ['-quiet', '', 0], # disable frequent printing of feature ID
-            ['-bam', $bam_file, 0]
+            ['-o',        $output_name, 0],
+            ['-gff',      $gff_file,    0],
+            ['-outside',  $outer,       0],
+            ['-inside',   $inner,       0],
+            ['-w',        $window_size, 0],
+            ['-outRange', '',           0],
+            ['-featType', $feat_type,   0],
+            ['-cpu',      8,            0],
+            ['-quiet',    '',           0], # disable frequent printing of feature ID
+            ['-bam',      $bam_file,    0]
         ],
         inputs => [
             $bam_file,
-            $bam_file . '.bai',
+            qq[$bam_file.bai],
             $gff_file
         ],
         outputs => [
-            catfile($staging_dir, "$output_name.tab"),
-            catfile($staging_dir, "$output_name.png")
+            catfile($self->staging_dir, "$output_name.tab"),
+            catfile($self->staging_dir, "$output_name.png")
         ],
         description => "Generating metaplot"
+    };
+}
+
+sub add_metadata_to_results {
+    my $self = shift;
+    my %opts = @_;
+    my $item_id     = $opts{item_id};
+    my $item_type   = $opts{item_type};
+    my $annotations = $opts{annotations}; # array ref
+    my $locked      = $opts{locked} // 1;
+
+    my $cmd = catfile($self->conf->{SCRIPTDIR}, "add_metadata_to_results.pl");
+
+    my $log_file = catfile($self->staging_dir, "add_metadata_to_results", "log.txt");
+
+    my $annotations_str = '';
+    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
+
+    my $args = [
+        ['-uid',         $self->user->id,               0],
+        ['-wid',         $self->workflow->id,           0],
+        ['-locked',      $locked,                       0],
+        ['-annotations', shell_quote($annotations_str), 0],
+        ['-config',      $self->conf->{_CONFIG_PATH},   0],
+        ['-log',         $log_file,                     0]
+    ];
+
+    if ($item_id && $item_type) {
+        push @$args, ['-item_id',   $item_id,   0];
+        push @$args, ['-item_type', $item_type, 0];
+    }
+
+    return {
+        cmd => $cmd,
+        args => $args,
+        inputs => [],
+        outputs => [ $log_file ],
+        description => "Adding metadata to results"
     };
 }
 

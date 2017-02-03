@@ -5,97 +5,122 @@ extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catdir catfile);
-use CoGe::Core::Storage qw(get_genome_file get_experiment_files get_popgen_result_path get_genome_cache_path);
-use CoGe::Builder::CommonTasks;
-use CoGe::Accessory::Utils qw(is_gzipped to_filename);
+
+use CoGe::Accessory::Utils;
+use CoGe::Accessory::Web qw(get_command_path);
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
+use CoGe::Exception::Generic;
 
 sub get_name {
     #my $self = shift;
-    return 'Compute Summary Stats';
+    return 'Compute Summary Stats'; #TODO add source experiment info
 }
 
 sub build {
-    my %opts = @_;
-    my $experiment = $opts{experiment};
-    my $input_file = $opts{input_file}; # path to vcf file
-    my $user = $opts{user};
-    my $wid = $opts{wid};
-    my $metadata = $opts{metadata};
-    
-    # Setup paths
+    my $self = shift;
+
+    my $experiment = $self->request->experiment;
     my $genome = $experiment->genome;
-    my $gid = $genome->id;
-    my $CONF = CoGe::Accessory::Web::get_defaults();
-    my $FASTA_CACHE_DIR = get_genome_cache_path($gid);
-    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
-    my $fasta_file = get_genome_file($gid);
-    my $reheader_fasta = to_filename($fasta_file) . ".reheader.faa";
-    
-    # Build the workflow's tasks
-    my ($task, @tasks, @done_files);
-    $task = create_fasta_reheader_job(
-        fasta => $fasta_file,
-        reheader_fasta => $reheader_fasta,
-        cache_dir => $FASTA_CACHE_DIR
+
+    #
+    # Build workflow
+    #
+
+    # Reheader the fasta file
+    $self->add(
+        $self->reheader_fasta($genome->id)
     );
-    push @tasks, $task;
-    $fasta_file = $task->{outputs}->[0];
+    my $reheader_fasta = $self->previous_output;
     
     # Check if genome has annotations
     my $isAnnotated = $genome->has_gene_features;
+    unless ($isAnnotated) {
+        CoGe::Exception::Generic->throw(message => 'Genome must be annotated to compute summary stats');
+    }
     
     # Generate cached gff if genome is annotated
-    my $gff_file;
-    if ($isAnnotated) {
-        $task = create_gff_generation_job(gid => $gid, organism_name => $genome->organism->name);
-        push @tasks, $task;
-        $gff_file = $task->{outputs}->[0];
-    }
-    else {
-        # TODO fail here, GFF is required by sumstats.pl
-    }
-    
+    $self->add(
+        $self->create_gff( #FIXME simplify this
+            gid => $genome->id,
+            output_file => get_gff_cache_path(
+                gid => $genome->id,
+                genome_name => sanitize_name($genome->organism->name),
+                output_type => 'gff',
+                params => {}
+            )
+        )
+    );
+    my $gff_file = $self->previous_output;
+
     # Get experiment VCF file
     my $vcf_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
     
     # Compress file using bgzip
-    $task = create_bgzip_job( $vcf_file );
-    push @tasks, $task;
-    $vcf_file = $task->{outputs}->[0];
+    $self->add(
+        $self->bgzip($vcf_file)
+    );
+    $vcf_file = $self->previous_output;
     
     # Create a Tabix index
-    $task = create_tabix_index_job( $vcf_file, 'vcf' );
-    push @tasks, $task;
-    
+    $self->add(
+        $self->tabix_index($vcf_file, 'vcf')
+    );
+
     # Determine output path for result files
     my $result_path = get_popgen_result_path($experiment->id);
-    die "Cannot determine sumstat result path" unless $result_path;
+    unless ($result_path) {
+        CoGe::Exception::Generic->throw(message => 'Cannot determine sumstat result path');
+    }
     
     # Compute summary stats
-    $task = create_sumstats_job(
-        vcf => $vcf_file,
-        gff => $gff_file,
-        fasta => $fasta_file,
-        output_path => $result_path
+    $self->add(
+        $self->sumstats(
+            vcf => $vcf_file,
+            gff => $gff_file,
+            fasta => $reheader_fasta,
+            output_path => $result_path
+        )
     );
-    push @tasks, $task;
     
     # Add workflow result
-    $task = add_workflow_result(
-        username => $user->name,
-        wid => $wid,
-        result => {
-            type => "popgen",
-            experiment_id => $experiment->id,
-            name => "Diversity analysis results"
-        },
-        dependency => catfile($result_path, 'sumstats.done')
+    $self->add_to_previous(
+        $self->add_result(
+            result => {
+                type => "popgen",
+                experiment_id => $experiment->id,
+                name => "Diversity analysis results"
+            }
+        )
     );
-    push @tasks, $task;    
-    
+}
+
+sub sumstats {
+    my $self = shift;
+    my %opts = @_;
+    my $vcf = $opts{vcf};
+    my $gff = $opts{gff};
+    my $fasta = $opts{fasta};
+    my $output_path = $opts{output_path};
+
     return {
-        tasks => \@tasks,
-        done_files => \@done_files
+        cmd => catfile($self->conf->{SCRIPTDIR}, "popgen/sumstats.pl"),
+        args => [
+            ['-vcf',    $vcf,         0],
+            ['-gff',    $gff,         0],
+            ['-fasta',  $fasta,       0],
+            ['-output', $output_path, 0],
+            ['-debug',  '',           0]
+        ],
+        inputs => [
+            $vcf,
+            $gff,
+            $fasta
+        ],
+        outputs => [
+            catfile($output_path, "sumstats.done"),
+        ],
+        description => "Calculating summary statistics"
     };
 }
 

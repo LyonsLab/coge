@@ -3,37 +3,32 @@ package CoGe::Request::Genome;
 use Moose;
 extends 'CoGe::Request::Request';
 
-sub is_valid {
+use CoGe::Exception::ItemNotFound
+
+has genome => (is => 'rw', isa => 'CoGeX::Result::Genome');
+
+sub is_valid { # called first
     my $self = shift;
 
     my $gid = $self->parameters->{gid} || $self->parameters->{genome_id};
     unless ($gid) {
-        warn "Request::Genome::is_valid: Missing gid/genome_id parameter";
-        return;
+        CoGe::Exception::MissingField->throw(message => "Missing genome_id");
     }
 
     my $genome = $self->db->resultset("Genome")->find($gid);
     unless ($genome) {
-        warn "Request::Genome::is_valid: Genome $gid not found";
-        return;
+        CoGe::Exception::ItemNotFound->throw(type => 'genome', id => $gid);
     }
+    $self->genome($genome);
 
     return 1;
 }
 
-sub has_access {
+sub has_access { # called second
     my $self = shift;
 
-    my $gid = $self->parameters->{gid} || $self->parameters->{genome_id};
-    unless ($gid) {
-        warn "Request::Genome::has_access: Missing gid/genome_id parameter";
-        return;
-    }
-
-    my $genome = $self->db->resultset("Genome")->find($gid);
-    unless ($self->user->has_access_to_genome($genome)) {
-        warn "Request::Genome::has_access: Access denied to genome $gid";
-        return;
+    unless ($self->user->has_access_to_genome($self->genome)) {
+        CoGe::Exception::AccessDenied->throw(type => 'genome', id => $self->genome->id);
     }
 
     return 1;

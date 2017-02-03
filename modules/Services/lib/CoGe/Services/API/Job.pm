@@ -51,12 +51,12 @@ sub add {
             error => { Error => "Failed to generate pipeline" }
         });
     }
-    
+
     # Submit pipeline
     my $response = $pipeline->submit();
     unless ($response->{success} && $response->{id}) {
         return $self->render(json => {
-            error => { Error => "JEX returned error on submission" }
+            error => $response->{error} || { Error => "Failed to start workflow" }
         });
     }
     

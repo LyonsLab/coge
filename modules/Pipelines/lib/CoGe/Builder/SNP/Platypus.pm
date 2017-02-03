@@ -1,130 +1,105 @@
 package CoGe::Builder::SNP::Platypus;
 
-use v5.14;
-use warnings;
-use strict;
+use Moose;
+extends 'CoGe::Builder::SNP::SNPFinder';
 
-use Carp;
 use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);
 
 use CoGe::Accessory::Web;
-use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_genome_cache_path);
-use CoGe::Core::Metadata qw(to_annotations);
-use CoGe::Builder::CommonTasks;
-
-require Exporter;
-our @ISA = qw(Exporter);
-our @EXPORT = qw(build);
-our $CONF = CoGe::Accessory::Web::get_defaults();
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
+use CoGe::Exception::Generic;
 
 sub build {
-    my $opts = shift;
+    my $self = shift;
+    my %opts = @_;
+    my ($bam_file) = @{$opts{data_files}};
+    my $isSorted = $opts{is_sorted}; # input bam file is already sorted (for passing sorted bam file from Experiment.pm)
+    unless ($bam_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing bam');
+    }
 
-    # Required arguments
-    my $genome = $opts->{genome};
-    my $input_file = $opts->{input_file}; # path to bam file
-    my $sorted = $opts->{sorted}; # input bam file is already sorted (for passing sorted bam file from Experiment.pm)
-    my $user = $opts->{user};
-    my $wid = $opts->{wid};
-    my $metadata = $opts->{metadata};
-    my $additional_metadata = $opts->{additional_metadata};
-
-    # Setup paths
-    my $gid = $genome->id;
-    my $FASTA_CACHE_DIR = get_genome_cache_path($gid);
-    die "ERROR: CACHEDIR not specified in config" unless $FASTA_CACHE_DIR;
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
-    my $fasta_file = get_genome_file($gid);
-    my $reheader_fasta =  to_filename($fasta_file) . ".reheader.faa";
+    my $gid = $self->request->genome->id;
 
     my $annotations = generate_additional_metadata();
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
-    # Build the workflow's tasks
-    my @tasks;
-    push @tasks, create_fasta_reheader_job(
-        fasta => $fasta_file,
-        reheader_fasta => $reheader_fasta,
-        cache_dir => $FASTA_CACHE_DIR
+    #
+    # Build workflow
+    #
+
+    $self->add(
+        $self->reheader_fasta($gid)
+    );
+    my $reheader_fasta = $self->previous_output;
+
+    $self->add(
+        $self->index_fasta($reheader_fasta)
     );
 
-    push @tasks, create_fasta_index_job(
-        fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta),
-        cache_dir => $FASTA_CACHE_DIR,
-    );
-
-    my $sorted_bam_file = $input_file;
-    unless ($sorted) {
-        my $sort_bam_task = create_bam_sort_job(
-            input_file => $input_file, 
-            staging_dir => $staging_dir
+    my $sorted_bam_file;
+    if ($isSorted) {
+        $sorted_bam_file = $bam_file
+    }
+    else {
+        $self->add(
+            $self->sort_bam($bam_file)
         );
-        push @tasks, $sort_bam_task;
-        $sorted_bam_file = $sort_bam_task->{outputs}->[0];
+        $sorted_bam_file = $self->previous_output;
         
-        push @tasks, create_bam_index_job(
-            input_file => $sort_bam_task->{outputs}->[0]
+        $self->add(
+            $self->index_bam($sorted_bam_file)
         );
     }
-    
-    push @tasks, create_platypus_job(
-        bam   => $sorted_bam_file,
-        fasta => catfile($FASTA_CACHE_DIR, $reheader_fasta),
-        vcf   => catfile($staging_dir, 'snps.vcf')
-    );
-    
-    my $load_vcf_task = create_load_vcf_job({
-        staging_dir => $staging_dir,
-        vcf         => catfile($staging_dir, 'snps.vcf'),
-        annotations => $annotations,
-        username    => $user->name,
-        metadata    => $metadata,
-        wid         => $wid,
-        gid         => $gid,
-        method      => 'Platypus'
-    });
-    push @tasks, $load_vcf_task;
 
-    return {
-        tasks => \@tasks,
-        metadata => $annotations,
-        done_files => [ $load_vcf_task->{outputs}->[1] ]
-    };
+    $self->add(
+        $self->platypus(
+            bam   => $sorted_bam_file,
+            fasta => $reheader_fasta
+        )
+    );
+
+    $self->vcf($self->previous_output);
+
+    $self->add(
+        $self->load_vcf(
+            vcf         => $self->vcf,
+            annotations => $annotations,
+            gid         => $gid
+        )
+    );
 }
 
-sub create_platypus_job {
+sub platypus {
+    my $self = shift;
     my %opts = @_;
-#    print STDERR "create_platypus_job ", Dumper \%opts, "\n";
-
-    # Required arguments
     my $fasta = $opts{fasta};
     my $bam = $opts{bam};
-    my $vcf = $opts{vcf};
     my $nCPU = 8; # number of processors to use
 
-    my $fasta_index = qq[$fasta.fai];
-    my $PLATYPUS = $CONF->{PLATYPUS} || "Platypus.py";
+    my $output_file = 'snps.vcf';
+    my $PLATYPUS = $self->conf->{PLATYPUS} || "Platypus.py";
 
     return {
         cmd => qq[export LD_LIBRARY_PATH=/usr/local/lib:\$LD_LIBRARY_PATH && $PLATYPUS callVariants], # mdb addex lib export 6/8/16
         args =>  [
             ["--bamFiles", $bam, 0],
             ["--refFile", $fasta, 0],
-            ["--output", $vcf, 1],
+            ["--output", $output_file, 1],
             ["--verbosity", 0, 0],
             ["--nCPU", $nCPU, 0]
         ],
         inputs => [
             $bam,
-            $bam . '.bai',
+            "$bam.bai", # bam index
             $fasta,
-            $fasta_index
+            "$fasta.fai" # fasta index
         ],
         outputs => [
-            $vcf
+            catfile($self->staging_dir, $output_file)
         ],
         description => "Identifying SNPs using Platypus method"
     };

@@ -4,17 +4,16 @@ use Moose;
 extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
-use File::Spec::Functions qw(catfile catdir);
 use File::Basename qw(basename);
+use File::Spec::Functions qw(catdir catfile);
 use String::ShellQuote qw(shell_quote);
 
-use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Accessory::Web qw(url_for);
-use CoGe::Core::Storage qw(get_upload_path);
-use CoGe::Builder::CommonTasks;
-use CoGe::Builder::Common::DataRetrieval;
-use CoGe::Exception::MissingField;
+use CoGe::Accessory::Utils;
+use CoGe::Accessory::Web qw(get_command_path url_for);
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
 use CoGe::Exception::Generic;
+use CoGe::Exception::ItemNotFound;
 
 sub get_name {
     my $self = shift;
@@ -34,15 +33,18 @@ sub get_site_url {
 
 sub build {
     my $self = shift;
+    my %opts = @_;
+    my $input_files = $opts{data_files};
+    my $input_dir   = $opts{data_dir};
+    my $ncbi_accns  = $opts{ncbi_accns};
+    unless (@$input_files || @$input_dir || @$ncbi_accns) {
+        CoGe::Exception::MissingField->throw(message => "Missing inputs");
+    }
     
     # Validate inputs
     my $organism_id = $self->params->{organism_id};
     unless ($organism_id) {
         CoGe::Exception::MissingField->throw(message => "Missing organism_id");
-    }
-    my $data = $self->params->{source_data};
-    unless (defined $data && @$data) {
-        CoGe::Exception::MissingField->throw(message => "Missing source_data");
     }
     my $metadata = $self->params->{metadata};
     unless ($metadata) {
@@ -55,86 +57,63 @@ sub build {
     # Get organism
     my $organism = $self->db->resultset('Organism')->find($organism_id);
     unless ($organism) {
-        CoGe::Exception::Generic->throw(message => "Organism $organism_id not found");
+        CoGe::Exception::ItemNotFound->throw(type => 'organism', id => $organism_id);
     }
     
     #
     # Build workflow
     #
     
-    # Create tasks to retrieve files #TODO move to pre_build()
-    my $dr = CoGe::Builder::Common::DataRetrieval->new({ #FIXME better way to pass these args? See Moose constructors
-#        params      => $self->params,
-#        db          => $self->db,
-#        user        => $self->user,
-#        conf        => $self->conf,
-        request     => $self->request,
-        workflow    => $self->workflow,
-        staging_dir => $self->staging_dir,
-        result_dr   => $self->result_dir,
-        outputs     => $self->outputs
-    });
-    $dr->build();
-    
     # Build steps to add genome
-    my @ncbi_accns  = $dr->get_assets('ncbi_accn');
-    if (@ncbi_accns) { # NCBI-based load
-        $self->add_task(
+    if (@$ncbi_accns) { # NCBI-based load
+        $self->add(
             $self->load_genome_from_NCBI(
-                ncbi_accns => \@ncbi_accns,
+                ncbi_accns => $ncbi_accns,
                 metadata => $metadata,
             )
         );
     }
     else { # File-based load
-        my @input_files = $dr->get_assets('data_file');
-        my $input_dir   = $dr->get_asset('data_dir');
-        
-        my ($fasta_file) = @input_files; # first file (in case just one);
-        if (@input_files > 1 || $input_dir) {
+        my ($fasta_file) = @$input_files; # first file (in case just one);
+        if (@$input_files > 1 || $input_dir) { # multiple FASTA files
             # Concatenate all input files into one
-            $self->add_task_chain_all(
+            $self->add_to_all(
                 $self->join_files(
-                    input_files => \@input_files, 
+                    input_files => $input_files,
                     input_dir => $input_dir,
                     output_file => catfile($self->staging_dir, 'concatenated_genome.fasta'),
                 )
             );
-            $fasta_file = $self->previous_output();
+            $fasta_file = $self->previous_output;
         }
     
         # Sort FASTA by length (for trimming in next step)
-        $self->add_task_chain_all(
+        $self->add_to_all(
             $self->sort_fasta( fasta_file => $fasta_file )
         );
         
         # Validate/process/trim FASTA file
         my $processed_fasta_file = catdir($self->staging_dir, 'genome.faa');
-        $self->add_task_chain(
+        $self->add_to_previous(
             $self->process_fasta(
-                input_file => $self->previous_output(),
+                input_file => $self->previous_output,
                 output_file => $processed_fasta_file,
             )
         );
         
         # Index processed FASTA file
-        $self->add_task_chain(
-            create_fasta_index_job(
-                fasta => $self->previous_output()
-            )
+        $self->add_to_previous(
+            $self->index_fasta($self->previous_output)
         );
     
         # Create genome in DB
-        $self->add_task_chain(
+        $self->add_to_previous(
             $self->load_genome(
                 organism_id => $organism->id,
                 fasta_file => $processed_fasta_file,
-                metadata => $metadata
             )
         );
     }
-    
-    return 1;
 }
 
 # mdb removed 10/12/16 -- replaced below for COGE-721
@@ -217,10 +196,10 @@ sub process_fasta {
 
 sub load_genome {
     my ($self, %params) = @_;
-
-    my $metadata    = $params{metadata};
     my $organism_id = $params{organism_id};
     my $fasta_file  = $params{fasta_file};
+
+    my $metadata    = $self->params->{metadata};
     
 #    my $result_file = get_workflow_results_file($user->name, $wid);
 

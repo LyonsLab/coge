@@ -1,61 +1,59 @@
 package CoGe::Builder::Methylation::BWAmeth;
 
-use v5.14;
-use strict;
-use warnings;
+use Moose;
+extends 'CoGe::Builder::Methylation::Analyzer';
 
-use Clone qw(clone);
-use Data::Dumper qw(Dumper);
+use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);
-use CoGe::Accessory::Utils qw(to_filename to_filename_without_extension);
-use CoGe::Accessory::Web qw(get_defaults);
-use CoGe::Core::Storage qw(get_genome_file get_workflow_paths get_genome_cache_path);
-use CoGe::Core::Metadata qw(to_annotations);
-use CoGe::Builder::CommonTasks;
+use Clone qw(clone);
 
-our $CONF = CoGe::Accessory::Web::get_defaults();
+use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils;
+use CoGe::Core::Storage;
+use CoGe::Core::Metadata;
+use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
-BEGIN {
-    use vars qw ($VERSION @ISA @EXPORT @EXPORT_OK);
-    require Exporter;
+my ($PICARD, $PILEOMETH);
+sub BUILD { # called immediately after constructor
+    my $self = shift;
+    $PICARD = $self->conf->{PICARD};
+    unless ($PICARD) {
+        CoGe::Exception::Generic->throw(message => 'Missing PICARD in config file');
+    }
 
-    $VERSION = 0.1;
-    @ISA     = qw(Exporter);
-    @EXPORT  = qw(build);
+    $PILEOMETH = $self->conf->{PILEOMETH} || 'PileOMeth';
 }
 
 sub build {
-    my $opts = shift;
-    my $genome = $opts->{genome};
-    my $user = $opts->{user};
-    my $input_file = $opts->{bam_file}; # path to bam file
-    my $metadata = $opts->{metadata};
-    my $additional_metadata = $opts->{additional_metadata};
-    my $wid = $opts->{wid};
-    my $read_params = $opts->{read_params};
-    my $methylation_params = $opts->{methylation_params};
+    my $self = shift;
+    my %opts = @_;
+    my ($bam_file) = @{$opts{data_files}};
+    unless ($bam_file) {
+        CoGe::Exception::MissingField->throw(message => 'Missing bam');
+    }
 
-    # Setup paths
-    my ($staging_dir, $result_dir) = get_workflow_paths($user->name, $wid);
+    # Validate inputs not already checked in Request
+    my $metadata = $self->params->{metadata};
+    unless ($metadata) {
+        CoGe::Exception::MissingField->throw(message => "Missing metadata");
+    }
+
+    my $genome = $self->request->genome;
 
     # Set metadata for the pipeline being used
-    my $annotations = generate_additional_metadata($methylation_params);
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($additional_metadata);
+    my $annotations = $self->generate_additional_metadata();
+    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
     #
     # Build the workflow
     #
-    my (@tasks, @done_files);
-    
-    if ($methylation_params->{'picard-deduplicate'}) {
-        my $deduplicate_task = create_picard_deduplicate_job(
-            bam_file => $input_file,
-            read_type => $read_params->{read_type},
-            staging_dir => $staging_dir
+    if ($self->params->{methylation_params}->{'picard-deduplicate'}) {
+        $self->add(
+            $self->picard_deduplicate($bam_file)
         );
-        push @tasks, $deduplicate_task;
-        $input_file = $deduplicate_task->{outputs}[0];
+        $bam_file = $self->previous_output;
     }
 
 # mdb removed 1/27/15 -- resulting .svg files are not used, reinstate when there is a way to show/download them
@@ -64,144 +62,87 @@ sub build {
 #        gid => $genome->id,
 #        staging_dir => $staging_dir
 #    );
-    
-    my $extract_methylation_task = create_pileometh_extraction_job(
-        bam_file => $input_file,
-        gid => $genome->id,
-        staging_dir => $staging_dir,
-        params => $methylation_params
+
+    my $dependencies = $self->add_to_previous(
+        $self->pileometh_extraction(
+            bam_file => $bam_file,
+            gid => $genome->id
+        )
     );
-    push @tasks, $extract_methylation_task;
     
-    my @outputs = @{$extract_methylation_task->{outputs}};
+    my @outputs = @{$self->previous_outputs};
     foreach my $file (@outputs) {
         my ($name) = $file =~ /(CHG|CHH|CpG)/;
-        
-        my $import_task = create_pileometh_import_job(
-            input_file => $file,
-            params => $methylation_params,
-            staging_dir => $staging_dir,
-            name => $name
+
+        $self->add_to_previous(
+            $self->pileometh_import(
+                input_file => $file,
+                name => $name
+            ),
+            $dependencies
         );
-        push @tasks, $import_task;
-        
+
         my $md = clone($metadata);
         $md->{name} .= " ($name methylation)";
-        
-        my $load_task = create_load_experiment_job(
-            user => $user,
-            metadata => $md,
-            staging_dir => $staging_dir,
-            wid => $wid,
-            gid => $genome->id,
-            input_file => $import_task->{outputs}[0],
-            name => $name,
-            annotations => $annotations
+
+        $self->add_to_previous(
+            $self->load_experiment(
+                metadata => $md,
+                gid => $genome->id,
+                input_file => $self->previous_output,
+                name => $name,
+                annotations => $annotations
+            )
         );
-        push @tasks, $load_task;
-        push @done_files, $load_task->{outputs}[1];
     }
-
-    return {
-        tasks => \@tasks,
-        done_files => \@done_files
-    };
 }
 
-sub generate_additional_metadata {
-    my $methylation_params = shift;
-    
-    my @annotations;
-    push @annotations, qq{https://genomevolution.org/wiki/index.php/Methylation_Analysis_Pipeline||note|Generated by CoGe's Methylation Analysis Pipeline};
+#sub pileometh_plot {
+#    my $self = shift;
+#    my %opts = @_;
+#    my $bam_file = $opts{bam_file};
+#    my $gid = $opts{gid};
+#
+#    my $BWAMETH_CACHE_FILE = catfile(get_genome_cache_path($gid), 'bwameth_index', 'genome.faa.reheader.faa');
+#    my $output_prefix = 'pileometh';
+#
+#    return {
+#        cmd => $PILEOMETH,
+#        args => [
+#            ['mbias', '', 0],
+#            ['--CHG', '', 0],
+#            ['--CHH', '', 0],
+#            ['', $BWAMETH_CACHE_FILE, 0],
+#            ['', $bam_file, 0],
+#            [$output_prefix, '', 0]
+#        ],
+#        inputs => [
+#            $bam_file
+#        ],
+#        outputs => [
+#            catfile($self->staging_dir, $output_prefix . '_OB.svg'),
+#            catfile($self->staging_dir, $output_prefix . '_OT.svg')
+#        ],
+#        description => "Plotting methylation bias with PileOMeth"
+#    };
+#}
 
-    push @annotations, 'note|picard MarkDuplicates REMOVE_DUPLICATES=true ' if ($methylation_params->{'bismark-deduplicate'});
-    #push @annotations, 'note|PileOMeth mbias --CHG --CHH' if ($methylation_params->{'bismark-deduplicate'});
-    push @annotations, 'note|PileOMeth extract --CHG --CHH ' . join(' ', map { $_.' '.$methylation_params->{$_} } ('-q', '--OT', '--OB'));
-
-    return \@annotations;
-}
-
-sub create_picard_deduplicate_job {
-    my %opts = @_;
-    my $bam_file = $opts{bam_file};
-    my $staging_dir = $opts{staging_dir};
-    
-    die "ERROR: PICARD is not in the config." unless $CONF->{PICARD};
-    my $cmd = 'java -jar ' . $CONF->{PICARD};
-    
-    my $output_file = $bam_file . '-deduplicated.bam';
-    
-    return {
-        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp ; mv $output_file.tmp $output_file",
-        script => undef,
-        args => [
-#            ['MarkDuplicates', '', 0],
-#            ['REMOVE_DUPLICATES=true', '', 0],
-#            ["INPUT=$bam_file", '', 0],
-#            ["METRICS_FILE=$bam_file.metrics", '', 0],
-#            ["OUTPUT=$output_file", '', 0],
-        ],
-        inputs => [
-            $bam_file
-        ],
-        outputs => [
-            $output_file
-        ],
-        description => "Deduplicating PCR artifacts using Picard"
-    };
-}
-
-sub create_pileometh_plot_job {
+sub pileometh_extraction {
+    my $self = shift;
     my %opts = @_;
     my $bam_file = $opts{bam_file};
     my $gid = $opts{gid};
-    my $staging_dir = $opts{staging_dir};
-    
-    my $cmd = $CONF->{PILEOMETH} || 'PileOMeth';
-    my $BWAMETH_CACHE_FILE = catfile(get_genome_cache_path($gid), 'bwameth_index', 'genome.faa.reheader.faa');
-    
-    my $output_prefix = 'pileometh';
-    
-    return {
-        cmd => $cmd,
-        script => undef,
-        args => [
-            ['mbias', '', 0],
-            ['--CHG', '', 0],
-            ['--CHH', '', 0],
-            ['', $BWAMETH_CACHE_FILE, 0],
-            ['', $bam_file, 0],
-            [$output_prefix, '', 0]
-        ],
-        inputs => [
-            $bam_file
-        ],
-        outputs => [
-            catfile($staging_dir, $output_prefix . '_OB.svg'),
-            catfile($staging_dir, $output_prefix . '_OT.svg')
-        ],
-        description => "Plotting methylation bias with PileOMeth"
-    };
-}
 
-sub create_pileometh_extraction_job {
-    my %opts = @_;
-    my $bam_file = $opts{bam_file};
-    my $gid = $opts{gid};
-    my $staging_dir = $opts{staging_dir};
-    my $params = $opts{params};
+    my $params = $self->params->{methylation_params};
     my $q  = $params->{'pileometh-min_converage'} // 10;
     my $ot = $params->{'--OT'} // '0,0,0,0';
     my $ob = $params->{'--OB'} // '0,0,0,0';
     
-    my $cmd = $CONF->{PILEOMETH} || 'PileOMeth';
     my $BWAMETH_CACHE_FILE = catfile(get_genome_cache_path($gid), 'bwameth_index', 'genome.faa.reheader.faa');
-    
     my $output_prefix = to_filename_without_extension($bam_file);
     
     return {
-        cmd => $cmd,
-        script => undef,
+        cmd => $PILEOMETH,
         args => [
             ['extract', '', 0],
             ['--methylKit', '', 0],
@@ -217,28 +158,27 @@ sub create_pileometh_extraction_job {
             $bam_file
         ],
         outputs => [
-            catfile($staging_dir, $output_prefix . '_CpG.methylKit'),
-            catfile($staging_dir, $output_prefix . '_CHH.methylKit'),
-            catfile($staging_dir, $output_prefix . '_CHG.methylKit')
+            catfile($self->staging_dir, $output_prefix . '_CpG.methylKit'),
+            catfile($self->staging_dir, $output_prefix . '_CHH.methylKit'),
+            catfile($self->staging_dir, $output_prefix . '_CHG.methylKit')
         ],
         description => "Extracting methylation calls with PileOMeth"
     };
 }
 
-sub create_pileometh_import_job {
+sub pileometh_import {
+    my $self = shift;
     my %opts = @_;
     my $input_file = $opts{input_file};
-    my $staging_dir = $opts{staging_dir};
     my $name = $opts{name};
-    my $params = $opts{params};
+
+    my $params = $self->params->{methylation_params};
     my $c = $params->{'pileometh-min_converage'} // 10;
     
-    my $cmd = catfile($CONF->{SCRIPTDIR}, 'methylation', 'coge-import_pileometh.py');
     my $output_file = $input_file . '.filtered.coge.csv';
     
     return {
-        cmd => $cmd,
-        script => undef,
+        cmd => catfile($self->conf->{SCRIPTDIR}, 'methylation', 'coge-import_pileometh.py'),
         args => [
             ['-u', 'f', 0],
             ['-c', $c, 0],
@@ -252,6 +192,20 @@ sub create_pileometh_import_job {
         ],
         description => "Converting $name"
     };
+}
+
+sub generate_additional_metadata {
+    my $self = shift;
+    my $methylation_params = $self->params->{methylation_params};
+
+    my @annotations;
+    push @annotations, qq{https://genomevolution.org/wiki/index.php/Methylation_Analysis_Pipeline||note|Generated by CoGe's Methylation Analysis Pipeline};
+
+    push @annotations, 'note|picard MarkDuplicates REMOVE_DUPLICATES=true ' if ($methylation_params->{'bismark-deduplicate'});
+    #push @annotations, 'note|PileOMeth mbias --CHG --CHH' if ($methylation_params->{'bismark-deduplicate'});
+    push @annotations, 'note|PileOMeth extract --CHG --CHH ' . join(' ', map { $_.' '.$methylation_params->{$_} } ('-q', '--OT', '--OB'));
+
+    return \@annotations;
 }
 
 1;

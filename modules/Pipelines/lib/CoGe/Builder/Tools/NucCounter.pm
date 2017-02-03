@@ -6,6 +6,11 @@ extends 'CoGe::Builder::Buildable';
 use CoGe::Accessory::IRODS qw(irods_get_base_path);
 use File::Spec::Functions;
 
+sub get_name {
+	my $self = shift;
+    return 'NucCounter | ' . $self->params->{'gid'} . ' | ' . $self->params->{'chr'};
+}
+
 sub build {
 	my $self = shift;
 
@@ -14,7 +19,7 @@ sub build {
     my $dir = catfile($self->conf->{SECTEMPDIR}, "downloads/genome", $gid);
 
     my $fasta = catfile($dir, $gid . '_' . $chr . '.faa');
-    $self->add_task({
+    $self->add({
         cmd         => catfile($self->conf->{SCRIPTDIR}, 'generate_chr_fasta.pl'),
         args        => [[ 'gid', $gid, 0 ], [ 'chr', $chr, 0 ]],
         outputs     => [$fasta],
@@ -23,7 +28,7 @@ sub build {
 
     my $filename = $gid . '_' . $chr . '_out.txt';
     my $output = catfile($dir, $filename);
-    $self->add_task({
+    $self->add({
         cmd         => catfile($self->conf->{SCRIPTDIR}, 'nuccounter.py') . ' ' . $fasta,
         inputs      => [$fasta],
         outputs     => [$output],
@@ -32,20 +37,15 @@ sub build {
 
     if ($self->params->{'irods'}) {
         my $irods_base = irods_get_base_path($self->user->name);
-        $self->add_task(
+        $self->add(
             $self->export_to_irods(
                 src_file  => $output,
                 dest_file => catfile($irods_base, $filename)
             )
         );
     }
-
-	return 1;
 }
 
-sub get_name {
-	my $self = shift;
-    return 'NucCounter | ' . $self->params->{'gid'} . ' | ' . $self->params->{'chr'};
-}
+__PACKAGE__->meta->make_immutable;
 
 1;
