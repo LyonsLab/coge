@@ -531,19 +531,19 @@ $.extend(TrimmingView.prototype, {
 
     render: function() {
         // jQuery events
-        this.el.find("[name=trimmer]").unbind().click(this.update.bind(this));
+        this.el.find("#trimming").unbind().change(this.update.bind(this));
         this.update();
     },
 
-    // Callback to display the selected aligner
+    // Callback to display the selected trimmer
     update: function() {
-        var selected = this.el.find("#trimming :checked").val();
+        var selected = this.el.find("#trimming").val();
         render_template(this.templates[selected], this.container);
+        this.container.show();
     },
 
     is_valid: function() {
         var trimmer = this.el.find("#trimming :checked").val();
-        // Pick the aligner and set the options
         if (trimmer === "cutadapt") {
             this.data = {
                 trimming_params: {
@@ -643,7 +643,6 @@ $.extend(AlignmentView.prototype, {
 
     is_valid: function() {
         var aligner = this.el.find("#alignment :checked").val();
-        // Pick the aligner and set the options
         if (aligner === "gsnap") {
             this.data = {
                 alignment_params: { //TODO is there a way to automate this parameter passing?

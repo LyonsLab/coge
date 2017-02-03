@@ -290,18 +290,13 @@
 	
 	    <div class="form-field">
 	        <label class="col-md-2">Trimmer:</label>
-	        <div id="trimming">
-		        <input name="trimmer" type="radio" value="none">
-				<label for="none">None</label>
-	            <input name="trimmer" type="radio" value="cutadapt" checked>
-	            <label for="cutadapt">CutAdapt</label>
-	            <input name="trimmer" type="radio" value="trimgalore">
-	            <label for="trimgalore">Trim Galore</label>
-				<input name="trimmer" type="radio" value="trimmomatic">
-	            <label for="trimmomatic">Trimmomatic</label>
-				<input name="trimmer" type="radio" value="bbduk">
-	            <label for="bbduk">BBDuk</label>
-	        </div>
+	        <select id="trimming">
+				<option value="none" selected>None</option>
+				<option value="cutadapt">CutAdapt</option>
+				<option value="trimgalore">Trim Galore</option>
+				<option value="trimmomatic">Trimmomatic</option>
+				<option value="bbduk">BBDuk</option>
+	        </select>
 	    </div>
 	
 	    <div id="trim-container" class="hidden"></div>
