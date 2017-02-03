@@ -34,6 +34,14 @@ foreach my $id (@workflow_ids) {
 
     # Get workflow
     my $workflow = $jex->get_job($id);
+    next unless ($workflow->{jobs} && @{$workflow->{jobs}});
+
+    if (lc($workflow->{status}) ne 'completed' &&
+        lc($workflow->{status}) ne 'failed')
+    {
+        print STDERR "Skipping incomplete workflow $id\n";
+        next;
+    }
 
     # Index tasks by outputs
     my %tasksByOutput;
@@ -44,11 +52,6 @@ foreach my $id (@workflow_ids) {
     }
 
     # Validate workflow
-    next unless ($workflow->{jobs} && @{$workflow->{jobs}});
-    if (lc($workflow->{status}) ne 'completed') {
-        print STDERR "Skipping incomplete workflow $id\n";
-        next;
-    }
     print STDERR "Validating workflow ", $id, "\n";
     validate_sequence($workflow, \%tasksByOutput);
 
