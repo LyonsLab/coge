@@ -90,14 +90,13 @@ sub build {
     }
 
     # Reheader the fasta file
-    $self->add(
+    my ($reheader_fasta) = $self->add(
         $self->reheader_fasta($gid)
     );
-    my $reheader_fasta = $self->previous_output;
 
     # Index the fasta file
     $self->add_to_previous(
-        $self->index_fasta($self->previous_output)
+        $self->index_fasta($reheader_fasta)
     );
 
     my $aligner;
@@ -117,6 +116,7 @@ sub build {
     $self->add_to_all($aligner);
     push @{$self->raw_bam}, @{$aligner->bam};
 
+    # Process and load each alignment output
     foreach my $bam_file (@{$self->raw_bam}) {
         # Sort and index the bam output file(s)
         my ($sorted_bam_file) = $self->add(
@@ -128,23 +128,26 @@ sub build {
             $self->index_bam($sorted_bam_file)
         );
 
-        # Get custom metadata to add to experiment #TODO migrate to metadata file
-        my $annotations = $self->generate_additional_metadata();
-
-        # Add bam filename to experiment name for ChIP-seq pipeline
-        my $md = clone($metadata);
-        if (@{$self->raw_bam} > 1) {
-            $md->{name} .= ' (' . to_filename_base($sorted_bam_file) . ')';
-        }
-
         # Load alignment
-        $self->add(
-            $self->load_bam(
-                metadata => $md,
-                annotations => $annotations,
-                bam_file => $sorted_bam_file
-            )
-        );
+        my $load = $self->params->{alignment_params}->{load};
+        if (!defined($load) || $load) {
+            # Get custom metadata to add to experiment #TODO migrate to metadata file
+            my $annotations = $self->generate_additional_metadata();
+
+            # Add bam filename to experiment name for ChIP-seq pipeline
+            my $md = clone($metadata);
+            if (@{$self->raw_bam} > 1) {
+                $md->{name} .= ' (' . to_filename_base($sorted_bam_file) . ')';
+            }
+
+            $self->add(
+                $self->load_bam(
+                    metadata    => $md,
+                    annotations => $annotations,
+                    bam_file    => $sorted_bam_file
+                )
+            );
+        }
     }
 }
 

@@ -673,7 +673,7 @@ $.extend(AlignmentView.prototype, {
         		alignment_params: {
         			tool: "bowtie2",
         			'presets': this.el.find("[id='presets']").val(),
-        			'--rg-id':    this.el.find("[id='--rg-id']").val(),
+        			'--rg-id': this.el.find("[id='--rg-id']").val(),
         		}
         	}
         }
@@ -711,6 +711,8 @@ $.extend(AlignmentView.prototype, {
         else { // should never happen
         	console.error('Invalid aligner');
         }
+
+        $.extend(this.data.alignment_params, { load: this.el.find("#load_alignment").is(":checked") });
 
         return true;
     },
