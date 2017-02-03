@@ -91,11 +91,22 @@ sub build {
     # Add processing tasks
     foreach my $input_file (@input_files) {
         my $done_file = qq[$input_file.done];
-        # Decompress and/or untar file
+        # Decompress and/or unarchive file
         if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) {
             my $output_dir = catdir($self->staging_dir, 'untarred');
             $self->add(
                 $self->untar(
+                    input_file => $input_file,
+                    output_path => $output_dir
+                ),
+                $done_file
+            );
+            $self->data_dir($output_dir);
+        }
+        if ( $input_file =~ /\.zip$/ ) {
+            my $output_dir = catdir($self->staging_dir, 'unzipped');
+            $self->add(
+                $self->unzip(
                     input_file => $input_file,
                     output_path => $output_dir
                 ),
@@ -181,6 +192,52 @@ sub ftp_get {
             $output_file
         ],
         description => "Fetching $url"
+    };
+}
+
+sub untar {
+    my $self = shift;
+
+    my $input_file  = $params{input_file};
+    my $output_path = $params{output_path};
+    my $done_file   = qq[$input_file.untarred];
+
+    my $cmd = get_command_path('TAR');
+
+    return {
+        cmd => "mkdir -p $output_path && $cmd -xf $input_file --directory $output_path && touch $done_file",
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            [$output_path, '1'],
+            $done_file
+        ],
+        description => "Unarchiving " . basename($input_file)
+    };
+}
+
+sub unzip {
+    my $self = shift;
+
+    my $input_file  = $params{input_file};
+    my $output_path = $params{output_path};
+    my $done_file   = qq[$input_file.unzipped];
+
+    my $cmd = get_command_path('unzip');
+
+    return {
+        cmd => "mkdir -p $output_path && $cmd $input_file -d $output_path && touch $done_file",
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            [$output_path, '1'],
+            $done_file
+        ],
+        description => "Unzipping " . basename($input_file)
     };
 }
 
