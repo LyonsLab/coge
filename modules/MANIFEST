@@ -170,7 +170,7 @@ Pipelines/lib/CoGe/Builder/Load/BatchExperiment.pm
 Pipelines/lib/CoGe/Builder/Load/Experiment.pm
 Pipelines/lib/CoGe/Builder/Load/Genome.pm
 Pipelines/lib/CoGe/Builder/Load/SRA.pm
-Pipelines/lib/CoGe/Builder/SNP/IdentifySNPs.pm
+Pipelines/lib/CoGe/Builder/SNP/Analyzer.pm
 Pipelines/lib/CoGe/Builder/SNP/CoGeSNPs.pm
 Pipelines/lib/CoGe/Builder/SNP/GATK.pm
 Pipelines/lib/CoGe/Builder/SNP/Platypus.pm

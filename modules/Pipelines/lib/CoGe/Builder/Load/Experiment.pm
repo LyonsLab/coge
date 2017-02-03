@@ -9,7 +9,7 @@ use CoGe::Accessory::Web qw(url_for);
 use CoGe::Core::Experiment qw(detect_data_type);
 use CoGe::Builder::Alignment::Aligner;
 use CoGe::Builder::Expression::Analyzer;
-use CoGe::Builder::SNP::SNPFinder;
+use CoGe::Builder::SNP::Analyzer;
 use CoGe::Builder::Methylation::Analyzer;
 use CoGe::Builder::Protein::ChIPseq;
 use CoGe::Exception::MissingField;
@@ -96,7 +96,7 @@ sub build {
         # Add SNP workflow (if specified)
         if ( $self->params->{snp_params} ) {
             my $isBamSorted = ($file_type ne 'bam');
-            my $snp = CoGe::Builder::SNP::SNPFinder->new($self);
+            my $snp = CoGe::Builder::SNP::Analyzer->new($self);
             $snp->build(data_files => \@bam_files, is_sorted => $isBamSorted);
             $self->add($snp);
         }

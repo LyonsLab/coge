@@ -19,7 +19,7 @@ lib/CoGe/Builder/Load/BatchExperiment.pm
 lib/CoGe/Builder/Load/Experiment.pm
 lib/CoGe/Builder/Load/Genome.pm
 lib/CoGe/Builder/Load/SRA.pm
-lib/CoGe/Builder/SNP/IdentifySNPs.pm
+lib/CoGe/Builder/SNP/Analyzer.pm
 lib/CoGe/Builder/SNP/CoGeSNPs.pm
 lib/CoGe/Builder/SNP/GATK.pm
 lib/CoGe/Builder/SNP/Platypus.pm

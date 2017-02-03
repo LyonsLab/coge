@@ -1,7 +1,7 @@
 package CoGe::Builder::SNP::Samtools;
 
 use Moose;
-extends 'CoGe::Builder::SNP::SNPFinder';
+extends 'CoGe::Builder::SNP::Analyzer';
 
 use Carp;
 use Data::Dumper;

@@ -1,7 +1,7 @@
 package CoGe::Builder::SNP::GATK;
 
 use Moose;
-extends 'CoGe::Builder::SNP::SNPFinder';
+extends 'CoGe::Builder::SNP::Analyzer';
 
 use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);

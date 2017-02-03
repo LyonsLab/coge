@@ -1,4 +1,4 @@
-package CoGe::Builder::SNP::SNPFinder;
+package CoGe::Builder::SNP::Analyzer;
 
 use Moose;
 extends 'CoGe::Builder::Buildable';
