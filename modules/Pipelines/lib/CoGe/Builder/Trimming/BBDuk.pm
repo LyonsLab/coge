@@ -3,12 +3,10 @@ package CoGe::Builder::Trimming::BBDuk;
 use Moose;
 extends 'CoGe::Builder::Trimming::Trimmer';
 
-use Data::Dumper;
 use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
 
 use CoGe::Accessory::Utils qw(to_filename);
-use CoGe::Accessory::Web qw(get_command_path);
 use CoGe::Exception::Generic;
 
 sub build {
@@ -19,6 +17,19 @@ sub build {
         CoGe::Exception::Generic->throw(message => 'Missing fastq');
     }
 
+    my $genome = $self->request->genome;
+
+    # Reheader the fasta file
+    $self->add(
+        $self->reheader_fasta($genome->id)
+    );
+    my $reheader_fasta = $self->previous_output;
+
+    # Index the fasta file
+    $self->add_to_previous(
+        $self->index_fasta($self->previous_output)
+    );
+
     my $read_params = $self->params->{read_params};
     my $read_type   = $read_params->{read_type} // 'single';
 
@@ -26,7 +37,7 @@ sub build {
         # Create BBDuk task for each file
         foreach (@$fastq1) {
             $self->add(
-                $self->bbduk($_)
+                $self->bbduk($_, $reheader_fasta)
             );
             push @{$self->fastq}, $self->previous_output;
         }
@@ -35,7 +46,7 @@ sub build {
         # Create BBDuk task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) {
             $self->add(
-                $self->bbduk([ $fastq1->[$i], $fastq2->[$i] ])
+                $self->bbduk([ $fastq1->[$i], $fastq2->[$i] ], $reheader_fasta)
             );
             push @{$self->fastq}, grep { /\.fastq$/ } @{$self->previous_outputs};
         }
@@ -46,6 +57,7 @@ sub bbduk {
     my $self = shift;
     my $fastq = shift; # single fastq file or two paired-end fastq files
     $fastq = [ $fastq ] unless (ref($fastq) eq 'ARRAY');
+    my $fasta = shift;
 
     my $trimming_params = $self->params->{trimming_params} // {};
     my $read_params = $self->params->{read_params} // {};
@@ -54,22 +66,28 @@ sub bbduk {
 
     my @outputs = map { catfile($self->staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
 
-    my $args = [
-        [ 'in=',  $fastq->[0], 0 ],
-        [ 'out=', $outputs[0], 0 ],
-        [ 'ref=', $fastq->[0], 0 ]
-    ];
+    unless ($self->conf->{BBMAP}) {
+        CoGe::Exception::Generic->throw(message => 'Missing BBMAP in configuration file');
+    }
+
+    my $cmd = join(' ',
+        'nice',
+        catfile($self->conf->{BBMAP}, 'bbduk.sh'),
+        qq[in=$fastq->[0]],
+        qq[out=$outputs[0]],
+        qq[ref=$fasta]
+    );
 
     if ($read_type eq 'paired') { # paired-end
-        push @$args, (
-            [ 'in2',  $fastq->[1], 0 ],
-            [ 'out2', $outputs[1], 0 ]
+        $cmd .= join(' ',
+            qq[in2=$fastq->[1]],
+            qq[out2=$outputs[1]]
         );
     }
 
     return {
-        cmd         => 'nice ' . catfile($self->conf->{BBMAP}, 'bbduk.sh'),
-        args        => $args,
+        cmd         => $cmd,
+        args        => [],
         inputs      => [ @$fastq ],
         outputs     => \@outputs,
         description => 'Trimming (BBDuk) '.join(', ', map { basename($_) } @$fastq)
