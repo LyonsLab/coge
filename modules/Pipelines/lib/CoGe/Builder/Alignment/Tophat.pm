@@ -98,7 +98,7 @@ sub create_tophat_job {
     $arg_str .= $cmd . ' ';
     $arg_str .= "-G $gff " if ($gff);
     $arg_str .= "--phred64_quals " if ($encoding eq '64');
-    $arg_str .= "-o . -g $g -p 32 $index_name ";
+    $arg_str .= "-o . -g $g -p " . $self->NUM_CPUS . " $index_name ";
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, 'tophat.pl'), # this script was created because JEX can't handle TopHat's paired-end argument syntax

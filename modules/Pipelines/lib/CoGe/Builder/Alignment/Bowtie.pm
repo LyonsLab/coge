@@ -78,7 +78,7 @@ sub bowtie2_alignment {
     # Build up command/arguments string
     my $cmd = $self->conf->{BOWTIE2} || 'bowtie2';
     $cmd = 'nice ' . $cmd; # run at lower priority
-    $cmd .= ' -p 32';
+    $cmd .= ' -p ' . $self->NUM_CPUS;
     $cmd .= ' ' . shell_quote($presets);
     $cmd .= ' --rg-id ' . shell_quote($read_group) if $read_group;
     $cmd .= ' --phred64' if ($encoding eq '64'); # default is --phred33

@@ -25,6 +25,9 @@ use CoGe::Builder::Alignment::BWAmeth;
 use CoGe::Exception::Generic;
 use CoGe::Exception::MissingField;
 
+# Settings
+has NUM_CPUS => (is => 'ro', isa => 'Int', default => 16); # number of CPUs to use for alignment tasks
+
 # Outputs
 has index   => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # index files
 has raw_bam => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # unprocessed bam files
