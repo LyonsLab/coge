@@ -415,31 +415,6 @@ sub irods_imeta {
     };
 }
 
-sub untar {
-    my ($self, %params) = @_;
-    
-    my $input_file = $params{input_file};
-    my $output_path = $params{output_path};
-    my $done_file = "$input_file.untarred";
-
-    my $cmd = get_command_path('TAR');
-
-    return {
-        cmd => "mkdir -p $output_path && $cmd -xf $input_file --directory $output_path && touch $done_file",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_file,
-#            $input_file . '.done' # ensure file is done transferring
-        ],
-        outputs => [
-            [$output_path, '1'],
-            $done_file
-        ],
-        description => "Unarchiving " . basename($input_file)
-    };
-}
-
 sub join_files {
     my ($self, %params) = @_;
     my $input_files = $params{input_files};
