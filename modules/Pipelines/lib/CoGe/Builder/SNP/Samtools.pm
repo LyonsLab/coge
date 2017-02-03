@@ -17,7 +17,15 @@ use CoGe::Exception::Generic;
 sub build {
     my $self = shift;
     my %opts = @_;
+    my $fasta_file = $opts{fasta_file};
     my ($bam_file) = @{$opts{data_files}};
+
+    unless ($fasta_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing fasta');
+    }
+    unless ($bam_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing bam');
+    }
 
     my $gid = $self->request->genome->id;
 
@@ -25,45 +33,12 @@ sub build {
     my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
     push @$annotations, @annotations2;
 
-#    my $conf = {
-#        staging_dir => $staging_dir,
-#        result_dir  => $result_dir,
-#
-#        bam         => $input_file,
-#        fasta       => catfile($FASTA_CACHE_DIR, $reheader_fasta),
-#        bcf         => catfile($staging_dir, qq[snps.raw.bcf]),
-#        vcf         => catfile($staging_dir, qq[snps.flt.vcf]),
-#
-#        username    => $user->name,
-#        metadata    => $metadata,
-#        wid         => $wid,
-#        gid         => $gid,
-#
-#        method      => 'SAMtools',
-#
-#        params      => $params,
-#
-#        annotations => $annotations
-#    };
-
     #
     # Build workflow
     #
 
     $self->add(
-        $self->reheader_fasta($gid)
-    );
-    my $reheader_fasta = $self->previous_output;
-
-    $self->add(
-        $self->index_fasta($reheader_fasta)
-    );
-
-    $self->add(
-        $self->find_snps(
-            $reheader_fasta,
-            $bam_file
-        )
+        $self->find_snps($fasta_file, $bam_file)
     );
 
     $self->add(

@@ -26,7 +26,15 @@ sub BUILD { # called immediately after constructor
 sub build {
     my $self = shift;
     my %opts = @_;
+    my $fasta_file = $opts{fasta_file};
     my ($bam_file) = @{$opts{data_files}};
+
+    unless ($fasta_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing fasta');
+    }
+    unless ($bam_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing bam');
+    }
 
     my $gid = $self->request->genome->id;
 
@@ -38,18 +46,8 @@ sub build {
     # Build workflow
     #
 
-    # Index reference FASTA
     $self->add(
-        $self->reheader_fasta($gid)
-    );
-    my $reheader_fasta = $self->previous_output;
-
-    $self->add(
-        $self->index_fasta($reheader_fasta)
-    );
-
-    $self->add(
-        $self->fasta_dict($reheader_fasta, $gid)
+        $self->fasta_dict($fasta_file, $gid)
     );
 
     # Mark duplicates
@@ -65,7 +63,7 @@ sub build {
     # Reorder BAM
     $self->add_to_previous(
         $self->reorder_sam(
-            input_fasta => $reheader_fasta,
+            input_fasta => $fasta_file,
             input_bam   => $self->previous_output
         )
     );
@@ -74,7 +72,7 @@ sub build {
     # Find intervals to analyze for realignment
     $self->add_to_previous(
         $self->gatk_RealignerTargetCreator(
-            input_fasta => $reheader_fasta,
+            input_fasta => $fasta_file,
             input_bam   => $reordered_bam
         )
     );
@@ -82,7 +80,7 @@ sub build {
     # Realign reads around INDELS
     $self->add_to_previous(
         $self->gatk_Realign(
-            input_fasta     => $reheader_fasta,
+            input_fasta     => $fasta_file,
             input_bam       => $reordered_bam,
             input_intervals => $self->previous_output
         )
@@ -97,7 +95,7 @@ sub build {
     # Variant calling with GATK HaplotypeCaller
     $self->add_to_previous(
         $self->gatk_HaplotypeCaller(
-            input_fasta => $reheader_fasta,
+            input_fasta => $fasta_file,
             input_bam   => $realigned_bam
         )
     );
@@ -116,10 +114,9 @@ sub build {
 }
 
 sub fasta_dict {
-    my $self = shift;
+    my $self  = shift;
     my $fasta = shift;
-    my $gid = shift;
-#    my $fasta     = get_genome_file($gid);
+    my $gid   = shift;
     my $cache_dir = get_genome_cache_path($gid);
 
     my $fasta_name = to_filename($fasta);
