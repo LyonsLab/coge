@@ -28,11 +28,10 @@ sub build {
     #
 
     # Reheader the fasta file
-    $self->add(
+    my ($reheader_fasta) = $self->add(
         $self->reheader_fasta($genome->id)
     );
-    my $reheader_fasta = $self->previous_output;
-    
+
     # Check if genome has annotations
     my $isAnnotated = $genome->has_gene_features;
     unless ($isAnnotated) {
