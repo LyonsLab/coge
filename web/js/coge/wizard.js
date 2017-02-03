@@ -228,7 +228,7 @@ $.extend(DataView.prototype, {
     
     // Returns the file extension detected or undefined
     autodetect_file_type: function(file) {
-        var stripped_file = file.replace(/.gz$/, '');
+        var stripped_file = file.replace(/.gz|.bz2$/, '');
         if (this.FILE_TYPE_PATTERNS.test(stripped_file))
             return stripped_file.match(this.FILE_TYPE_PATTERNS)[0];
     },

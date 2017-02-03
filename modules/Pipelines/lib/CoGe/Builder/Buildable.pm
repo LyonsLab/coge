@@ -320,32 +320,6 @@ sub wait {
     };
 }
 
-# Generate gunzip task
-sub gunzip {
-    my $self = shift;
-    my $input_file = shift;
-
-    my $output_file = $input_file;
-    $output_file =~ s/\.gz$//;
-
-    my $cmd = get_command_path('GUNZIP');
-
-    return {
-        cmd => "$cmd -c $input_file > $output_file && touch $output_file.decompressed",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_file,
-            #$input_file . '.done' # ensure file is done transferring
-        ],
-        outputs => [
-            $output_file,
-            "$output_file.decompressed"
-        ],
-        description => "Decompressing " . basename($input_file)
-    };
-}
-
 # Generate GFF file of genome annotations
 sub create_gff {
     my $self = shift;
