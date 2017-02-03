@@ -77,9 +77,6 @@ sub undelete_experiment {
 sub detect_data_type {
     my $filetype = shift;
     my $filepath = shift;
-    warn $filetype;
-    warn $filepath;
-    warn Dumper \@QUANT_TYPES;
     #print STDOUT "detect_data_type: $filepath\n";
 
     # Try to determine type based on file extension
