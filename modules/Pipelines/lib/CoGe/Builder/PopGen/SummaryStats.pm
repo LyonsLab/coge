@@ -124,4 +124,48 @@ sub sumstats {
     };
 }
 
+sub bgzip {
+    my $self = shift;
+    my $input_file = shift;
+    my $output_file = $input_file . '.bgz';
+
+    my $cmd = get_command_path('BGZIP');
+
+    return {
+        cmd => "$cmd -c $input_file > $output_file && touch $output_file.done",
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.done"
+        ],
+        description => "Compressing " . basename($input_file) . " with bgzip"
+    };
+}
+
+sub tabix_index {
+    my $self = shift;
+    my $input_file = shift;
+    my $index_type = shift;
+    my $output_file = $input_file . '.tbi';
+
+    my $cmd = $self->conf->{TABIX} || 'tabix';
+
+    return {
+        cmd => "$cmd -p $index_type $input_file && touch $output_file.done",
+        args => [],
+        inputs => [
+            $input_file,
+            $input_file . '.done'
+        ],
+        outputs => [
+            $output_file,
+            "$output_file.done"
+        ],
+        description => "Indexing " . basename($input_file)
+    };
+}
+
 1;
