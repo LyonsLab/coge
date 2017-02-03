@@ -10,6 +10,7 @@ use CoGe::Accessory::Utils qw(detect_paired_end);
 use CoGe::Builder::Trimming::Cutadapt;
 use CoGe::Builder::Trimming::TrimGalore;
 use CoGe::Builder::Trimming::Trimmomatic;
+use CoGe::Builder::Trimming::BBDuk;
 use CoGe::Exception::Generic;
 
 # Outputs
@@ -42,9 +43,10 @@ sub build {
 
     my $trimmer;
     switch( lc($trimming_params->{trimmer}) ) {
-        case 'cutadapt'    { $trimmer = CoGe::Builder::Trimming::Cutadapt->new($self)  }
-        case 'trimgalore'  { $trimmer = CoGe::Builder::Trimming::TrimGalore->new($self)  }
+        case 'cutadapt'    { $trimmer = CoGe::Builder::Trimming::Cutadapt->new($self)     }
+        case 'trimgalore'  { $trimmer = CoGe::Builder::Trimming::TrimGalore->new($self)   }
         case 'trimmomatic' { $trimmer = CoGe::Builder::Trimming::Trimmomatic->new($self)  }
+        case 'bbduk'       { $trimmer = CoGe::Builder::Trimming::BBDuk->new($self)        }
         default {
             CoGe::Exception::Generic->throw(message => 'Invalid trimmer');
         }

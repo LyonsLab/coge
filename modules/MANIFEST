@@ -186,6 +186,8 @@ Pipelines/lib/CoGe/Builder/Tools/SynMap3D.pm
 Pipelines/lib/CoGe/Builder/Trimming/Trimmer.pm
 Pipelines/lib/CoGe/Builder/Trimming/Cutadapt.pm
 Pipelines/lib/CoGe/Builder/Trimming/TrimGalore.pm
+Pipelines/lib/CoGe/Builder/Trimming/Trimmomatic.pm
+Pipelines/lib/CoGe/Builder/Trimming/BBDuk.pm
 Pipelines/lib/CoGe/Request/Request.pm
 Pipelines/lib/CoGe/Request/CoGeBlast.pm
 Pipelines/lib/CoGe/Request/Empty.pm
