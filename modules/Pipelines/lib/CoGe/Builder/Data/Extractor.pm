@@ -196,7 +196,7 @@ sub ftp_get {
 }
 
 sub untar {
-    my $self = shift;
+    my ($self, %params) = @_;
 
     my $input_file  = $params{input_file};
     my $output_path = $params{output_path};
@@ -219,7 +219,7 @@ sub untar {
 }
 
 sub unzip {
-    my $self = shift;
+    my ($self, %params) = @_;
 
     my $input_file  = $params{input_file};
     my $output_path = $params{output_path};
