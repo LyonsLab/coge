@@ -163,7 +163,7 @@ $.extend(ExperimentDescriptionView.prototype, {
                 description:  '<to be determined from SRA>',
                 version:      '<to be determined from SRA>',
                 link:         '<to be determined from SRA>',
-                restricted:   0,
+                //restricted:   false,
                 source_name: 'NCBI-SRA'
             };
         }
@@ -175,8 +175,8 @@ $.extend(ExperimentDescriptionView.prototype, {
             this.el.find('#edit_link').val(this.metadata.link);
             this.edit_source.val(this.metadata.source_name);
 
-            if (!this.metadata.restricted)
-                this.el.find('#restricted').removeAttr('checked');
+            /*if (!this.metadata.restricted)
+                this.el.find('#restricted').removeAttr('checked');*/
 
             /*this.el.find('#edit_genome').val(this.metadata.genome);*/
         }
@@ -216,9 +216,11 @@ $.extend(ExperimentDescriptionView.prototype, {
         var description = this.el.find('#edit_description').val();
         var version     = this.el.find('#edit_version').val();
         var link        = this.el.find('#edit_link').val();
-        var restricted  = this.el.find('#restricted').is(':checked');
+        var restricted  = false; //var restricted  = this.el.find('#restricted').is(':checked');
 
         if (!this.isSRA) { // metadata fields are set in Pipeline for SRA data
+            restricted = true; // force to be public since from public source
+
             if (!name) {
                 if (this.onError)
                     this.onError('Please specify an experiment name.');

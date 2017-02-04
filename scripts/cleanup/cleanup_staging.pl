@@ -14,6 +14,8 @@
 use strict;
 use warnings;
 
+use Data::Dumper;
+use Getopt::Long;
 use File::Find;
 use File::Path qw(remove_tree);
 use File::Spec::Functions qw(catdir catfile);
@@ -22,12 +24,15 @@ use CoGe::JEX::Jex;
 
 $| = 1;
 
-my $conf_file  = shift;
-my $max_size   = shift; # max size of staging directory (in bytes), use 0 to disbale, default=1TB
-my $older_than = shift; # maximum age of subdirectories (in days), use 0 to disable
-die "Missing 'conf_file' argument\n" unless ($conf_file);
-
-print "Settings: conf_file=$conf_file max_size=$max_size older_than=$older_than\n";
+our ($conf_file, $max_size, $older_than, $job_id, $debug);
+GetOptions(
+    "conf=s"     => \$conf_file,  # CoGe configuration file
+    "max_size=i"   => \$max_size,   # max size of staging directory (in bytes)
+    "older_than=i" => \$older_than, # maximum age of subdirectories (in days)
+    "job_id=i"     => \$job_id,     # only delete directory for job ID
+    "debug"      => \$debug       # set to 1 to only show output without deleting
+);
+die "Missing 'conf' argument\n" unless $conf_file;
 
 # Load config file
 unless ($conf_file) {
@@ -64,34 +69,37 @@ unless ($jex) {
     exit(-1);
 }
 
+# Delete directories that do not meet constraints
 my $staging_size = get_dir_size($staging_root_path);
-print "Staging size: $staging_size\n";
+print "Staging: $staging_root_path, size=$staging_size bytes\n";
 
 my $num_deleted = 0;
 foreach my $d (sort { (stat $a)[9] <=> (stat $b)[9] } @dirs) { # sort directories by time
     my $dir_size = get_dir_size($d);
     my $dir_age = (stat $d)[9];
-    #print "$d $dir_age $dir_size\n";
+    my $id = $d =~ /\/(\d+)$/;
+    next if ($job_id && $id ne $job_id);
+    print "$d $dir_age $dir_size\n";
 
     # Check if directory should be deleted
     my $delete = 0;
     if ($max_size && $staging_size > $max_size) {
-        print "DELETE due to size\n";
+        print "   DELETE due to size\n";
         $delete = 1;
     }
     if ($older_than && (time - $dir_age) > $older_than*24*60*60) {
-        print "DELETE due to age\n";
+        print "   DELETE due to age\n";
         $delete = 1;
     }
-    next unless $delete;
+    next unless ($delete || $job_id);
 
     # Check if job is still running
-    my $id = $d =~ /\/(\d+)$/;
     my $job = $jex->get_job($id);
     unless ($job) {
         print STDERR "Couldn't retrieve job $id\n";
         exit(-1);
     }
+    print "   STATUS ", $job->{status}, "\n";
     if (lc($job->{status}) eq 'running') {
         print "Skipping running job $id\n";
         next;
@@ -99,14 +107,15 @@ foreach my $d (sort { (stat $a)[9] <=> (stat $b)[9] } @dirs) { # sort directorie
 
     # Delete directory
     #
-    print "Deleting directory $d\n";
+    print "   DELETING\n";
+    next if $debug;
     remove_tree($d);
     $staging_size -= $dir_size;
     $num_deleted ++;
 }
 
 # All done!
-print "All done: deleted $num_deleted out of ", scalar(@dirs), " directories\n";
+print "All done: deleted $num_deleted out of ", scalar(@dirs), " directories" . ($debug ? ' (debug mode)' : '') . "\n";
 exit;
 
 #-------------------------------------------------------------------------------

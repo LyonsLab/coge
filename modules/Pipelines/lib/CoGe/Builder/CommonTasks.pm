@@ -232,5 +232,4 @@ sub create_transdecoder_predict_job {
     };
 }
 
-
 1;
