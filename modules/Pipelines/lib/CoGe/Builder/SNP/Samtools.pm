@@ -61,7 +61,7 @@ sub find_snps {
     my $fasta = shift;
     my $bam = shift;
 
-    my $output_file = 'snps.raw.bcf';
+    my $output_file = qq[$bam.raw.bcf];
 
     # Pipe commands together
     my $sam_command = get_command_path('SAMTOOLS');
@@ -88,7 +88,7 @@ sub filter_snps {
     my $self = shift;
     my $bcf_file = shift;
 
-    my $output_file = 'snps.vcf';
+    my $output_file = qq[$bcf_file.vcf];
 
     my $params = $self->params->{snp_params};
     my $min_read_depth = $params->{'min-read-depth'} // 6;

@@ -74,11 +74,7 @@ sub samtools_mpileup {
     $filter_script .= ' min_allele_count=' . $min_allele_count;
     $filter_script .= ' quality_scale=' . $scale;
     
-<<<<<<< HEAD
-    my $output_file = 'snps.vcf';
-=======
-    my $output_name = "$bam_file.vcf";
->>>>>>> stable
+    my $output_file = to_filename_base($bam_file) . '.vcf';
 
     return {
         cmd => $samtools,
@@ -88,7 +84,7 @@ sub samtools_mpileup {
             ['',        $fasta_file,     1],
             ['',        $bam_file,       1],
             ['|',       $filter_script,  0],
-            ['>',       $output_file,    0]
+            ['>',       $output_file,    1]
         ],
         inputs => [
             $fasta_file,

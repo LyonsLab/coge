@@ -76,7 +76,7 @@ sub platypus {
     my $bam = $opts{bam};
     my $nCPU = 8; # number of processors to use
 
-    my $output_file = 'snps.vcf';
+    my $output_file = to_filename_base($bam) . '.vcf';
     my $PLATYPUS = $self->conf->{PLATYPUS} || "Platypus.py";
 
     return {

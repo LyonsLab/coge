@@ -286,7 +286,7 @@ sub gatk_HaplotypeCaller {
     my $input_fasta = $opts{input_fasta};
     my $input_bam   = $opts{input_bam};
 
-    my $output_vcf = 'snps.flt.vcf';
+    my $output_vcf = to_filename_base($input_bam) . '.flt.vcf';
 
     my $params      = $self->params->{snp_params};
     my $stand_call_conf = $params->{'-stand_call_conf'} // 30;
