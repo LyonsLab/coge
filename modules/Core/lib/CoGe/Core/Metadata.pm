@@ -11,7 +11,7 @@ use Switch;
 use Text::Unidecode qw(unidecode);
 
 use CoGeX;
-use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_iput);
+use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_iput irods_irm);
 
 BEGIN {
     our (@ISA, $VERSION, @EXPORT);
@@ -25,7 +25,7 @@ BEGIN {
 sub create_annotation {
     my %opts = @_;
 
-    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
+    my ($error, $type_id, $link, $image_id, $bisque_id, $bisque_file) = _init(\%opts);
     if ($error) {
         warn 'create_annotation: ' . $error;
         return;
@@ -57,6 +57,7 @@ sub create_annotation {
             link => $link,
             image_id => $image_id,
             bisque_id => $bisque_id,
+            bisque_file => $bisque_file,
             locked => $locked
         });
     }
@@ -68,6 +69,7 @@ sub create_annotation {
             link => $link,
             image_id => $image_id,
             bisque_id => $bisque_id,
+            bisque_file => $bisque_file,
             locked => $locked
         });
     }
@@ -79,6 +81,7 @@ sub create_annotation {
             link => $link,
             image_id => $image_id,
             bisque_id => $bisque_id,
+            bisque_file => $bisque_file,
             locked => $locked
         });
     }
@@ -163,10 +166,14 @@ sub create_annotations {
 }
 
 sub delete_annotation {
-    my ($aid, $object_id, $object_type, $db) = @_;
+    my ($aid, $object_id, $object_type, $db, $user) = @_;
     return 'delete_annotation: missing parameter' unless $aid && $object_id && $object_type && $db;
 
     my $annotation = $db->resultset($object_type . 'Annotation')->find( { lc($object_type) . '_annotation_id' => $aid } );
+    if ($annotation->bisque_file) {
+        my $path = catfile(dirname(irods_get_base_path($user->name)), 'bisque_data', $annotation->bisque_file);
+        irods_irm($path);
+    }
     $annotation->delete();
     return undef;
 }
@@ -327,7 +334,7 @@ sub update_annotation {
         return;
     }
  
-    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
+    my ($error, $type_id, $link, $image_id, $bisque_id, $bisque_file) = _init(\%opts);
     if ($error) {
         warn 'update_annotation: ' . $error;
         return;
@@ -345,6 +352,7 @@ sub update_annotation {
     $annotation->annotation_type_id($type_id);
     $annotation->image_id($image_id) if ($image_id);
     $annotation->bisque_id($bisque_id) if ($bisque_id);
+    $annotation->bisque_file($bisque_file) if ($bisque_file);
     $annotation->update;
 
     return;
@@ -397,8 +405,6 @@ sub _create_bisque_image {
     my ($upload, $user) = @_;
 
     my $dest = catfile(dirname(irods_get_base_path($user->name)), 'bisque_data', basename($upload->filename));
-    warn $dest;
-    warn $upload->asset->path;
     irods_iput($upload->asset->path, $dest);
     for my $i (0..9) {
         sleep 5;
@@ -406,7 +412,7 @@ sub _create_bisque_image {
         if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
             my $bisque_id = substr($result->[2], 7);
             chomp $bisque_id;
-            return $bisque_id;
+            return $bisque_id, $upload->filename;
         }
     }
     warn 'unable to get bisque id';
@@ -472,11 +478,12 @@ sub _init {
 
     my $image_id;
     my $bisque_id;
+    my $bisque_file;
     my $filename = $opts->{filename};
     if ($filename) {
         my $upload = $opts->{image};
         if ($upload) {
-            $bisque_id = _create_bisque_image($upload, $opts->{user});
+            ($bisque_id, $bisque_file) = _create_bisque_image($upload, $opts->{user});
             return 'error creating image' unless $bisque_id;
         }
         else {
@@ -486,7 +493,7 @@ sub _init {
         }
     }
 
-    return (undef, $type_id, $link, $image_id, $bisque_id);
+    return (undef, $type_id, $link, $image_id, $bisque_id, $bisque_file);
 }
 
 1;

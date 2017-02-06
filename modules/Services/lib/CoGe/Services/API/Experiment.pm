@@ -182,8 +182,8 @@ sub delete_annotation {
     my $id = int($self->stash('id'));
     my $aid = int($self->stash('aid'));
 
-    my ($db) = CoGe::Services::Auth::init($self);
-    my $error = CoGe::Core::Metadata::delete_annotation($aid, $id, 'Experiment', $db);
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $error = CoGe::Core::Metadata::delete_annotation($aid, $id, 'Experiment', $db, $user);
     if ($error) {
         $self->render(status => 400, json => { error => { Error => $error} });
         return;

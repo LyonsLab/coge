@@ -79,14 +79,6 @@ var coge = window.coge = (function(namespace) {
 			return this._ajax("PUT", this.baseUrl + "jobs/", request);
 		},
 
-		fetch_annotation: function(type,id,aid) {
-			return this._ajax("GET", this.baseUrl + type + '/' + id + '/annotations/' + aid);
-		},
-
-		fetch_annotations: function(type,id) {
-			return this._ajax("GET", this.baseUrl + type + '/' + id + '/annotations');
-		},
-
 		fetch_job: function(id) {
 			this._debug('fetch_job');
 			if (!id) {
