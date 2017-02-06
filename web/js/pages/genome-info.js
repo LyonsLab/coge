@@ -253,15 +253,18 @@ function download_chr_file() {
 		download_chromosome_sequence(id.substring(1));
 	else if (type == 'g')
 		get_gff(id.substring(1));
-    else {
-        var chr = id.substring(1);
-        coge.progress.init({title: 'NucCounter',
-            onSuccess: function() {
-                document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
+    else 
+        coge.utils.prompt('Window Size:', 'NucCounter Sliding Window', 200, function(val) {
+            if (val != '') {
+                var chr = id.substring(1);
+                coge.progress.init({title: 'NucCounter',
+                    onSuccess: function() {
+                        document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
+                    }
+                });
+                nuccounter(chr);
             }
         });
-        nuccounter(chr);
-    }
 }
 
 function export_chr_file() {
