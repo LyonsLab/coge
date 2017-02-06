@@ -16,7 +16,7 @@ use CoGe::Exception::Generic;
 
 # Outputs
 has data_files => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # input files
-has data_dir   => (is => 'ro', isa => 'Str'); # input directory
+has data_dir   => (is => 'rw', isa => 'Str'); # input directory
 has ncbi_accns => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # GenBank accessions
 
 my $MAX_DATA_ITEMS = 100;
