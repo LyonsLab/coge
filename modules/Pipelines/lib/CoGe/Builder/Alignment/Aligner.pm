@@ -129,8 +129,8 @@ sub build {
         );
 
         # Load alignment
-        my $load = $self->params->{alignment_params}->{load};
-        if (!defined($load) || $load) {
+        my $load_bam = $self->params->{alignment_params}->{load_bam};
+        if (!defined($load_bam) || $load_bam) {
             # Get custom metadata to add to experiment #TODO migrate to metadata file
             my $annotations = $self->generate_additional_metadata();
 

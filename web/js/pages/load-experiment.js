@@ -715,7 +715,7 @@ $.extend(AlignmentView.prototype, {
         	console.error('Invalid aligner');
         }
 
-        $.extend(this.data.alignment_params, { load: this.el.find("#load_alignment").is(":checked") });
+        $.extend(this.data.alignment_params, { load_bam: this.el.find("#load_bam").is(":checked") });
 
         return true;
     },
@@ -939,30 +939,30 @@ $.extend(ChIPSeqView.prototype, {
 
 function FastqView(opts) {
 	this.experiment = opts.experiment
+	this.onError = opts.onError;
     this.initialize();
 }
 
 $.extend(FastqView.prototype, {
     initialize: function() {
-    	this.read_view = new ReadFormatView();
-    	this.trim_view = new TrimmingView();
-        this.expression_view = new ExpressionView();
-        this.snp_view = new FindSNPView();
+    	this.read_view        = new ReadFormatView();
+    	this.trim_view        = new TrimmingView();
+        this.expression_view  = new ExpressionView();
+        this.snp_view         = new FindSNPView();
         this.methylation_view = new MethylationView({ format: this.read_view });
-        this.chipseq_view = new ChIPSeqView({ experiment: this.experiment });
-        this.align_view = new AlignmentView({ onChange: this.methylation_view.update.bind(this.methylation_view) });
+        this.chipseq_view     = new ChIPSeqView({ experiment: this.experiment });
+        this.align_view       = new AlignmentView({ onChange: this.methylation_view.update.bind(this.methylation_view) });
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
-
             layout: {
-                '#read-view': this.read_view,
-                '#trim-view': this.trim_view,
-                "#align-view": this.align_view,
-                "#expression-view": this.expression_view,
-                "#snp-view": this.snp_view,
+                '#read-view':        this.read_view,
+                '#trim-view':        this.trim_view,
+                "#align-view":       this.align_view,
+                "#expression-view":  this.expression_view,
+                "#snp-view":         this.snp_view,
                 "#methylation-view": this.methylation_view,
-                "#chipseq-view": this.chipseq_view
+                "#chipseq-view":     this.chipseq_view
             }
         });
 
@@ -975,6 +975,18 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
+        var opts = this.get_options();
+
+        if (!opts.alignment_params.load_bam &&
+            !opts.expression_params &&
+            !opts.snp_params &&
+            !opts.methylation_params &&
+            !opts.chipseq_params)
+        {
+            this.onError('No outputs resulting from these settings.  Select the "Load alignment" option.');
+            return false;
+        }
+
     	return (   this.read_view.is_valid()
     			&& this.trim_view.is_valid()
     			&& this.align_view.is_valid()
@@ -1164,7 +1176,10 @@ $.extend(OptionsView.prototype, {
         if ($.inArray(file_type, POLY_FILES) > -1)
             this.analysis_view = new PolymorphismView();
         else if ($.inArray(file_type, SEQ_FILES) > -1)
-            this.analysis_view = new FastqView({experiment: this.experiment});
+            this.analysis_view = new FastqView({
+                experiment: this.experiment,
+                onError:    this.onError
+            });
         else if ($.inArray(file_type, QUANT_FILES) > -1)
             this.analysis_view = new QuantativeView();
         else if ($.inArray(file_type, ALIGN_FILES) > -1)
@@ -1268,7 +1283,7 @@ function initialize_wizard(opts) {
     wizard.addStep(new OptionsView({
         experiment: current_experiment,
         admin: opts.admin,
-        onError: wizard.error_help
+        onError: wizard.error_help.bind(wizard),
     }));
     wizard.addStep(new ExperimentDescriptionView({
         experiment: current_experiment,

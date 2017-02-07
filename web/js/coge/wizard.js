@@ -43,6 +43,7 @@ $.extend(Wizard.prototype, {
             .show()
             .delay(10*1000)
             .fadeOut(1500);
+        window.scrollTo(0, 0); // scroll to top where error message is displayed
     },
 
     at_first: function() {
