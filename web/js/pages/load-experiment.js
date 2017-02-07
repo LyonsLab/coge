@@ -183,10 +183,11 @@ $.extend(ExperimentDescriptionView.prototype, {
 
         var edit_genome = this.edit_genome;
 
-        edit_genome.unbind().change(function() {
-            // Reset gid when item has changed
-            self.gid = undefined;
-        });
+// mdb removed 2/7/17 -- no longer needed? breaks loading BAM files for some reason
+//        edit_genome.unbind().change(function() {
+//            // Reset gid when item has changed
+//            self.gid = undefined;
+//        });
 
         edit_genome.autocomplete({
             source:[],
@@ -249,7 +250,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             return false;
         }
 
-       $.extend(this.experiment, {
+        $.extend(this.experiment, {
             metadata: {
                 name: coge.utils.removeSpecialChars(name),
                 description: coge.utils.removeSpecialChars(description),
