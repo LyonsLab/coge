@@ -1642,7 +1642,13 @@ sub upload_metadata {
 			    }
 			    if ($can_annotate) {
 				    my $target = $DB->resultset($type eq 'Notebook' ? 'List' : $type)->find($_);
-				    create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
+				    create_annotations(
+                        db => $DB,
+                        user => $USER,
+                        target => $target,
+                        annotations => $annotations,
+                        locked => 1
+                    );
 			    }
 			    else {
 			        push @error_ids, $_;

@@ -11,7 +11,7 @@ use Switch;
 use Text::Unidecode qw(unidecode);
 
 use CoGeX;
-use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_iput irods_irm);
+use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_imkdir irods_iput irods_irm);
 
 BEGIN {
     our (@ISA, $VERSION, @EXPORT);
@@ -169,9 +169,12 @@ sub delete_annotation {
     my ($aid, $object_id, $object_type, $db, $user) = @_;
     return 'delete_annotation: missing parameter' unless $aid && $object_id && $object_type && $db;
 
+    my ($error, $object) = _get_object(undef, $object_id, $object_type, 1, $db, $user);
+    return $error if $error;
+
     my $annotation = $db->resultset($object_type . 'Annotation')->find( { lc($object_type) . '_annotation_id' => $aid } );
     if ($annotation->bisque_file) {
-        my $path = catfile(dirname(irods_get_base_path($user->name)), 'bisque_data', $annotation->bisque_file);
+        my $path = catfile(_get_bisque_dir($object_type, $object_id), $annotation->bisque_file);
         irods_irm($path);
     }
     $annotation->delete();
@@ -233,8 +236,6 @@ sub export_annotations {
 sub get_annotation {
     my ($aid, $object_type, $db) = @_;
     return unless $aid && $object_type && $db;
-
-    #TODO check user access here
 
     my $annotation = $db->resultset($object_type . 'Annotation')->find($aid);
     return unless $annotation;
@@ -402,9 +403,11 @@ sub tags_to_string {
 }
 
 sub _create_bisque_image {
-    my ($upload, $user) = @_;
+    my ($target_type, $target_id, $upload) = @_;
 
-    my $dest = catfile(dirname(irods_get_base_path($user->name)), 'bisque_data', basename($upload->filename));
+    my $dest = _get_bisque_dir($target_type, $target_id);
+    irods_imkdir($dest);
+    $dest = catfile($dest, basename($upload->filename));
     irods_iput($upload->asset->path, $dest);
     for my $i (0..9) {
         sleep 5;
@@ -418,7 +421,7 @@ sub _create_bisque_image {
     warn 'unable to get bisque id';
 }
 
-sub _create_image { # mdb: don't have a better place for this atm
+sub _create_image {
     my %opts = @_;
     my $fh = $opts{fh};
     my $filename = $opts{filename};
@@ -445,13 +448,18 @@ sub _create_image { # mdb: don't have a better place for this atm
     return unless $image;
 }
 
+sub _get_bisque_dir {
+    my ($target_type, $target_id) = @_;
+    return catfile(dirname(irods_get_base_path('coge')), 'bisque_data', $target_type, $target_id);
+}
+
 sub _get_object {
-    my ($id, $object_type, $own_or_edit, $db, $user) = @_;
-    my $object = $db->resultset($object_type)->find($id);
+    my ($object, $id, $object_type, $own_or_edit, $db, $user) = @_;
+    $object = $db->resultset($object_type eq 'notebook' ? 'List' : ucfirst($object_type))->find($id) unless $object;
     return 'Resource not found' unless $object;
     if ($own_or_edit) {
         return 'User not logged in' unless $user;
-        return 'Access denied' unless $user->is_owner_editor(lc($object_type) => $id);
+        return 'Access denied' unless $user->is_owner_editor(lc($object_type) => $object->id);
     }
     return 'Access denied' unless !$object->restricted || ($user && $user->has_access_to($object));
     return undef, $object;
@@ -463,6 +471,8 @@ sub _init {
     return 'type_name required' unless $type_name;
 
     my $db = $opts->{db};
+    my ($error, $object) = _get_object($opts->{target}, $opts->{target_id}, $opts->{target_type}, 1, $db, $opts->{user});
+    return $error if $error;
     my $group_name = $opts->{group_name};
     my $group_id;
     $group_id = $db->resultset('AnnotationTypeGroup')->find_or_create({ name => $group_name })->id if defined $group_name;
@@ -483,7 +493,8 @@ sub _init {
     if ($filename) {
         my $upload = $opts->{image};
         if ($upload) {
-            ($bisque_id, $bisque_file) = _create_bisque_image($upload, $opts->{user});
+            my $ref = ref($object);
+            ($bisque_id, $bisque_file) = _create_bisque_image(substr($ref, rindex($ref, ':') + 1), $object->id, $upload);
             return 'error creating image' unless $bisque_id;
         }
         else {

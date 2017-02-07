@@ -67,7 +67,8 @@ foreach my $result (@results) {
     next unless ($result->{id} && $result->{type} 
         && ($result->{type} eq 'genome' || $result->{type} eq 'experiment' || $result->{type} eq 'notebook' ));
     CoGe::Core::Metadata::create_annotations(
-        db => $db, 
+        db => $db,
+        user => $user,
         target_id => $result->{id}, 
         target_type => $result->{type}, 
         annotations => $annotations, 

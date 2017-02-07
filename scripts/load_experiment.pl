@@ -381,6 +381,7 @@ if ($tags || $detected_tags) {
 if ($annotations || $metadata_file) {
     CoGe::Core::Metadata::create_annotations(
         db => $db,
+        user => $user,
         target => $experiment,
         annotations => $annotations,
         anno_file => $metadata_file,

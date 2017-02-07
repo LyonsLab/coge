@@ -222,6 +222,7 @@ sub irods_imeta_ls {
 
     my $cmd = "export irodsEnvFile='$env_file' && imeta ls -d '" . $dest . "' '" . $attribute . "'";
     my @result = `$cmd`;
+    warn Dumper \@result;
 
     return \@result;
 }
@@ -233,7 +234,7 @@ sub irods_imkdir {
     my $env_file = _irods_get_env_file();
     return 'irods env file missing' unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file' && imkdir '" . $path . "'";
+    my $cmd = "export irodsEnvFile='$env_file' && imkdir -p '" . $path . "'";
     my @result = `$cmd`;
     return $result[0] if scalar @result;
 }
