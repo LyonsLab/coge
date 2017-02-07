@@ -14,11 +14,11 @@ use CoGe::Builder::Load::SRA;
 use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
-use CoGe::Builder::SNP::IdentifySNPs;
 use CoGe::Builder::Tools::NucCounter;
 use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Tools::SynMap3D;
+use CoGe::Builder::SNP::Analyzer;
 use CoGe::Builder::Expression::Analyzer;
 use CoGe::Builder::Methylation::Analyzer;
 use CoGe::Builder::Methylation::Metaplot;
@@ -36,9 +36,9 @@ my %typeToClass = (
     #'load_batch'            => 'CoGe::Builder::Load::BatchExperiment',
     'load_genome'           => 'CoGe::Builder::Load::Genome',
     'load_annotation'       => 'CoGe::Builder::Load::Annotation',
-    'analyze_snps'          => 'CoGe::Builder::SNP::SNPFinder',
     'synmap'                => 'CoGe::Builder::Tools::SynMap',
     'synmap3d'              => 'CoGe::Builder::Tools::SynMap3D',
+    'analyze_snps'          => 'CoGe::Builder::SNP::Analyzer',
     'analyze_expression'    => 'CoGe::Builder::Expression::Analyzer',
     'analyze_methylation'   => 'CoGe::Builder::Methylation::Analyzer',
     'analyze_metaplot'      => 'CoGe::Builder::Methylation::Metaplot',

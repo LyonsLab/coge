@@ -9,14 +9,14 @@ use File::Spec::Functions qw(catfile catdir);
 use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Accessory::Web qw(split_url);
+use CoGe::Accessory::Web qw(split_url get_command_path);
 use CoGe::Accessory::IRODS qw(irods_iget irods_set_env);
 use CoGe::Core::Storage qw(get_upload_path);
 use CoGe::Exception::Generic;
 
 # Outputs
 has data_files => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # input files
-has data_dir   => (is => 'ro', isa => 'Str'); # input directory
+has data_dir   => (is => 'rw', isa => 'Str'); # input directory
 has ncbi_accns => (is => 'ro', isa => 'ArrayRef', default => sub { [] }); # GenBank accessions
 
 my $MAX_DATA_ITEMS = 100;
@@ -90,24 +90,41 @@ sub build {
 
     # Add processing tasks
     foreach my $input_file (@input_files) {
-        # Decompress file
+        my $done_file = qq[$input_file.done];
+        # Decompress and/or unarchive file
         if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) {
-            # Untar file
             my $output_dir = catdir($self->staging_dir, 'untarred');
             $self->add(
                 $self->untar(
                     input_file => $input_file,
                     output_path => $output_dir
                 ),
-                "$input_file.done"
+                $done_file
+            );
+            $self->data_dir($output_dir);
+        }
+        if ( $input_file =~ /\.zip$/ ) {
+            my $output_dir = catdir($self->staging_dir, 'unzipped');
+            $self->add(
+                $self->unzip(
+                    input_file => $input_file,
+                    output_path => $output_dir
+                ),
+                $done_file
             );
             $self->data_dir($output_dir);
         }
         elsif ( $input_file =~ /\.gz$/ ) {
-            # Decompress file
             $self->add(
                 $self->gunzip($input_file),
-                "$input_file.done"
+                $done_file
+            );
+            push @{$self->data_files}, $self->previous_output;
+        }
+        elsif ( $input_file =~ /\.bz2$/ ) {
+            $self->add(
+                $self->bunzip2($input_file),
+                $done_file
             );
             push @{$self->data_files}, $self->previous_output;
         }
@@ -175,6 +192,98 @@ sub ftp_get {
             $output_file
         ],
         description => "Fetching $url"
+    };
+}
+
+sub untar {
+    my ($self, %params) = @_;
+
+    my $input_file  = $params{input_file};
+    my $output_path = $params{output_path};
+    my $done_file   = qq[$input_file.untarred];
+
+    my $cmd = get_command_path('TAR');
+
+    return {
+        cmd => "mkdir -p $output_path && $cmd -xf $input_file --directory $output_path && touch $done_file",
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            [$output_path, '1'],
+            $done_file
+        ],
+        description => "Unarchiving " . basename($input_file)
+    };
+}
+
+sub unzip {
+    my ($self, %params) = @_;
+
+    my $input_file  = $params{input_file};
+    my $output_path = $params{output_path};
+    my $done_file   = qq[$input_file.unzipped];
+
+    my $cmd = get_command_path('unzip');
+
+    return {
+        cmd => "mkdir -p $output_path && $cmd $input_file -d $output_path && touch $done_file",
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            [$output_path, '1'],
+            $done_file
+        ],
+        description => "Unzipping " . basename($input_file)
+    };
+}
+
+sub gunzip {
+    my $self = shift;
+    my $input_file = shift; # .gz compressed file
+
+    my $output_file = $input_file;
+    $output_file =~ s/\.gz$//;
+
+    my $cmd = get_command_path('GUNZIP');
+
+    return {
+        cmd => qq[$cmd -c $input_file > $output_file && touch $output_file.decompressed],
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            qq[$output_file.decompressed]
+        ],
+        description => "Decompressing " . basename($input_file)
+    };
+}
+
+sub bunzip2 {
+    my $self = shift;
+    my $input_file = shift; # .bz2 compressed file
+
+    my $output_file = $input_file;
+    $output_file =~ s/\.bz2$//;
+
+    my $cmd = get_command_path('BUNZIP2');
+
+    return {
+        cmd => qq[$cmd -c $input_file > $output_file && touch $output_file.decompressed],
+        args => [],
+        inputs => [
+            $input_file
+        ],
+        outputs => [
+            $output_file,
+            qq[$output_file.decompressed]
+        ],
+        description => "Decompressing " . basename($input_file)
     };
 }
 

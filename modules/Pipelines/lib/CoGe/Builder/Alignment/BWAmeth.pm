@@ -89,8 +89,8 @@ sub bwameth_alignment {
         args        => [
             ['--reference', catfile($index_path, 'genome.faa.reheader.faa'), 0],
             ['', join(' ', @$fastq), 0],
-            ['-t', 8, 0],
-            ['-p', 'alignment', 0]
+            ['-t', $self->NUM_CPUS,  0],
+            ['-p', 'alignment',      0]
         ],
         inputs      => [
             @$fastq,

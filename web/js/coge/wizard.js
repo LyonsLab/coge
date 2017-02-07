@@ -43,6 +43,7 @@ $.extend(Wizard.prototype, {
             .show()
             .delay(10*1000)
             .fadeOut(1500);
+        window.scrollTo(0, 0); // scroll to top where error message is displayed
     },
 
     at_first: function() {
@@ -228,7 +229,7 @@ $.extend(DataView.prototype, {
     
     // Returns the file extension detected or undefined
     autodetect_file_type: function(file) {
-        var stripped_file = file.replace(/.gz$/, '');
+        var stripped_file = file.replace(/.gz|.bz2$/, '');
         if (this.FILE_TYPE_PATTERNS.test(stripped_file))
             return stripped_file.match(this.FILE_TYPE_PATTERNS)[0];
     },
@@ -244,6 +245,7 @@ $.extend(DataView.prototype, {
 
     is_valid: function() {
         var items = coge.fileSelect.get_selected_files();
+        console.log(items);
         if (!items || items.length === 0) {
             if (this.onError)
             	this.onError('Please select a valid data file of type: ' + this.supportedFileTypes.join(', ') + '.  Allow uploaded files to finish transferring.');
@@ -272,7 +274,15 @@ $.extend(DataView.prototype, {
 		}
 
 		// Prevent too many SRA items
-		var totalItems = items.reduce(function(a, b) { return a+b.size; }, 0);
+		var totalItems = items.reduce(
+		    function(a, b) {
+		        if (b.name && b.name.startsWith('SRR'))
+		            return a+1;
+		        return a+b.size;
+            },
+            0
+        );
+
 		if (isSRA && !this.disableMaxItemsCheck && totalItems > this.maxSraItems) {
             this.onError('Too many SRA items specified (' + totalItems + '), the limit is ' + this.maxSraItems + '.  If you need to load more than that, please contact the CoGe Team at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a>.');
 			return false;

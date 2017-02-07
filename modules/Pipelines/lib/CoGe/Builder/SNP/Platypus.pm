@@ -1,7 +1,7 @@
 package CoGe::Builder::SNP::Platypus;
 
 use Moose;
-extends 'CoGe::Builder::SNP::SNPFinder';
+extends 'CoGe::Builder::SNP::Analyzer';
 
 use Data::Dumper;
 use File::Spec::Functions qw(catdir catfile);
@@ -15,8 +15,13 @@ use CoGe::Exception::Generic;
 sub build {
     my $self = shift;
     my %opts = @_;
+    my $fasta_file = $opts{fasta_file};
     my ($bam_file) = @{$opts{data_files}};
     my $isSorted = $opts{is_sorted}; # input bam file is already sorted (for passing sorted bam file from Experiment.pm)
+
+    unless ($fasta_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing fasta');
+    }
     unless ($bam_file) {
         CoGe::Exception::Generic->throw(message => 'Missing bam');
     }
@@ -30,15 +35,6 @@ sub build {
     #
     # Build workflow
     #
-
-    $self->add(
-        $self->reheader_fasta($gid)
-    );
-    my $reheader_fasta = $self->previous_output;
-
-    $self->add(
-        $self->index_fasta($reheader_fasta)
-    );
 
     my $sorted_bam_file;
     if ($isSorted) {
@@ -58,7 +54,7 @@ sub build {
     $self->add(
         $self->platypus(
             bam   => $sorted_bam_file,
-            fasta => $reheader_fasta
+            fasta => $fasta_file
         )
     );
 
@@ -80,7 +76,7 @@ sub platypus {
     my $bam = $opts{bam};
     my $nCPU = 8; # number of processors to use
 
-    my $output_file = 'snps.vcf';
+    my $output_file = to_filename_base($bam) . '.vcf';
     my $PLATYPUS = $self->conf->{PLATYPUS} || "Platypus.py";
 
     return {

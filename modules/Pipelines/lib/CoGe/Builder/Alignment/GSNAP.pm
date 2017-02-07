@@ -112,7 +112,7 @@ sub gsnap_alignment {
     my $args = [
         ["-D", ".", 0],
         ["-d", $index_name, 0],
-        ["--nthreads=32", '', 0],
+        ["--nthreads=" . $self->NUM_CPUS, '', 0],
         ["-n", $n, 0],
         ["-N", $N, 0],
         ["--format=sam", '', 0],

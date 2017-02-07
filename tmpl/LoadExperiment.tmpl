@@ -291,16 +291,13 @@
 	
 	    <div class="form-field">
 	        <label class="col-md-2">Trimmer:</label>
-	        <div id="trimming">
-		        <input name="trimmer" type="radio" value="none">
-				<label for="none">None</label>
-	            <input name="trimmer" type="radio" value="cutadapt" checked>
-	            <label for="cutadapt">CutAdapt</label>
-	            <input name="trimmer" type="radio" value="trimgalore">
-	            <label for="trimgalore">Trim Galore</label>
-				<input name="trimmer" type="radio" value="trimmomatic">
-	            <label for="trimmomatic">Trimmomatic</label>
-	        </div>
+	        <select id="trimming">
+				<option value="none">None</option>
+				<option value="cutadapt" selected>CutAdapt</option>
+				<option value="trimgalore">Trim Galore</option>
+				<option value="trimmomatic">Trimmomatic</option>
+				<option value="bbduk">BBDuk</option>
+	        </select>
 	    </div>
 	
 	    <div id="trim-container" class="hidden"></div>
@@ -393,6 +390,15 @@ the specified length after this step has been performed.">
 	</div>
 </script>
 
+<script id="bbduk-template" type="text/template">
+	<div class="form-field">
+		<label class="col-md-2">BBDuk: (<a href="http://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/" target="_blank" class="small link">docs</a>)</label>
+		<div class="form-group italic">
+			No options
+		</div>
+	</div>
+</script>
+
 <script id="none-template" type="text/template">
 	<div class="form-field">
 	</div>
@@ -418,6 +424,11 @@ the specified length after this step has been performed.">
 	    </div>
 	
 	    <div id="align-container" class="hidden"></div>
+
+		<div class="form-field" title="Load resulting BAM output as separate experiment.">
+			<label class="col-md-2">Load alignment:</label>
+			<input id="load_bam" type="checkbox"/>
+		</div>
 	</div>
 </script>
 

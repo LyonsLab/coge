@@ -200,7 +200,7 @@ var coge = window.coge = (function(ns) {
         alert: function(msg, title) {
             var div = $('<div></div>').appendTo(document.body);
             if (title)
-                div.prop('title') = title;
+                div.prop('title', title);
             $('<p>' + msg + '</p>').appendTo(div);
             div.dialog({
                 modal: true,
@@ -213,12 +213,26 @@ var coge = window.coge = (function(ns) {
         confirm: function(msg, title, on_ok) {
             var div = $('<div></div>').appendTo(document.body);
             if (title)
-                div.prop('title') = title;
+                div.prop('title', title);
             $('<p>' + msg + '</p>').appendTo(div);
             div.dialog({
                 modal: true,
                 buttons: {
                     Ok: function() { div.remove(); on_ok(); },
+                    Cancel: function() { div.remove(); }
+                }
+            });
+        },
+
+        prompt: function(msg, title, value, on_ok) {
+            var div = $('<div></div>').appendTo(document.body);
+            if (title)
+                div.prop('title', title);
+            $('<p>' + msg + ' <input value=' + JSON.stringify(value) + ' /></p>').appendTo(div);
+            div.dialog({
+                modal: true,
+                buttons: {
+                    Ok: function() { var val=div.find('input').val(); div.remove(); on_ok(val); },
                     Cancel: function() { div.remove(); }
                 }
             });

@@ -320,32 +320,6 @@ sub wait {
     };
 }
 
-# Generate gunzip task
-sub gunzip {
-    my $self = shift;
-    my $input_file = shift;
-
-    my $output_file = $input_file;
-    $output_file =~ s/\.gz$//;
-
-    my $cmd = get_command_path('GUNZIP');
-
-    return {
-        cmd => "$cmd -c $input_file > $output_file && touch $output_file.decompressed",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_file,
-            #$input_file . '.done' # ensure file is done transferring
-        ],
-        outputs => [
-            $output_file,
-            "$output_file.decompressed"
-        ],
-        description => "Decompressing " . basename($input_file)
-    };
-}
-
 # Generate GFF file of genome annotations
 sub create_gff {
     my $self = shift;
@@ -438,31 +412,6 @@ sub irods_imeta {
         args => [],
         inputs => [],
         outputs => [ $done_file ]
-    };
-}
-
-sub untar {
-    my ($self, %params) = @_;
-    
-    my $input_file = $params{input_file};
-    my $output_path = $params{output_path};
-    my $done_file = "$input_file.untarred";
-
-    my $cmd = get_command_path('TAR');
-
-    return {
-        cmd => "mkdir -p $output_path && $cmd -xf $input_file --directory $output_path && touch $done_file",
-        script => undef,
-        args => [],
-        inputs => [
-            $input_file,
-#            $input_file . '.done' # ensure file is done transferring
-        ],
-        outputs => [
-            [$output_path, '1'],
-            $done_file
-        ],
-        description => "Unarchiving " . basename($input_file)
     };
 }
 
@@ -621,50 +570,6 @@ sub index_bam {
             $bamfile . '.bai'
         ],
         description => "Indexing BAM file",
-    };
-}
-
-sub bgzip {
-    my $self = shift;
-    my $input_file = shift;
-    my $output_file = $input_file . '.bgz';
-
-    my $cmd = get_command_path('BGZIP');
-
-    return {
-        cmd => "$cmd -c $input_file > $output_file && touch $output_file.done",
-        args => [],
-        inputs => [
-            $input_file
-        ],
-        outputs => [
-            $output_file,
-            "$output_file.done"
-        ],
-        description => "Compressing " . basename($input_file) . " with bgzip"
-    };
-}
-
-sub tabix_index {
-    my $self = shift;
-    my $input_file = shift;
-    my $index_type = shift;
-    my $output_file = $input_file . '.tbi';
-
-    my $cmd = $self->conf->{TABIX} || 'tabix';
-
-    return {
-        cmd => "$cmd -p $index_type $input_file && touch $output_file.done",
-        args => [],
-        inputs => [
-            $input_file,
-            $input_file . '.done'
-        ],
-        outputs => [
-            $output_file,
-            "$output_file.done"
-        ],
-        description => "Indexing " . basename($input_file)
     };
 }
 

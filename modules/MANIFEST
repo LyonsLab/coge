@@ -170,7 +170,7 @@ Pipelines/lib/CoGe/Builder/Load/BatchExperiment.pm
 Pipelines/lib/CoGe/Builder/Load/Experiment.pm
 Pipelines/lib/CoGe/Builder/Load/Genome.pm
 Pipelines/lib/CoGe/Builder/Load/SRA.pm
-Pipelines/lib/CoGe/Builder/SNP/IdentifySNPs.pm
+Pipelines/lib/CoGe/Builder/SNP/Analyzer.pm
 Pipelines/lib/CoGe/Builder/SNP/CoGeSNPs.pm
 Pipelines/lib/CoGe/Builder/SNP/GATK.pm
 Pipelines/lib/CoGe/Builder/SNP/Platypus.pm
@@ -186,6 +186,8 @@ Pipelines/lib/CoGe/Builder/Tools/SynMap3D.pm
 Pipelines/lib/CoGe/Builder/Trimming/Trimmer.pm
 Pipelines/lib/CoGe/Builder/Trimming/Cutadapt.pm
 Pipelines/lib/CoGe/Builder/Trimming/TrimGalore.pm
+Pipelines/lib/CoGe/Builder/Trimming/Trimmomatic.pm
+Pipelines/lib/CoGe/Builder/Trimming/BBDuk.pm
 Pipelines/lib/CoGe/Request/Request.pm
 Pipelines/lib/CoGe/Request/CoGeBlast.pm
 Pipelines/lib/CoGe/Request/Empty.pm

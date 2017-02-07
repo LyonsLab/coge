@@ -103,10 +103,10 @@ sub hisat2_alignment {
     my $output_file = to_filename_without_extension($first_fastq) . '.sam';
 
 	my $args = [
-		['-p', '32', 0],
+		['-p', $self->NUM_CPUS, 0],
         ['--dta-cufflinks', '', 0], # mdb added 8/9/16 for Cufflinks error "BAM record error: found spliced alignment without XS attribute"
 		['-x', catfile(get_genome_cache_path($gid), 'hisat2_index', 'genome.reheader'), 0],
-		['-S', $output_file, 0]
+		['-S', $output_file,    0]
     ];
 
     if ($encoding eq '64') {

@@ -33,3 +33,6 @@ modules/perl
 /.includepath
 bin/get_chr_start/get_chr_start
 experiments
+.agignore
+.DS_Store
+._*

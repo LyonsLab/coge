@@ -114,7 +114,7 @@ sub bwa_alignment {
     push @args, ['-M', '', 0] if $M;
     push @args, ['-R', shell_quote($R), 0] if $R;
     push @args, (
-        ['-t', '32',                    0],
+        ['-t', $self->NUM_CPUS,         0],
         ['',   $index_path,             0],
         ['',   join(' ', sort @$fastq), 0],
         ['>',  $output_file,            1]

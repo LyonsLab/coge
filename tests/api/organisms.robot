@@ -6,14 +6,14 @@ Resource	resource.robot
 
 *** Test Cases ***
 Organism Search
-	Create Session	coge	${API_URL}	
+	Create Session	coge	${API_URL}  verify=true
 	${resp}=        Get Request	    coge	 ${ORGANISMS}/search/col-0
 	Should Be Equal As Strings	${resp.status_code}	200
 	Dictionary Should Contain Key	${resp.json()}		organisms
 
 Organism Fetch
-	Create Session  coge    ${API_URL}   
-	${resp}=	Get Request	coge	${ORGANISMS}/1  
+	Create Session  coge    ${API_URL}  verify=true
+	${resp}=	Get Request	coge	${ORGANISMS}/1
 	Should Be Equal As Strings	${resp.status_code}	200
 	Dictionary Should Contain Item	${resp.json()}	id	1
 	Dictionary Should Contain Item	${resp.json()}	name	Arabidopsis thaliana Col-0 (thale cress)	
@@ -21,7 +21,7 @@ Organism Fetch
 	Dictionary Should Contain Key	${resp.json()}	genomes
 
 #Organism Add
-#        Create Session  coge    ${API_URL}
+#        Create Session  coge    ${API_URL} verify=true
 #        ${content}=	Evaluate        json.load(open('organism_add.json', 'r'))       json
 #	${headers}=	Create Dictionary	Content-Type=application/json
 #	${resp}=	Put Request	coge	${ORGANISMS}	data=${content}	headers=${headers}

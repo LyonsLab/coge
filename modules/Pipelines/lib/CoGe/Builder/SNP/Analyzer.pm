@@ -1,4 +1,4 @@
-package CoGe::Builder::SNP::SNPFinder;
+package CoGe::Builder::SNP::Analyzer;
 
 use Moose;
 extends 'CoGe::Builder::Buildable';
@@ -28,13 +28,15 @@ sub build {
     my $self = shift;
     my %opts = @_;
 
-    my $bam_file;
+    my ($bam_file, $gid);
     if ($opts{data_files}) {
         ($bam_file) = @{$opts{data_files}};
+        $gid = $self->request->genome->id;
     }
     else {
         my $experiment = $self->request->experiment;
         $bam_file = get_experiment_files($experiment->id, $experiment->data_type)->[0];
+        $gid = $experiment->genome->id;
     }
 
     unless ($self->params->{metadata}) {
@@ -49,8 +51,15 @@ sub build {
 
     my $snp_params  = $self->params->{snp_params};
 
-    warn 'bam_file=', $bam_file;
+    # Reheader and index FASTA file
+    my ($reheader_fasta) = $self->add(
+        $self->reheader_fasta($gid)
+    );
+    $self->add(
+        $self->index_fasta($reheader_fasta)
+    );
 
+    # Add SNP analysis workflow
     my $snp;
     switch( lc($snp_params->{method}) ) {
         case 'coge'     { $snp = CoGe::Builder::SNP::CoGeSNPs->new($self) }
@@ -61,7 +70,7 @@ sub build {
             CoGe::Exception::Generic->throw(message => 'Invalid SNP method');
         }
     }
-    $snp->build(data_files => [$bam_file], is_sorted => $opts{is_sorted});
+    $snp->build(fasta_file => $reheader_fasta, data_files => [$bam_file], is_sorted => $opts{is_sorted});
     $self->add($snp);
     $self->vcf($snp->vcf);
 }

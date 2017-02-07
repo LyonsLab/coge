@@ -1,7 +1,7 @@
 package CoGe::Builder::SNP::CoGeSNPs;
 
 use Moose;
-extends 'CoGe::Builder::SNP::SNPFinder';
+extends 'CoGe::Builder::SNP::Analyzer';
 
 use Data::Dumper qw(Dumper);
 use File::Spec::Functions qw(catfile catdir);
@@ -15,7 +15,15 @@ use CoGe::Exception::Generic;
 sub build {
     my $self = shift;
     my %opts = @_;
+    my $fasta_file = $opts{fasta_file};
     my ($bam_file) = @{$opts{data_files}};
+
+    unless ($fasta_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing fasta');
+    }
+    unless ($bam_file) {
+        CoGe::Exception::Generic->throw(message => 'Missing bam');
+    }
 
     my $gid = $self->request->genome->id;
 
@@ -24,17 +32,8 @@ sub build {
     #
 
     $self->add(
-        $self->reheader_fasta($gid)
-    );
-    my $reheader_fasta = $self->previous_output;
-    
-    $self->add(
-        $self->index_fasta($reheader_fasta)
-    );
-    
-    $self->add(
         $self->samtools_mpileup(
-            reheader_fasta => $reheader_fasta,
+            fasta_file => $fasta_file,
             bam_file => $bam_file
         )
     );
@@ -57,8 +56,8 @@ sub build {
 sub samtools_mpileup {
     my $self = shift;
     my %opts = @_;
-    my $reheader_fasta = $opts{reheader_fasta};
-    my $bam_file       = $opts{bam_file};
+    my $fasta_file = $opts{fasta_file};
+    my $bam_file   = $opts{bam_file};
 
     my $params = $self->params->{snp_params};
     my $min_read_depth   = $params->{'min-read-depth'} || 10;
@@ -75,21 +74,21 @@ sub samtools_mpileup {
     $filter_script .= ' min_allele_count=' . $min_allele_count;
     $filter_script .= ' quality_scale=' . $scale;
     
-    my $output_file = 'snps.vcf';
+    my $output_file = to_filename_base($bam_file) . '.vcf';
 
     return {
         cmd => $samtools,
         args => [
             ['mpileup', '',              0],
             ['-f',      '',              0],
-            ['',        $reheader_fasta, 1],
+            ['',        $fasta_file,     1],
             ['',        $bam_file,       1],
             ['|',       $filter_script,  0],
-            ['>',       $output_file,    0]
+            ['>',       $output_file,    1]
         ],
         inputs => [
-            $reheader_fasta,
-            $reheader_fasta.'.fai',
+            $fasta_file,
+            $fasta_file.'.fai',
             $bam_file
         ],
         outputs => [

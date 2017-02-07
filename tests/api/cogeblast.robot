@@ -10,7 +10,7 @@ Resource	resource.robot
 *** Test Cases ***
 Submit BLAST Job
 	[Tags]  auth-required
-	Create Session  coge    ${API_URL}
+	Create Session  coge    ${API_URL}  verify=true
 	${document1}=	Catenate
 	...	{ 
 	...		"type": "blast", 

@@ -163,7 +163,7 @@ $.extend(ExperimentDescriptionView.prototype, {
                 description:  '<to be determined from SRA>',
                 version:      '<to be determined from SRA>',
                 link:         '<to be determined from SRA>',
-                restricted:   0,
+                //restricted:   false,
                 source_name: 'NCBI-SRA'
             };
         }
@@ -175,8 +175,8 @@ $.extend(ExperimentDescriptionView.prototype, {
             this.el.find('#edit_link').val(this.metadata.link);
             this.edit_source.val(this.metadata.source_name);
 
-            if (!this.metadata.restricted)
-                this.el.find('#restricted').removeAttr('checked');
+            /*if (!this.metadata.restricted)
+                this.el.find('#restricted').removeAttr('checked');*/
 
             /*this.el.find('#edit_genome').val(this.metadata.genome);*/
         }
@@ -216,9 +216,11 @@ $.extend(ExperimentDescriptionView.prototype, {
         var description = this.el.find('#edit_description').val();
         var version     = this.el.find('#edit_version').val();
         var link        = this.el.find('#edit_link').val();
-        var restricted  = this.el.find('#restricted').is(':checked');
+        var restricted  = false; //var restricted  = this.el.find('#restricted').is(':checked');
 
         if (!this.isSRA) { // metadata fields are set in Pipeline for SRA data
+            restricted = true; // force to be public since from public source
+
             if (!name) {
                 if (this.onError)
                     this.onError('Please specify an experiment name.');
@@ -467,7 +469,8 @@ $.extend(FindSNPView.prototype, {
                 this.data.snp_params = {
                     method: method,
                     '-stand_call_conf': this.el.find("[id='-stand_call_conf']").val(),
-                    '-stand_emit_conf': this.el.find("[id='-stand_emit_conf']").val()
+                    '-stand_emit_conf': this.el.find("[id='-stand_emit_conf']").val(),
+                    'realign':          this.el.find("#realign").is(":checked")
                 };
             }
         }
@@ -525,24 +528,25 @@ $.extend(TrimmingView.prototype, {
             cutadapt:    $($("#cutadapt-template").html()),
             trimgalore:  $($("#trimgalore-template").html()),
             trimmomatic: $($("#trimmomatic-template").html()),
+            bbduk:       $($("#bbduk-template").html()),
         };
     },
 
     render: function() {
         // jQuery events
-        this.el.find("[name=trimmer]").unbind().click(this.update.bind(this));
+        this.el.find("#trimming").unbind().change(this.update.bind(this));
         this.update();
     },
 
-    // Callback to display the selected aligner
+    // Callback to display the selected trimmer
     update: function() {
-        var selected = this.el.find("#trimming :checked").val();
+        var selected = this.el.find("#trimming").val();
         render_template(this.templates[selected], this.container);
+        this.container.show();
     },
 
     is_valid: function() {
         var trimmer = this.el.find("#trimming :checked").val();
-        // Pick the aligner and set the options
         if (trimmer === "cutadapt") {
             this.data = {
                 trimming_params: {
@@ -574,6 +578,11 @@ $.extend(TrimmingView.prototype, {
                 	'HEADCROP':      this.el.find("[id='HEADCROP']").val(),
                 	'MINLEN':        this.el.find("[id='MINLEN']").val(),
                 }
+            };
+        }
+        else if (trimmer === "bbduk") {
+            this.data = {
+                trimming_params: { 'trimmer': 'bbduk' }
             };
         }
         else {
@@ -637,7 +646,6 @@ $.extend(AlignmentView.prototype, {
 
     is_valid: function() {
         var aligner = this.el.find("#alignment :checked").val();
-        // Pick the aligner and set the options
         if (aligner === "gsnap") {
             this.data = {
                 alignment_params: { //TODO is there a way to automate this parameter passing?
@@ -668,7 +676,7 @@ $.extend(AlignmentView.prototype, {
         		alignment_params: {
         			tool: "bowtie2",
         			'presets': this.el.find("[id='presets']").val(),
-        			'--rg-id':    this.el.find("[id='--rg-id']").val(),
+        			'--rg-id': this.el.find("[id='--rg-id']").val(),
         		}
         	}
         }
@@ -706,6 +714,8 @@ $.extend(AlignmentView.prototype, {
         else { // should never happen
         	console.error('Invalid aligner');
         }
+
+        $.extend(this.data.alignment_params, { load_bam: this.el.find("#load_bam").is(":checked") });
 
         return true;
     },
@@ -929,30 +939,30 @@ $.extend(ChIPSeqView.prototype, {
 
 function FastqView(opts) {
 	this.experiment = opts.experiment
+	this.onError = opts.onError;
     this.initialize();
 }
 
 $.extend(FastqView.prototype, {
     initialize: function() {
-    	this.read_view = new ReadFormatView();
-    	this.trim_view = new TrimmingView();
-        this.expression_view = new ExpressionView();
-        this.snp_view = new FindSNPView();
+    	this.read_view        = new ReadFormatView();
+    	this.trim_view        = new TrimmingView();
+        this.expression_view  = new ExpressionView();
+        this.snp_view         = new FindSNPView();
         this.methylation_view = new MethylationView({ format: this.read_view });
-        this.chipseq_view = new ChIPSeqView({ experiment: this.experiment });
-        this.align_view = new AlignmentView({ onChange: this.methylation_view.update.bind(this.methylation_view) });
+        this.chipseq_view     = new ChIPSeqView({ experiment: this.experiment });
+        this.align_view       = new AlignmentView({ onChange: this.methylation_view.update.bind(this.methylation_view) });
 
         this.layout_view = new LayoutView({
             template: "#fastq-template",
-
             layout: {
-                '#read-view': this.read_view,
-                '#trim-view': this.trim_view,
-                "#align-view": this.align_view,
-                "#expression-view": this.expression_view,
-                "#snp-view": this.snp_view,
+                '#read-view':        this.read_view,
+                '#trim-view':        this.trim_view,
+                "#align-view":       this.align_view,
+                "#expression-view":  this.expression_view,
+                "#snp-view":         this.snp_view,
                 "#methylation-view": this.methylation_view,
-                "#chipseq-view": this.chipseq_view
+                "#chipseq-view":     this.chipseq_view
             }
         });
 
@@ -965,6 +975,18 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
+        var opts = this.get_options();
+
+        if (!opts.alignment_params.load_bam &&
+            !opts.expression_params &&
+            !opts.snp_params &&
+            !opts.methylation_params &&
+            !opts.chipseq_params)
+        {
+            this.onError('No outputs resulting from these settings.  Select the "Load alignment" option.');
+            return false;
+        }
+
     	return (   this.read_view.is_valid()
     			&& this.trim_view.is_valid()
     			&& this.align_view.is_valid()
@@ -1154,7 +1176,10 @@ $.extend(OptionsView.prototype, {
         if ($.inArray(file_type, POLY_FILES) > -1)
             this.analysis_view = new PolymorphismView();
         else if ($.inArray(file_type, SEQ_FILES) > -1)
-            this.analysis_view = new FastqView({experiment: this.experiment});
+            this.analysis_view = new FastqView({
+                experiment: this.experiment,
+                onError:    this.onError
+            });
         else if ($.inArray(file_type, QUANT_FILES) > -1)
             this.analysis_view = new QuantativeView();
         else if ($.inArray(file_type, ALIGN_FILES) > -1)
@@ -1258,7 +1283,7 @@ function initialize_wizard(opts) {
     wizard.addStep(new OptionsView({
         experiment: current_experiment,
         admin: opts.admin,
-        onError: wizard.error_help
+        onError: wizard.error_help.bind(wizard),
     }));
     wizard.addStep(new ExperimentDescriptionView({
         experiment: current_experiment,

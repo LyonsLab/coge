@@ -25,6 +25,9 @@ use CoGe::Builder::Alignment::BWAmeth;
 use CoGe::Exception::Generic;
 use CoGe::Exception::MissingField;
 
+# Settings
+has NUM_CPUS => (is => 'ro', isa => 'Int', default => 16); # number of CPUs to use for alignment tasks
+
 # Outputs
 has index   => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # index files
 has raw_bam => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # unprocessed bam files
@@ -87,14 +90,13 @@ sub build {
     }
 
     # Reheader the fasta file
-    $self->add(
+    my ($reheader_fasta) = $self->add(
         $self->reheader_fasta($gid)
     );
-    my $reheader_fasta = $self->previous_output;
 
     # Index the fasta file
     $self->add_to_previous(
-        $self->index_fasta($self->previous_output)
+        $self->index_fasta($reheader_fasta)
     );
 
     my $aligner;
@@ -114,6 +116,7 @@ sub build {
     $self->add_to_all($aligner);
     push @{$self->raw_bam}, @{$aligner->bam};
 
+    # Process and load each alignment output
     foreach my $bam_file (@{$self->raw_bam}) {
         # Sort and index the bam output file(s)
         my ($sorted_bam_file) = $self->add(
@@ -125,23 +128,26 @@ sub build {
             $self->index_bam($sorted_bam_file)
         );
 
-        # Get custom metadata to add to experiment #TODO migrate to metadata file
-        my $annotations = $self->generate_additional_metadata();
-
-        # Add bam filename to experiment name for ChIP-seq pipeline
-        my $md = clone($metadata);
-        if (@{$self->raw_bam} > 1) {
-            $md->{name} .= ' (' . to_filename_base($sorted_bam_file) . ')';
-        }
-
         # Load alignment
-        $self->add(
-            $self->load_bam(
-                metadata => $md,
-                annotations => $annotations,
-                bam_file => $sorted_bam_file
-            )
-        );
+        my $load_bam = $self->params->{alignment_params}->{load_bam};
+        if (!defined($load_bam) || $load_bam) {
+            # Get custom metadata to add to experiment #TODO migrate to metadata file
+            my $annotations = $self->generate_additional_metadata();
+
+            # Add bam filename to experiment name for ChIP-seq pipeline
+            my $md = clone($metadata);
+            if (@{$self->raw_bam} > 1) {
+                $md->{name} .= ' (' . to_filename_base($sorted_bam_file) . ')';
+            }
+
+            $self->add(
+                $self->load_bam(
+                    metadata    => $md,
+                    annotations => $annotations,
+                    bam_file    => $sorted_bam_file
+                )
+            );
+        }
     }
 }
 

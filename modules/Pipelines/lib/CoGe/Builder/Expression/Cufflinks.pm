@@ -36,11 +36,10 @@ sub build {
     #
 
     # Reheader the fasta file
-    $self->add(
+    my ($reheader_fasta) = $self->add(
         $self->reheader_fasta($genome->id)
     );
-    my $reheader_fasta = $self->previous_output;
-    
+
     # Generate cached gff if genome is annotated
     my $gff_file;
     if ( $isAnnotated ) {

@@ -47,11 +47,11 @@ sub build {
     # Build workflow
     #
 
-    my $wait_file;
+    #my $wait_file;
     foreach my $record (@$records) {
         # Extract metadata from SRA record
         my ($accns, $metadata, $additional_metadata, $read_type) = _extract_metadata($record);
-        print STDERR 'SRA: Building workflow for "', $metadata->{name}, '"\n';
+        print STDERR "SRA: Building workflow for '", $metadata->{name}, "'\n";
 
         # Limit the max number of SRA experiments a user can load at one time
         if (@$accns > MAX_SRA_EXPERIMENTS && !$self->user->is_poweruser) {
@@ -65,7 +65,7 @@ sub build {
         foreach (@$accns) {
             $self->add_to_previous(
                 $self->fastq_dump($_, $read_type),
-                $wait_file ? [ $wait_file ] : undef
+                #$wait_file ? [ $wait_file ] : undef
             );
             push @fastq, grep { $_ =~ /\.fastq$/ } @{$self->previous_outputs};
         }
@@ -74,12 +74,14 @@ sub build {
         $self->params->{metadata} = $metadata;
         $self->params->{additional_metadata} = $additional_metadata;
         $self->params->{read_params}{read_type} = $read_type;
-        CoGe::Builder::Load::Experiment->new($self)->build(data_files => \@fastq);
+        my $load = CoGe::Builder::Load::Experiment->new($self);
+        $load->build(data_files => \@fastq);
+        $self->add_to_all($load);
 
         # Add wait task to serialize experiment loads
-        ($wait_file) = $self->add_to_all(
-            $self->wait()
-        );
+#        ($wait_file) = $self->add_to_all(
+#            $self->wait()
+#        );
     }
 }
 

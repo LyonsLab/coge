@@ -9,11 +9,12 @@ use CGI;
 my $q = CGI->new;
 my $gid = $q->param('gid');
 my $chr = $q->param('chr');
+my $ws = $q->param('ws');
 
 # Connect to the database
 my $conf = CoGe::Accessory::Web->get_defaults();
 
-my $filename = $gid . "_" . $chr . "_out.txt";
+my $filename = $gid . "_" . $chr . "_" . $ws . "_out.txt";
 
 print "Content-Type: application/force-download\n";
 print "Content-disposition: attachement; filename=chromosome_";
