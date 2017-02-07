@@ -309,8 +309,7 @@ accn: foreach my $accn (@accns) {
                 #next;
             }
             my $feat_type =
-              $coge->resultset('FeatureType')
-              ->find_or_create( { name => $feature->type() } )
+              $coge->resultset('FeatureType')->find_or_create( { name => $feature->type() } )
               if $GO;
 
            # create a db_feature for to link this feature with the dataset table
@@ -324,8 +323,7 @@ accn: foreach my $accn (@accns) {
                     start           => $start,
                     stop            => $stop,
                 }
-              )
-              if $GO;
+              ) if $GO;
 
             # expect first feature to be the source feature!
             if ( $feature->type() =~ /chromosome/i ) {
@@ -333,12 +331,10 @@ accn: foreach my $accn (@accns) {
                 my $feat_name = $coge->resultset('FeatureName')->create(
                     {
                         name => $chromosome,
-
-                        #                                    description => "Chromosome " . $chromosome,
+                        #description => "Chromosome " . $chromosome,
                         feature_id => $db_feature->id
                     }
-                  )
-                  if $GO;
+                  ) if $GO;
 
                 # generate name for accession
                 $feat_name = $coge->resultset('FeatureName')->create(
@@ -346,8 +342,7 @@ accn: foreach my $accn (@accns) {
                         name       => $entry->accession,
                         feature_id => $db_feature->id()
                     }
-                  )
-                  if $GO;
+                  ) if $GO;
 
                 # generate name for version
                 $feat_name = $coge->resultset('FeatureName')->create(
@@ -355,18 +350,21 @@ accn: foreach my $accn (@accns) {
                         name       => $entry->accession . "." . $entry->version,
                         feature_id => $db_feature->id
                     }
-                  )
-                  if $GO;
+                  ) if $GO;
 
                 # generate name for GI
-                $feat_name = $coge->resultset('FeatureName')->create(
-                    {
-                        name        => $entry->gi,
-                        description => "GI number",
-                        feature_id  => $db_feature->id
-                    }
-                  )
-                  if $GO;
+                if ($entry->gi) { # mdb added if condition 2/7/17
+                    $feat_name = $coge->resultset('FeatureName')->create(
+                        {
+                            name        => $entry->gi,
+                            description => "GI number",
+                            feature_id  => $db_feature->id
+                        }
+                    ) if $GO;
+                }
+                else {
+                    print STDOUT "Missing gi for entry ", $entry->accession, "\n";
+                }
             }
 
             # add a location entry
@@ -393,8 +391,7 @@ accn: foreach my $accn (@accns) {
                         strand     => $feature->strand,
                         chromosome => $chromosome
                     }
-                  )
-                  if $GO;
+                  ) if $GO;
             }
 
             # now work through the qualifiers for this feature
@@ -409,8 +406,7 @@ accn: foreach my $accn (@accns) {
                 # deal with db_xref: (taxon:3702) (GeneID:821318) (GI:18379324)
                 if ( $anno =~ /xref/i ) {
                     my $anno_type_group =
-                      $coge->resultset('AnnotationTypeGroup')
-                      ->find_or_create( { name => $anno } )
+                      $coge->resultset('AnnotationTypeGroup')->find_or_create( { name => $anno } )
                       if $GO;
 
                     # go through each of the entries in the db_xref qualifier values and split on ':', then add entries individually
@@ -433,8 +429,7 @@ accn: foreach my $accn (@accns) {
                                 annotation_type_group_id =>
                                   $anno_type_group->id()
                             }
-                          )
-                          if $GO && !$anno_type;
+                          ) if $GO && !$anno_type;
 
                         # now create the row for the data value of the xref
                         my $sub_anno = $db_feature->add_to_feature_annotations(
@@ -442,8 +437,7 @@ accn: foreach my $accn (@accns) {
                                 annotation         => $inner[1],
                                 annotation_type_id => $anno_type->id()
                             }
-                          )
-                          if $GO;
+                          ) if $GO;
                     }
                 }
                 elsif (
