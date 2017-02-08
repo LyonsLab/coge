@@ -1,25 +1,30 @@
-package CoGe::Request::SynMap;
+package CoGe::Request::NGenomes;
 
 use Moose;
 extends 'CoGe::Request::Request';
 
+has genomes => (is => 'rw', isa => 'ArrayRef', default => sub{ [] });
+
 sub is_valid {
     my $self = shift;
-    my $id;
-    my $i;
-	for ($i=1; $id=$self->parameters->{'genome_id' . $i}; $i++) {
-		return 0 unless $self->db->resultset("Genome")->find($id);
+
+	for (my $i = 1; my $id = $self->parameters->{'genome_id' . $i}; $i++) {
+        my $genome = $self->db->resultset("Genome")->find($id);
+		return 0 unless $genome;
+
+        push @{$self->genomes}, $genome;
 	}
-    return $i > 2 ? 1 : 0;
+
+    return scalar(@{$self->genomes}) > 2 ? 1 : 0;
 }
 
 sub has_access {
     my $self = shift;
-    my $id;
-	for (my $i=1; $id=$self->parameters->{'genome_id' . $i}; $i++) {
-	    my $genome = $self->db->resultset("Genome")->find($id);
-	    return 0 if ($genome->restricted && (!$self->user || !$self->user->has_access_to_genome($genome)));
-	}
+
+    foreach (@{$self->genomes}) {
+        return 0 if ($_->restricted && (!$self->user || !$self->user->has_access_to_genome($_)));
+    }
+
     return 1;
 }
 
