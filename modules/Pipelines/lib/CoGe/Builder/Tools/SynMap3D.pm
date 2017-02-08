@@ -3,16 +3,9 @@ package CoGe::Builder::Tools::SynMap3D;
 use Moose;
 extends 'CoGe::Builder::Buildable';
 
-use CoGe::Accessory::Web qw( get_defaults );
-use CoGe::JEX::Workflow;
-use CoGe::Accessory::Utils qw(units);
-use CoGe::Builder::CommonTasks qw( create_gff_generation_job );
-use CoGe::Builder::Tools::SynMap qw( add_jobs defaults gen_org_name );
-use CoGe::Core::Storage qw( get_workflow_paths );
-use Data::Dumper;
+use CoGe::JEX::Jex;
+use CoGe::Builder::Tools::SynMap qw( defaults gen_org_name );
 use File::Spec::Functions;
-use JSON qw( encode_json );
-use POSIX;
 
 sub pre_build { # override superclass method
 	my $self = shift;
@@ -49,47 +42,22 @@ sub build {
 	my ($dir3, $dir4) = sort($xid, $zid);
 	my ($dir5, $dir6) = sort($yid, $zid);
 
-	my $SYN3DIR = $self->conf->{SYN3DIR};
+	my $SYN3DIR   = $self->conf->{SYN3DIR};
 	my $SCRIPTDIR = catdir( $self->conf->{SCRIPTDIR}, 'synmap' );
-	my $PYTHON = $self->conf->{PYTHON} // 'python';
-
-	my $MERGER = 'nice ' . $PYTHON . ' ' . catfile($SCRIPTDIR, 'synmerge_3.py');
-
-	#########################################################################
-	# Add SynMap jobs.
-	#########################################################################
-	my @genome_ids;
-	my $i = 1;
-	while (1) {
-		if ($self->params->{'genome_id' . $i}) {
-			push @genome_ids, $self->params->{'genome_id' . $i++};
-		}
-		else {
-			last;
-		}
-	}
-	for (my $j=1; $j<$i-1; $j++) {
-		for (my $k=$j+1; $k<$i; $k++) {
-			$self->params->{genome_id1} = $genome_ids[$j-1];
-			$self->params->{genome_id2} = $genome_ids[$k-1];
-			my %opts = ( %{ defaults() }, %{ $self->params } );
-			my $resp = add_jobs(
-				workflow => $self->workflow,
-				db       => $self->db,
-				config   => $self->conf,
-				user     => $self->user,
-				%opts
-			);
-			if ($resp) { # an error occurred
-			   return 0;
-			}
-		}
-	}
+	my $PYTHON    = $self->conf->{PYTHON} // 'python';
+	my $MERGER    = 'nice ' . $PYTHON . ' ' . catfile($SCRIPTDIR, 'synmerge_3.py');
 
 	#########################################################################
-	# Add merging job.
+	# Add tasks for all pairwise SynMap comparisons
 	#########################################################################
-	my $workflow = $self->workflow;
+
+    my $synmap = CoGe::Builder::Tools::SynMap->new($self);
+    $synmap->build();
+    $self->add_to_all($synmap);
+
+	#########################################################################
+	# Add task to merge results
+	#########################################################################
 
 	# Input datafiles. TODO: Make this path specification based on the '$final_dagchainer_file' from SynMap.pm
 	# AKB (2016-8-15) changed to reflect new naming conventions.
@@ -101,7 +69,6 @@ sub build {
 	my $dot_xy_path = catfile( $self->conf->{DIAGSDIR}, $dir1, $dir2, $dir1 . '_' . $dir2 . $opts_name );
 	my $dot_xz_path = catfile( $self->conf->{DIAGSDIR}, $dir3, $dir4, $dir3 . '_' . $dir4 . $opts_name );
 	my $dot_yz_path = catfile( $self->conf->{DIAGSDIR}, $dir5, $dir6, $dir5 . '_' . $dir6 . $opts_name );
-
 
 	# Options.
 	my $sort = $self->params->{sort};
@@ -139,9 +106,8 @@ sub build {
         $merge_opt .= ' -R ' . $ratio . ' -Rby ' . $r_by . ' -Rmin ' . $r_min . ' -Rmax ' . $r_max;
     }
 
-	# Add job to workflow.
-	$workflow->add_job({
-		description => "Identifying common points & building graph object...",
+	$self->add_to_all({
+		description => "Identifying common points & building graph object",
         cmd => $MERGER . $merge_ids . $merge_ins . $merge_opt . $merge_otp,
         inputs => [
 			$dot_xy_path,
@@ -154,8 +120,6 @@ sub build {
 			catfile($SYN3DIR, $data_out)
 		]
     });
-
-	return 1;
 }
 
 sub get_name {
