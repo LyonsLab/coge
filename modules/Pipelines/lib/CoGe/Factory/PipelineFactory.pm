@@ -3,7 +3,6 @@ package CoGe::Factory::PipelineFactory;
 use Moose;
 
 use File::Spec::Functions qw(catfile);
-use Data::Dumper;
 
 use CoGe::Builder::Export::Fasta;
 use CoGe::Builder::Export::Gff;
@@ -18,6 +17,7 @@ use CoGe::Builder::Tools::NucCounter;
 use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Tools::SynMap3D;
+use CoGe::Builder::Tools::Pseudoassembly;
 use CoGe::Builder::SNP::Analyzer;
 use CoGe::Builder::Expression::Analyzer;
 use CoGe::Builder::Methylation::Analyzer;
@@ -38,6 +38,7 @@ my %typeToClass = (
     'load_annotation'       => 'CoGe::Builder::Load::Annotation',
     'synmap'                => 'CoGe::Builder::Tools::SynMap',
     'synmap3d'              => 'CoGe::Builder::Tools::SynMap3D',
+    'pseudoassembly'        => 'CoGe::Builder::Tools::Pseudoassembly',
     'analyze_snps'          => 'CoGe::Builder::SNP::Analyzer',
     'analyze_expression'    => 'CoGe::Builder::Expression::Analyzer',
     'analyze_methylation'   => 'CoGe::Builder::Methylation::Analyzer',

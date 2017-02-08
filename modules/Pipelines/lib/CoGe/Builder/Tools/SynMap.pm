@@ -1350,18 +1350,19 @@ sub gen_org_name {
 	return ( $org_name, $title );
 }
 
-sub generate_pseudo_assembly {
-	my ( $config, $input, $output, $flip ) = @_;
-	$flip = 0 unless $flip;
-
-	my $cmd = "synmap/order_contigs_to_chromosome.pl";
-
-	my $JEX = CoGe::JEX::Jex->new(
-		host => $config->{JOBSERVER},
-		port => $config->{JOBPORT}
-	);
-	my $workflow = $JEX->create_workflow( name => "Generate Pseudo Assembly" );
-
+# mdb moved to CoGe::Pipelines::Tools::Pseudoassembly on 2/8/17
+#sub generate_pseudo_assembly {
+#	my ( $config, $input, $output, $flip ) = @_;
+#	$flip = 0 unless $flip;
+#
+#	my $cmd = "synmap/order_contigs_to_chromosome.pl";
+#
+#	my $JEX = CoGe::JEX::Jex->new(
+#		host => $config->{JOBSERVER},
+#		port => $config->{JOBPORT}
+#	);
+#	my $workflow = $JEX->create_workflow( name => "Generate Pseudo Assembly" );
+#
 #	$self->add({
 #		cmd  => catfile( $config->{SCRIPTDIR}, $cmd ),
 #		args => [
@@ -1374,15 +1375,15 @@ sub generate_pseudo_assembly {
 #		outputs => [$output],
 #		description => "Generating pseudo assembly"
 #	});
-
-	my $response = $JEX->submit_workflow($workflow);
-
-	return {
-		id      => $response->{id},
-		success => $JEX->is_successful($response),
-		output  => $output
-	};
-}
+#
+#	my $response = $JEX->submit_workflow($workflow);
+#
+#	return {
+#		id      => $response->{id},
+#		success => $JEX->is_successful($response),
+#		output  => $output
+#	};
+#}
 
 sub get_name {
 #	return 'SynMap';

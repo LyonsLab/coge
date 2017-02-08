@@ -14,7 +14,7 @@ use CoGe::Core::Favorites;
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
-use CGI::Ajax;
+#use CGI::Ajax;
 #use DBIxProfiler;
 use Data::Dumper;
 use Digest::MD5 qw(md5_hex);
@@ -117,32 +117,33 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 	get_dotplot            => \&get_dotplot,
 	gen_dsg_menu           => \&gen_dsg_menu,
 	get_dsg_gc             => \&get_dsg_gc,
-	#read_log               => \&CoGe::Accessory::Web::read_log,
-	get_results       => \&get_results,
-	generate_assembly => \&generate_assembly,
+#	read_log               => \&CoGe::Accessory::Web::read_log,
+	get_results            => \&get_results,
+#	generate_assembly      => \&generate_assembly,
 	%ajax,
 );
 
-my $pj = new CGI::Ajax(%FUNCTIONS);
-if ( $FORM->param('jquery_ajax') ) {
-	my %args  = $FORM->Vars;
-	my $fname = $args{fname};
-
-	if ( $fname and defined $FUNCTIONS{$fname} ) {
-	    my $header = $FORM->header;
-		if ( $args{args} ) {
-			my @args_list = split( /,/, $args{args} );
-			print $header, $FUNCTIONS{$fname}->(@args_list);
-		}
-		else {
-			print $header, $FUNCTIONS{$fname}->(%args);
-		}
-	}
-}
-else {
-	$pj->js_encode_function('escape');
-	print $pj->build_html( $FORM, \&gen_html );
-}
+#my $pj = new CGI::Ajax(%FUNCTIONS);
+#if ( $FORM->param('jquery_ajax') ) {
+#	my %args  = $FORM->Vars;
+#	my $fname = $args{fname};
+#
+#	if ( $fname and defined $FUNCTIONS{$fname} ) {
+#	    my $header = $FORM->header;
+#		if ( $args{args} ) {
+#			my @args_list = split( /,/, $args{args} );
+#			print $header, $FUNCTIONS{$fname}->(@args_list);
+#		}
+#		else {
+#			print $header, $FUNCTIONS{$fname}->(%args);
+#		}
+#	}
+#}
+#else {
+#	$pj->js_encode_function('escape');
+#	print $pj->build_html( $FORM, \&gen_html );
+#}
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTIONS, \&gen_html );
 
 ################################################################################
 # Web functions
@@ -206,7 +207,7 @@ sub gen_body {
 
 	#set search algorithm on web-page
 	my $b = $FORM->param('b') // 6;
-	$template->param( get_blast_config($b)->{opt} => "selected" );
+	$template->param( get_blast_config($config, $b)->{opt} => "selected" );
 	my $bo = $FORM->param('bo');
 	$template->param(BLAST_OPTION => $bo);
 	my ( $D, $A, $Dm, $gm, $dt, $vis, $dupdist, $cscore ); #AKB Added '$vis' 2016-10-18
@@ -963,7 +964,7 @@ sub get_results {
 	my $merge_algo = $opts{merge_algo};    #is there a merging function?
 	                                       #will non-syntenic dots be shown?
 	my $snsd      = $opts{show_non_syn_dots} =~ /true/i ? 1 : 0;
-	my $algo_name = get_blast_config($blast)->{displayname};
+	my $algo_name = get_blast_config($config, $blast)->{displayname};
 
 	#will the axis be flipped?
 	my $flip = $opts{flip} =~ /true/i ? 1 : 0;
@@ -1074,7 +1075,7 @@ sub get_results {
 	############################################################################
 	my ( $blastdb, @blastdb_files );
 
-	my $blast_config = get_blast_config($blast, $opts{blast_option});
+	my $blast_config = get_blast_config($config, $blast, $opts{blast_option});
 	if ( $blast_config->{formatdb} ) {
 		my $basename  = "$BLASTDBDIR/$dsgid2-$feat_type2";
 
@@ -2038,63 +2039,64 @@ sub get_dotplot {
 	return $html;
 }
 
-sub generate_assembly {
-	my %opts = @_;
-	my $gid1 = $opts{gid1};
-	my $gid2 = $opts{gid2};
-	my $flip = $opts{flip};    #reverse the order from default
-
-	unless ( $gid1 and $gid2 ) {
-		return encode_json(
-			{
-				success => JSON::false,
-				error   => "Wrong number of genomes specified"
-			}
-		);
-	}
-
-	# Swap order if gid2 < gid1
-	( $gid1, $gid2 ) = ( $gid2, $gid1 ) if $gid2 lt $gid1;
-
-	my $genome1 = $coge->resultset("Genome")->find($gid1);
-	my $genome2 = $coge->resultset("Genome")->find($gid2);
-
-	unless ($USER->has_access_to_genome($genome1)
-		and $USER->has_access_to_genome($genome2) )
-	{
-
-		return encode_json(
-			{
-				success => JSON::false,
-				error   => "User does not have access to this dataset"
-			}
-		);
-	}
-
-	unless ( $opts{input} and -r $opts{input} ) {
-		return encode_json(
-			{
-				success => JSON::false,
-				error   => "The syntenic path assembly could not be found"
-			}
-		);
-	}
-
-	my $filename =
-	  qq($gid1-$gid2-) . md5_hex( $opts{input} ) . "." . $flip . ".tar.gz";
-	my $output = catfile( $DIAGSDIR, $gid1, $gid2, "assembly", $filename );
-
-	# Submit workflow
-	my $submission =
-	  generate_pseudo_assembly( $config, $opts{input}, $output, $flip );
-	$output =~ s/$DIR/$URL/;
-
-	# Fixup success to return true or false
-	return encode_json(
-		{
-			id      => $submission->{id},
-			output  => $output,
-			success => $submission->{success} ? JSON::true : JSON::false,
-		}
-	);
-}
+# mdb moved to CoGe::Pipelines::Tools::Pseudoassembly on 2/8/17
+#sub generate_assembly {
+#	my %opts = @_;
+#	my $gid1 = $opts{gid1};
+#	my $gid2 = $opts{gid2};
+#	my $flip = $opts{flip};    #reverse the order from default
+#
+#	unless ( $gid1 and $gid2 ) {
+#		return encode_json(
+#			{
+#				success => JSON::false,
+#				error   => "Wrong number of genomes specified"
+#			}
+#		);
+#	}
+#
+#	# Swap order if gid2 < gid1
+#	( $gid1, $gid2 ) = ( $gid2, $gid1 ) if $gid2 lt $gid1;
+#
+#	my $genome1 = $coge->resultset("Genome")->find($gid1);
+#	my $genome2 = $coge->resultset("Genome")->find($gid2);
+#
+#	unless ($USER->has_access_to_genome($genome1)
+#		and $USER->has_access_to_genome($genome2) )
+#	{
+#
+#		return encode_json(
+#			{
+#				success => JSON::false,
+#				error   => "User does not have access to this dataset"
+#			}
+#		);
+#	}
+#
+#	unless ( $opts{input} and -r $opts{input} ) {
+#		return encode_json(
+#			{
+#				success => JSON::false,
+#				error   => "The syntenic path assembly could not be found"
+#			}
+#		);
+#	}
+#
+#	my $filename =
+#	  qq($gid1-$gid2-) . md5_hex( $opts{input} ) . "." . $flip . ".tar.gz";
+#	my $output = catfile( $DIAGSDIR, $gid1, $gid2, "assembly", $filename );
+#
+#	# Submit workflow
+#	my $submission =
+#	  generate_pseudo_assembly( $config, $opts{input}, $output, $flip );
+#	$output =~ s/$DIR/$URL/;
+#
+#	# Fixup success to return true or false
+#	return encode_json(
+#		{
+#			id      => $submission->{id},
+#			output  => $output,
+#			success => $submission->{success} ? JSON::true : JSON::false,
+#		}
+#	);
+#}

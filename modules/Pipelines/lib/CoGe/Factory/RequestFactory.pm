@@ -8,8 +8,8 @@ use CoGe::Request::Empty;
 use CoGe::Request::Experiment;
 use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
-use CoGe::Request::SynMap;
 use CoGe::Request::TwoGenomes;
+use CoGe::Request::NGenomes; # TODO: replace Genome and TwoGenomes with this
 use CoGe::Exception::Generic;
 
 has 'user'    => (
