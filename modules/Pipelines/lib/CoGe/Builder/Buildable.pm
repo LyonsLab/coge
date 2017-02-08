@@ -584,9 +584,9 @@ sub add_result {
     return {
         cmd  => catfile($self->conf->{SCRIPTDIR}, "add_workflow_result.pl"),
         args => [
-            ['-user_name', $username,       0],
-            ['-wid',       $wid,            0],
-            ['-result',    "'".$result."'", 0] #TODO pass via temp file instead
+            ['-user_name', $username,            0],
+            ['-wid',       $wid,                 0],
+            ['-result',    shell_quote($result), 0] #TODO pass via temp file instead
         ],
         inputs  => [],
         outputs => [
