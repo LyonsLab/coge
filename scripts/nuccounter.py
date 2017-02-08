@@ -10,9 +10,9 @@ from operator import itemgetter
 from itertools import islice
 from itertools import groupby
 
-window_size = 200
 fasta_line_source = fileinput.FileInput(sys.argv[1])
-file_name = (os.path.splitext(sys.argv[1])[0]) + '_out.txt'
+window_size = int(sys.argv[2]);
+file_name = (os.path.splitext(sys.argv[1])[0]) + '_' + sys.argv[1] + '_out.txt'
 
 ###Read each line on the input file and splits sequence headers and sequenced (es a string) into a dictionary
 def lines_to_contigs(lines):

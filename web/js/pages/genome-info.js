@@ -211,7 +211,7 @@ function download_chromosome_sequence(chr) { // FIXME use API genome/sequence (m
     });
 }
 
-function nuccounter(chr, irods) {
+function nuccounter(chr, ws, irods) {
     coge.progress.begin();
     var request = {
         type: 'analyze_nucleotides',
@@ -221,6 +221,7 @@ function nuccounter(chr, irods) {
         parameters: {
             gid: GENOME_ID,
             chr: chr,
+            ws: ws,
             irods: irods ? 1 : 0
         }
     };
@@ -253,15 +254,18 @@ function download_chr_file() {
 		download_chromosome_sequence(id.substring(1));
 	else if (type == 'g')
 		get_gff(id.substring(1));
-    else {
-        var chr = id.substring(1);
-        coge.progress.init({title: 'NucCounter',
-            onSuccess: function() {
-                document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr;
+    else 
+        coge.utils.prompt('Window Size:', 'NucCounter Sliding Window', 200, function(val) {
+            if (val != '') {
+                var chr = id.substring(1);
+                coge.progress.init({title: 'NucCounter',
+                    onSuccess: function() {
+                        document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr + '&ws=' + val;
+                    }
+                });
+                nuccounter(chr, val);
             }
         });
-        nuccounter(chr);
-    }
 }
 
 function export_chr_file() {
@@ -276,10 +280,13 @@ function export_chr_file() {
 		export_fasta_chr(id.substring(1));
 	else if (type == 'g')
 		export_gff(id.substring(1));
-    else {
-        coge.progress.init({title: 'NucCounter'});
-        nuccounter(id.substring(1), true);
-    }
+    else
+        coge.utils.prompt('Window Size:', 'NucCounter Sliding Window', 200, function(val) {
+            if (val != '') {
+                coge.progress.init({title: 'NucCounter'});
+                nuccounter(id.substring(1), val, true);
+            }
+        });
 }
 
 function toggle_load_log() {
