@@ -130,9 +130,9 @@ sub build1x1 {
 			($genome2->type->name =~ /unmasked/i) ))
 	{
 		my $log_msg = '!!!!!!!!!!! BLOCKING SYNMAP COMPARISON: ' .
-           $genome1->id, '(', $genome1->length, ',', $genome1->type->name, ')' .
-           ' vs. ', $genome2->id, '(', $genome2->length, ',', $genome2->type->name, ') ' .
-           'feat_type1=', $feat_type1, ' feat_type2=', $feat_type2, "\n";
+           $genome1->id . '(' . $genome1->length . ',' . $genome1->type->name . ')' .
+           ' vs. ' . $genome2->id . '(' . $genome2->length . ',' . $genome2->type->name . ') ' .
+           'feat_type1=' . $feat_type1 . ' feat_type2=' . $feat_type2 . "\n";
 	    print STDERR $log_msg;
 		$self->workflow->log("");
 		$self->workflow->log($log_msg);
