@@ -3,6 +3,10 @@ package CoGe::Request::NGenomes;
 use Moose;
 extends 'CoGe::Request::Request';
 
+use CoGe::Exception::Generic;
+use CoGe::Exception::AccessDenied;
+use CoGe::Exception::ItemNotFound;
+
 has genomes => (is => 'rw', isa => 'ArrayRef', default => sub{ [] });
 
 sub is_valid {
@@ -10,19 +14,27 @@ sub is_valid {
 
 	for (my $i = 1; my $id = $self->parameters->{'genome_id' . $i}; $i++) {
         my $genome = $self->db->resultset("Genome")->find($id);
-		return 0 unless $genome;
+        unless ($genome) {
+            CoGe::Exception::ItemNotFound->throw(type => 'genome', id => $id);
+        }
 
         push @{$self->genomes}, $genome;
 	}
 
-    return scalar(@{$self->genomes}) > 2 ? 1 : 0;
+    if (scalar(@{$self->genomes}) < 2) {
+        CoGe::Exception::Generic->throw(message => 'At least 2 genomes must be specified');
+    }
+
+    return 1;
 }
 
 sub has_access {
     my $self = shift;
 
-    foreach (@{$self->genomes}) {
-        return 0 if ($_->restricted && (!$self->user || !$self->user->has_access_to_genome($_)));
+    foreach my $genome (@{$self->genomes}) {
+        if ($genome->restricted && (!$self->user || !$self->user->has_access_to_genome($genome))) {
+            CoGe::Exception::AccessDenied->throw(type => 'genome', id => $genome->id);
+        }
     }
 
     return 1;
