@@ -132,7 +132,7 @@ $r->get("/features/:id" => [id => qr/\d+/])
     ->name("features-fetch")
     ->to("feature#fetch", id => undef);
     
-$r->get("/features/sequence/:id" => [id => qr/\d+/])
+$r->get("/features/:id/sequence/" => [id => qr/\d+/])
     ->name("features-sequence")
     ->to("feature#sequence", id => undef);
 
