@@ -429,7 +429,6 @@ sub join_files {
     
     return {
         cmd => $cmd,
-        script => undef,
         args => [],
         inputs => [
             @$input_files,
@@ -460,7 +459,6 @@ sub send_email {
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, "send_email.pl"),
-        script => undef,
         args => $args,
         inputs => [],
         outputs => [],
@@ -477,7 +475,6 @@ sub curl_get {
 
     return {
         cmd => "$cmd -s -o $output_file $url",
-        script => undef,
         args => [],
         inputs => [],
         outputs => [ $output_file ],
@@ -538,7 +535,6 @@ sub sam_to_bam {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ["view", '', 0],
             ["-bS", $samfile, 1],
@@ -606,7 +602,6 @@ sub add_items_to_notebook {
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, 'add_items_to_notebook.pl'),
-        script => undef,
         args => [
             ['-uid', $self->user->id, 0],
             ['-wid', $self->workflow->id, 0],
@@ -637,7 +632,6 @@ sub create_notebook {
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, 'create_notebook.pl'),
-        script => undef,
         args => [
             ['-uid', $self->user->id, 0],
             ['-wid', $self->workflow->id, 0],
@@ -694,7 +688,6 @@ sub sort_bam {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ["sort", '', 0],
             ["", $bam_file, 1],
