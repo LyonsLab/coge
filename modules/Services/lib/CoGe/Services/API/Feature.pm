@@ -70,7 +70,7 @@ sub sequence {
     }
 
     # Verify that user has access to a genome associated with this feature
-    unless (get_genome_for_feature(feature => $feature)) {
+    unless (get_genome_for_feature(feature => $feature, user => $user)) {
         $self->render(status => 401, json => {
             error => { Error => 'Access denied' }
         });
