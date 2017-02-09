@@ -352,9 +352,11 @@ sub build1x1 {
 		$blastdb = $basename;
 		$basename .= $feat_type2 eq "protein" ? ".p" : ".n";
 
-		push @blastdb_files, "$basename" . "sq";
-		push @blastdb_files, "$basename" . "in";
-		push @blastdb_files, "$basename" . "hr";
+		push @blastdb_files, (
+				$basename . "sq",
+				$basename . "in",
+				$basename . "hr"
+			);
 
 		$self->add({
 			cmd         => $FORMATDB,
@@ -369,20 +371,31 @@ sub build1x1 {
 		$self->workflow->log( $blastdb );
 	}
 	elsif ( $blast_config->{lastdb} ) { # mdb added 3/17/16 for upgrade to Last v731
-	    my $basedir = "$LASTDBDIR/$genome_id2";
-	    my $basename = "$LASTDBDIR/$genome_id2/$genome_id2-$feat_type2";
+	    my $basedir = catdir($LASTDBDIR, $genome_id2);
+	    my $basename = catdir($basedir, "$genome_id2-$feat_type2");
+
+		push @blastdb_files, (
+				qq[$basename.bck],
+				qq[$basename.des],
+				qq[$basename.prj],
+				qq[$basename.sds],
+				qq[$basename.ssp],
+				qq[$basename.suf],
+				qq[$basename.tis]
+			);
+
         $self->add({
-            cmd         => "mkdir -p $basedir ; $LASTDB $basename $fasta2",
-            args        => [],
-            inputs      => [$fasta2],
-            outputs     => [
-                $basename . '.prj'
-            ],
+            cmd         => "mkdir -p $basedir && $LASTDB ",#"mkdir -p $basedir && $LASTDB $basename $fasta2",
+            args        => [
+				['', $basename, 0],
+				['', $fasta2,   1]
+			],
+            inputs      => [ $fasta2 ],
+            outputs     => \@blastdb_files,
             description => "Generating LastDB",
         });
 
         $blastdb = $basename;
-        push @blastdb_files, $basename . '.prj';
 
         $self->workflow->log( "" );
         $self->workflow->log( "Added LastDB generation" );
