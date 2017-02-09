@@ -186,7 +186,7 @@ class Annotations {
 				groups.sort().forEach(function(group){
 					var prev_type;
 					Object.keys(json[group]).sort().forEach(function(type){
-						json[group][type].forEach(function(annotation){
+						json[group][type].sort(annotation_type_sort).forEach(function(annotation){
 							var tr = $('<tr class="' + (even ? 'even' : 'odd') + '" style="vertical-align:top;"></tr>').appendTo(tbody);
 							even ^= 1;
 							if (groups.length > 1)
@@ -205,7 +205,7 @@ class Annotations {
 								var image_link = 'image.pl?id=' + annotation.image_id;
 								$('<a href=' + image_link + ' target="_blank" title="click for full-size image"><img height="40" width="40" src="' + image_link + '" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray margin-right:5px;"></a>').appendTo(td);
 							} else if (annotation.bisque_id)
-								$('<a href="http://bisque.iplantc.org/client_service/view?resource=http://bisque.iplantc.org/data_service/' + annotation.bisque_id + '7" target="_blank" title="click to view in BisQue"><img src="http://bisque.iplantc.org/image_service/' + annotation.bisque_id + '7?thumbnail=200,200" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray;max-width:40px;margin-right:5px;"></a>').appendTo(td);
+								$('<a href="http://bisque.iplantcollaborative.org/client_service/view?resource=http://bisque.iplantcollaborative.org/data_service/' + annotation.bisque_id + '" target="_blank" title="click to view in BisQue"><img src="http://bisque.iplantcollaborative.org/image_service/' + annotation.bisque_id + '?thumbnail=200,200" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray;max-width:40px;margin-right:5px;"></a>').appendTo(td);
 							td.append(document.createTextNode(annotation.annotation));
 							td = $('<td style="padding-left:5px;"></td>').appendTo(tr);
 							if (annotation.link)
@@ -241,7 +241,15 @@ class Annotations {
 		this.time = setTimeout(this.search_types, 500);
 	}
 }
-
+var annotation_type_sort = function(a,b) {
+	var annotation_a = a.annotation.toLowerCase();
+	var annotation_b = b.annotation.toLowerCase();
+	if (annotation_a < annotation_b)
+		return -1;
+	if (annotation_a > annotation_b)
+		return 1;
+	return 0;
+}
 </script>
 
 <div id="annotation_dialog" class="dialog_box hidden">

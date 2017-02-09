@@ -274,7 +274,6 @@ sub _irods_get_env_file {
     $env_file //= $conf->{IRODSENV}; # 2: config file
     $env_file //= $ENV{IRODSENV};    # 3: environment variable
     $env_file //= catfile($conf->{_HOME_PATH}, 'irodsEnv'); # 4: default
-    #print STDERR "env_file=$env_file\n";
     
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "CoGe::Accessory::IRODS: fatal error: iRODS env file missing! env_file=", ($env_file ? $env_file : ''), "\n";

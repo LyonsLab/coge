@@ -12,6 +12,8 @@ use Text::Unidecode qw(unidecode);
 
 use CoGeX;
 use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_imkdir irods_iput irods_irm);
+use CoGe::Accessory::Utils qw(get_unique_id);
+use CoGe::Core::Storage qw(get_upload_path);
 
 BEGIN {
     our (@ISA, $VERSION, @EXPORT);
@@ -408,7 +410,17 @@ sub _create_bisque_image {
     my $dest = _get_bisque_dir($target_type, $target_id);
     irods_imkdir($dest);
     $dest = catfile($dest, basename($upload->filename));
-    irods_iput($upload->asset->path, $dest);
+    my $source;
+    if ($upload->asset->is_file) {
+         $source = $upload->asset->path;
+    }
+    else {
+        $source = get_upload_path('coge', get_unique_id());
+        system('mkdir', '-p', $source);
+        $source = catfile($source, $upload->filename);
+        $upload->asset->move_to($source);
+    }
+    irods_iput($source, $dest);
     for my $i (0..9) {
         sleep 5;
         my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
