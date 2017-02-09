@@ -157,6 +157,9 @@ sub upload_file {
         copy( $tmpfilename, $targetpath );
         touch($targetpath . '.done'); # for JEX
         $size = -s $fh;
+
+        # mdb added 2/9/17 -- delete temp file
+        unlink($tmpfilename) or warn "Couldn't delete file '$tmpfilename': $!";
     }
 
     return encode_json(
