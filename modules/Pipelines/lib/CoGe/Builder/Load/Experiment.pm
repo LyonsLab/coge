@@ -6,7 +6,7 @@ extends 'CoGe::Builder::Buildable';
 use Data::Dumper qw(Dumper);
 
 use CoGe::Accessory::Web qw(url_for);
-use CoGe::Core::Experiment qw(detect_data_type);
+use CoGe::Core::Experiment;
 use CoGe::Builder::Alignment::Aligner;
 use CoGe::Builder::Expression::Analyzer;
 use CoGe::Builder::SNP::Analyzer;
@@ -58,7 +58,7 @@ sub build {
     #
 
     # Add analytical tasks based on file type
-    if ( $file_type eq 'fastq' || $file_type eq 'bam' || $file_type eq 'sra' ) {
+    if ( grep { $_ eq $file_type } (@ALIGNMENT_TYPES, @SEQUENCE_TYPES, 'sra') ) { #FIXME this is a little kludgey
         my @bam_files;
         my @raw_bam_files; # mdb added 2/29/16 for Bismark, COGE-706
 
@@ -74,10 +74,16 @@ sub build {
                 CoGe::Exception::Generic->throw(message => 'Alignment returned no results');
             }
         }
-        elsif ( $file_type && $file_type eq 'bam' ) {
+        elsif ( $file_type && grep { $_ eq $file_type } @ALIGNMENT_TYPES ) {
+            my $bam_file = $input_files->[0];
+            if ( $file_type eq 'sam' ) {
+                ($bam_file) = $self->add(
+                    $self->sam_to_bam($bam_file)
+                );
+            }
             $self->add(
                 $self->load_bam(
-                    bam_file => $input_files->[0]
+                    bam_file => $bam_file
                 )
             );
             @bam_files = @raw_bam_files = @$input_files;
