@@ -194,7 +194,7 @@ Pipelines/lib/CoGe/Request/Empty.pm
 Pipelines/lib/CoGe/Request/Experiment.pm
 Pipelines/lib/CoGe/Request/ExperimentAnalysis.pm
 Pipelines/lib/CoGe/Request/Genome.pm
-Pipelines/lib/CoGe/Request/SynMap.pm
+Pipelines/lib/CoGe/Request/NGenomes.pm
 Pipelines/lib/CoGe/Request/TwoGenomes.pm
 Pipelines/lib/CoGe/Factory/RequestFactory.pm
 Pipelines/lib/CoGe/Factory/PipelineFactory.pm

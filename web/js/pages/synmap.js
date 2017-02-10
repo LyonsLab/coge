@@ -528,40 +528,43 @@ var coge = window.coge = (function(namespace) {
         	var self = this;
             e.preventDefault();
 
-            var promise = $.ajax({
-                dataType: "json",
-                data: {
-                    fname: "generate_assembly",
-                    jquery_ajax: 1,
-                    input: input,
-                    gid1: gid1,
-                    gid2: gid2,
-                    flip: flip
+            var request = {
+                type: 'pseudoassembly',
+                requester: {
+                    page: PAGE_NAME
+                },
+                parameters: {
+                    input:      input,
+                    genome_id1: gid1,
+                    genome_id2: gid2,
+                    flip:       flip
                 }
-            });
+            };
 
-            $("#dialog").dialog({
-                autoOpen: true,
-                position: {
-                    my: "top",
-                    at: "top+150",
-                }
-            });
+            coge.services.submit_job(request)
+                .then(function(response) {
+                    return self.wait_for_assembly.call(self, response);
+                })
+                .then(
+                    function(response) {
+                        // Extract pseudoassembly download path from workflow results
+                        response.results.forEach(function(result) {
+                            if (result.name === 'pseudoassembly')
+                                self.download_file.call(self, result.path);
+                        });
 
-            promise.then(function(response) { return self.wait_for_assembly.call(self, response); })
-                   .then(function(url) { self.download_file.call(self, url); }, self.report_error);
-        },
-
-        get_job_status: function(id) {
-            return $.getJSON("jex/status/" + id);
+                    },
+                    self.report_error
+                );
         },
 
         wait_for_assembly: function(response) {
             var deferred = $.Deferred();
 
             if (response && response.success) {
-                this.wait_for_job(response.id, deferred, response.output);
-            } else {
+                this.wait_for_job(response.id, deferred);
+            }
+            else {
             	console.warn('synmap:wait_for_assembly: error response');
                 deferred.reject(undefined);
             }
@@ -569,12 +572,12 @@ var coge = window.coge = (function(namespace) {
             return deferred;
         },
 
-        wait_for_job: function(id, promise, args) {
-            this.get_job_status(id).then(function(response) {
+        wait_for_job: function(id, promise) {
+            coge.services.fetch_job(id).then(function(response) {
                 switch(response.status) {
                     case "Completed":
-                    	console.log(args);
-                        promise.resolve(args);
+                    	//console.log(response);
+                        promise.resolve(response);
                         break;
                     case "Failed":
                     	console.warn(response);
@@ -582,7 +585,7 @@ var coge = window.coge = (function(namespace) {
                         break;
                     default:
                         setTimeout(function() {
-                            coge.synmap.wait_for_job(id, promise, args);
+                            coge.synmap.wait_for_job(id, promise);
                         }, 3000);
                         break;
                 }

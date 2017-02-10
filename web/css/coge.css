@@ -336,6 +336,7 @@ select {
   color: red;
 }
 
+/*
 .ital {
   font-style: italic;
 }
@@ -347,8 +348,9 @@ select {
 .oblique_bold {
   font-style: oblique;
   font-weight: bold;
-  font-size: 1.5em; /* 24/16 = 1.5 */
+  font-size: 1.5em;
 }
+*/
 
 .annotation {
   font-style: oblique;
@@ -704,6 +706,7 @@ tr.ltblue {
 	background-color: #CCFFFF;
 }
 
+/*
 .topItem
 {
   background: url(/CoGe/picts/menus/coge_gradient.png) repeat-x;
@@ -713,9 +716,8 @@ tr.ltblue {
   text-decoration: none;
   color: #009900;
   border: 1px solid #00FF36;
-    font-size: 0.875em; /* 14/16 = 0.875 */
+    font-size: 0.875em;
 }
-
 
 .topItemSelected
 {
@@ -726,7 +728,7 @@ tr.ltblue {
   text-decoration: none;
   color: #000099;
   border: 1px solid #00FF36;
-    font-size: 0.875em; /* 14/16 = 0.875 */
+    font-size: 0.875em;
 }
 
 .boxarttop
@@ -755,9 +757,10 @@ tr.ltblue {
   cursor:pointer;
   text-decoration: none;
   color: #009900;
-    font-size: 0.875em; /* 14/16 = 0.875 */
+  font-size: 0.875em;
   border-bottom: 1px solid #00FF35;
 }
+*/
 
 .dropMenu
 {
@@ -897,6 +900,7 @@ th.headerSortDown {
  border-bottom: 2px solid #c3c2b1;
 }
 
+/*
 .image_window {
 	background-color: #FFF;
 	position: absolute;
@@ -918,6 +922,7 @@ th.headerSortDown {
 .imagemaplink {
  cursor: pointer;
 }
+*/
 
 tr.highlight {
  background-color: #90EE90;

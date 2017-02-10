@@ -43,7 +43,7 @@ lib/CoGe/Request/Empty.pm
 lib/CoGe/Request/Experiment.pm
 lib/CoGe/Request/ExperimentAnalysis.pm
 lib/CoGe/Request/Genome.pm
-lib/CoGe/Request/SynMap.pm
+lib/CoGe/Request/NGenomes.pm
 lib/CoGe/Request/TwoGenomes.pm
 lib/CoGe/Factory/RequestFactory.pm
 lib/CoGe/Factory/PipelineFactory.pm

@@ -23,9 +23,9 @@ BEGIN {
     # Setup supported experiment file types
     @QUANT_TYPES        = qw(csv tsv bed wig bw seg);
     @MARKER_TYPES       = qw(gff gtf gff3);
-    @POLYMORPHISM_TYPES = qw(vcf gvcf); # mdb added 11/22/16
-    @ALIGNMENT_TYPES    = qw(bam);      # mdb added 11/22/16
-    @SEQUENCE_TYPES     = qw(fastq fq); # mdb added 11/22/16
+    @POLYMORPHISM_TYPES = qw(vcf gvcf);
+    @ALIGNMENT_TYPES    = qw(sam bam);
+    @SEQUENCE_TYPES     = qw(fastq fq);
     @SUPPORTED_TYPES = (@QUANT_TYPES, @MARKER_TYPES, @POLYMORPHISM_TYPES, @ALIGNMENT_TYPES, @SEQUENCE_TYPES);
 }
 

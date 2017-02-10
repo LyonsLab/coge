@@ -5,7 +5,7 @@ var current_experiment = {};
 
 // Supported input file types
 var POLY_FILES  = [ "vcf", "gcvf" ];
-var ALIGN_FILES = [ "bam" ];
+var ALIGN_FILES = [ "sam", "bam" ];
 var SEQ_FILES   = [ "fastq", "fq", "sra" ];
 var QUANT_FILES = [ "csv", "tsv", "bed", "wig", "bw", "gff", "gtf", "seg" ];
 var SUPPORTED_FILE_TYPES = Array.prototype.concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
@@ -183,10 +183,10 @@ $.extend(ExperimentDescriptionView.prototype, {
 
         var edit_genome = this.edit_genome;
 
-        edit_genome.unbind().change(function() {
-            // Reset gid when item has changed
-            self.gid = undefined;
-        });
+//        edit_genome.unbind().change(function() {
+//            // Reset gid when item has changed
+//            self.gid = undefined;
+//        });
 
         edit_genome.autocomplete({
             source:[],

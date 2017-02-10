@@ -8,8 +8,8 @@ use CoGe::Request::Empty;
 use CoGe::Request::Experiment;
 use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
-use CoGe::Request::SynMap;
 use CoGe::Request::TwoGenomes;
+use CoGe::Request::NGenomes; # TODO: replace Genome and TwoGenomes with this
 use CoGe::Exception::Generic;
 
 has 'user'    => (
@@ -38,8 +38,9 @@ my %typeToClass = (
     'load_batch'            => 'CoGe::Request::Genome',
     'load_genome'           => 'CoGe::Request::Empty',
     'load_annotation'       => 'CoGe::Request::Genome',
-    'synmap'                => 'CoGe::Request::SynMap',
-    'synmap3d'              => 'CoGe::Request::SynMap',
+    'synmap'                => 'CoGe::Request::NGenomes',
+    'synmap3d'              => 'CoGe::Request::NGenomes',
+    'pseudoassembly'        => 'CoGe::Request::TwoGenomes',
     'dotplot_dots'          => 'CoGe::Request::TwoGenomes',
     'analyze_snps'          => 'CoGe::Request::ExperimentAnalysis',
     'analyze_expression'    => 'CoGe::Request::ExperimentAnalysis',
