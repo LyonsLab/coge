@@ -582,7 +582,18 @@ $.extend(TrimmingView.prototype, {
         }
         else if (trimmer === "bbduk") {
             this.data = {
-                trimming_params: { 'trimmer': 'bbduk' }
+                trimming_params: {
+                    'trimmer':   'bbduk',
+                    'k':         this.el.find("[id='k']").val(),
+                    'mink':      this.el.find("[id='mink']").val(),
+                    'hdist':     this.el.find("[id='hdist']").val(),
+                    'tpe':       this.el.find("[id='tpe']").is(":checked") ? 't' : 'f',
+                    'tbo':       this.el.find("[id='tbo']").is(":checked") ? 't' : 'f',
+                    'qtrim':     this.el.find("[id='qtrim']").val(),
+                    'trimq':     this.el.find("[id='trimq']").val(),
+                    'minlength': this.el.find("[id='minlength']").val(),
+                    'adapters':  this.el.find("[id='adapters']").val(),
+                }
             };
         }
         else {

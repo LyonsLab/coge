@@ -13,6 +13,9 @@ use CoGe::Builder::Trimming::Trimmomatic;
 use CoGe::Builder::Trimming::BBDuk;
 use CoGe::Exception::Generic;
 
+# Settings
+has NUM_CPUS => (is => 'ro', isa => 'Int', default => 8); # number of CPUs to use for trimming tasks (when applicable)
+
 # Outputs
 has fastq => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # trimmed fastq files
 

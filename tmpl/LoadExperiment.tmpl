@@ -393,8 +393,54 @@ the specified length after this step has been performed.">
 <script id="bbduk-template" type="text/template">
 	<div class="form-field">
 		<label class="col-md-2">BBDuk: (<a href="http://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbduk-guide/" target="_blank" class="small link">docs</a>)</label>
-		<div class="form-group italic">
-			No options
+		<div class="form-group">
+            <div class="form-entry" title="Kmer length used for finding contaminants. Contaminants shorter than k will not be found. k must be at least 1.">
+		        <label>k</label>
+		        <input id="k" type="number" value="27"/>
+		    </div>
+			<div class="form-entry" title="Look for shorter kmers at read tips down to this length, when k-trimming or masking. -1 means disabled.">
+		        <label>mink</label>
+		        <input id="mink" type="number" value="-1"/>
+		    </div>
+			<div class="form-entry" title="Maximum Hamming distance for ref kmers (subs only).">
+		        <label>hdist</label>
+		        <input id="hdist" type="number" value="0"/>
+		    </div>
+            <div class="form-entry" title="When kmer right-trimming, trim both reads to the minimum length of either.">
+		        <label>tpe</label>
+		        <input id="tpe" type="checkbox"/>
+		    </div>
+            <div class="form-entry" title="Trim adapters based on where paired reads overlap.">
+		        <label>tbo</label>
+		        <input id="tbo" type="checkbox"/>
+		    </div>
+            <div class="form-entry" style="padding-right:3em;" title="Trim read ends to remove bases with quality below trimq. Performed AFTER looking for kmers.">
+		        <label>qtrim</label>
+                <select id="qtrim">
+                    <option value="f" selected>f (neither end)</option>
+                    <option value="rl">rl (both ends)</option>
+                    <option value="r">r (right end only)</option>
+                    <option value="l">l (left end only)</option>
+                    <option value="w">w (sliding window)</option>
+                </select>
+		    </div>
+			<div class="form-entry" title="Regions with average quality below this will be trimmed.">
+		        <label>trimq</label>
+		        <input id="trimq" type="number" value="6"/>
+		    </div>
+			<div class="form-entry" title="Reads shorter than this after trimming will be discarded.  Pairs will be discarded if both are shorter.">
+		        <label>minlength</label>
+		        <input id="minlength" type="number" value="10"/>
+		    </div>
+            <div class="form-entry" title="Trim Illumina adapters (source: TERRA project).">
+		        <label>trim adapters</label>
+                <select id="adapters">
+                    <option value="none" selected>none</option>
+                    <option value="both">both ends</option>
+                    <option value="r">right end</option>
+                    <option value="l">left end</option>
+                </select>
+		    </div>
 		</div>
 	</div>
 </script>
