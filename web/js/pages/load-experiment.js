@@ -598,9 +598,8 @@ $.extend(TrimmingView.prototype, {
 });
 
 function AlignmentView(opts) {
-	if (opts) {
+	if (opts)
 		this.onChange = opts.onChange;
-	}
     this.data = {};
     this.initialize();
 }
@@ -648,7 +647,7 @@ $.extend(AlignmentView.prototype, {
         var aligner = this.el.find("#alignment :checked").val();
         if (aligner === "gsnap") {
             this.data = {
-                alignment_params: { //TODO is there a way to automate this parameter passing?
+                alignment_params: { //TODO automate this parameter passing?
                     tool: "gsnap",
                     '-N': this.el.find("[id='-N']").val(),
                     '-n': this.el.find("[id='-n']").val(),
@@ -975,25 +974,28 @@ $.extend(FastqView.prototype, {
     },
 
     is_valid: function() {
-        var opts = this.get_options();
-
-        if (!opts.alignment_params.load_bam &&
-            !opts.expression_params &&
-            !opts.snp_params &&
-            !opts.methylation_params &&
-            !opts.chipseq_params)
-        {
-            this.onError('No outputs resulting from these settings.  Select the "Load alignment" option.');
-            return false;
-        }
-
-    	return (   this.read_view.is_valid()
+        // Note: this comes first because is_valid() call populates alignment_params.  Not sure why get_options()
+        // doesn't do that instead.
+        var isValid = this.read_view.is_valid()
     			&& this.trim_view.is_valid()
     			&& this.align_view.is_valid()
     			&& this.snp_view.is_valid()
     			&& this.expression_view.is_valid()
     			&& this.methylation_view.is_valid()
-    			&& this.chipseq_view.is_valid());
+    			&& this.chipseq_view.is_valid();
+
+        var opts = this.get_options();
+        if (   !opts.alignment_params.load_bam
+            && !opts.expression_params
+            && !opts.snp_params
+            && !opts.methylation_params
+            && !opts.chipseq_params)
+        {
+            this.onError('No outputs result from these settings.  Select the "Load alignment" option.');
+            return false;
+        }
+
+    	return isValid;
     },
 
     get_options: function() {
