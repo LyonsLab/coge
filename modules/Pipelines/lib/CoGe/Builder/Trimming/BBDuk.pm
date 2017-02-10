@@ -8,13 +8,14 @@ use File::Spec::Functions qw(catdir catfile);
 
 use CoGe::Accessory::Utils qw(to_filename);
 use CoGe::Exception::Generic;
+use CoGe::Exception::MissingField;
 
 sub build {
     my $self = shift;
     my %opts = @_;
     my ($fastq1, $fastq2) =  @{$opts{data_files}}; # fastq2 is undef for single-ended
     unless ($fastq1 && @$fastq1) {
-        CoGe::Exception::Generic->throw(message => 'Missing fastq');
+        CoGe::Exception::MissingField->throw(message => 'Missing fastq');
     }
 
     my $genome = $self->request->genome;
