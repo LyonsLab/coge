@@ -1618,6 +1618,10 @@ h5 > small {
 .coge-disabled {
     opacity: .35;
 }
+.coge-disabled:not(.coge-icon):hover {
+    background: #9ce76d;
+    opacity: .35;
+}
 
 /*
  * User Profile
