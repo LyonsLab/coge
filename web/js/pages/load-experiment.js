@@ -566,19 +566,18 @@ $.extend(TrimmingView.prototype, {
             };
         }
         else if (trimmer === "trimmomatic") {
+            var self = this;
+            var trimming_params = { 'trimmer': 'trimmomatic' };
+
+            ['ILLUMINACLIP', 'SLIDINGWINDOW', 'MAXINFO', 'LEADING', 'TRAILING', 'CROP', 'HEADCROP', 'MINLEN' ].forEach(function (key) {
+                var val = self.el.find("[id='"+key+"']").val();
+                if (val)
+                    trimming_params[key] = val;
+            });
+
             this.data = {
-                trimming_params: {
-                	'trimmer': 'trimmomatic',
-                	'ILLUMINACLIP':  this.el.find("[id='ILLUMINACLIP']").val(),
-                	'SLIDINGWINDOW': this.el.find("[id='SLIDINGWINDOW']").val(),
-                	'MAXINFO':       this.el.find("[id='MAXINFO']").val(),
-                	'LEADING':       this.el.find("[id='LEADING']").val(),
-                	'TRAILING':      this.el.find("[id='TRAILING']").val(),
-                	'CROP':          this.el.find("[id='CROP']").val(),
-                	'HEADCROP':      this.el.find("[id='HEADCROP']").val(),
-                	'MINLEN':        this.el.find("[id='MINLEN']").val(),
-                }
-            };
+                trimming_params: trimming_params
+            }
         }
         else if (trimmer === "bbduk") {
             this.data = {
