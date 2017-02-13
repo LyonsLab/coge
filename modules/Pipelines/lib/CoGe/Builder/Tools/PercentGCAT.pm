@@ -1,4 +1,4 @@
-package CoGe::Builder::Tools::NucCounter;
+package CoGe::Builder::Tools::PercentGCAT;
 
 use Moose;
 extends 'CoGe::Builder::Buildable';
@@ -8,7 +8,7 @@ use File::Spec::Functions;
 
 sub get_name {
 	my $self = shift;
-    return 'NucCounter | ' . $self->params->{'gid'} . ' | ' . $self->params->{'chr'};
+    return 'PercentGCAT | ' . $self->params->{'gid'} . ' | ' . $self->params->{'chr'};
 }
 
 sub build {
@@ -30,7 +30,7 @@ sub build {
     my $filename = $gid . '_' . $chr . '_' . $ws . '_out.txt';
     my $output = catfile($dir, $filename);
     $self->add({
-        cmd         => catfile($self->conf->{SCRIPTDIR}, 'nuccounter.py') . ' ' . $fasta . ' ' . $ws,
+        cmd         => catfile($self->conf->{SCRIPTDIR}, 'percent_gc_at.py') . ' ' . $fasta . ' ' . $ws,
         inputs      => [$fasta],
         outputs     => [$output],
         description => "Generating nucleotide sliding window percentages",        

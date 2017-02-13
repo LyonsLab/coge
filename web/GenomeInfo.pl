@@ -875,8 +875,8 @@ sub get_chromosomes { #TODO use API Genome Fetch
 		}
 		$html .= '["' . $c->name . ' <a href=\\"GenomeView.pl?gid=' . $gid . '&loc=' . $c->name . '%3A1..' . ($c->length - 1) .
             '\\" target=\\"_blank\\"><span class=\\"glyphicon glyphicon-eye-open\\" style=\\"color:black;padding-left:20px;\\" title=\\"Browse\\"></span></a>","' .
-            $c->length . '","<input type=\\"radio\\" name=\\"chr\\" id=\\"f' . $c->name . '\\" /> FASTA","<input type=\\"radio\\" name=\\"chr\\" id=\\"g' . $c->name .
-            '\\" /> GFF","<input type=\\"radio\\" name=\\"chr\\" id=\\"n' . $c->name . '\\" /> NucCounter"]';
+            $c->length . '","<input type=\\"radio\\" name=\\"chr\\" id=\\"f' . $c->name . '\\" onchange=\\"update_percent_gc_at_plot_button()\\" /> FASTA","<input type=\\"radio\\" name=\\"chr\\" id=\\"g' . $c->name .
+            '\\" onchange=\\"update_percent_gc_at_plot_button()\\" /> GFF","<input type=\\"radio\\" name=\\"chr\\" id=\\"n' . $c->name . '\\" onchange=\\"update_percent_gc_at_plot_button()\\" /> %GC/AT"]';
   	}
 	$html .= ']';
 	return $html;	

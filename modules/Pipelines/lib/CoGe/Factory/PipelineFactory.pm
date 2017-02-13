@@ -13,7 +13,7 @@ use CoGe::Builder::Load::SRA;
 use CoGe::Builder::Load::BatchExperiment;
 use CoGe::Builder::Load::Genome;
 use CoGe::Builder::Load::Annotation;
-use CoGe::Builder::Tools::NucCounter;
+use CoGe::Builder::Tools::PercentGCAT;
 use CoGe::Builder::Tools::CoGeBlast;
 use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Tools::SynMap3D;
@@ -44,7 +44,7 @@ my %typeToClass = (
     'analyze_methylation'   => 'CoGe::Builder::Methylation::Analyzer',
     'analyze_metaplot'      => 'CoGe::Builder::Methylation::Metaplot',
     'analyze_diversity'     => 'CoGe::Builder::PopGen::SummaryStats',
-    'analyze_nucleotides'   => 'CoGe::Builder::Tools::NucCounter'
+    'analyze_nucleotides'   => 'CoGe::Builder::Tools::PercentGCAT'
 );
 
 sub get {
