@@ -176,7 +176,7 @@ sub delete_annotation {
 
     my $annotation = $db->resultset($object_type . 'Annotation')->find( { lc($object_type) . '_annotation_id' => $aid } );
     if ($annotation->bisque_file) {
-        my $path = catfile(_get_bisque_dir($object_type, $object_id), $annotation->bisque_file);
+        my $path = catfile(_get_bisque_dir($object_type, $object_id, $user), $annotation->bisque_file);
         irods_irm($path);
     }
     $annotation->delete();
@@ -405,9 +405,9 @@ sub tags_to_string {
 }
 
 sub _create_bisque_image {
-    my ($target_type, $target_id, $upload) = @_;
+    my ($target_type, $target_id, $upload, $user) = @_;
 
-    my $dest = _get_bisque_dir($target_type, $target_id);
+    my $dest = _get_bisque_dir($target_type, $target_id, $user);
     irods_imkdir($dest);
     $dest = catfile($dest, basename($upload->filename));
     my $source;
@@ -461,8 +461,8 @@ sub _create_image {
 }
 
 sub _get_bisque_dir {
-    my ($target_type, $target_id) = @_;
-    return catfile(dirname(irods_get_base_path('coge')), 'bisque_data', $target_type, $target_id);
+    my ($target_type, $target_id, $user) = @_;
+    return catfile(dirname(irods_get_base_path($user->name)), 'bisque_data', $target_type, $target_id);
 }
 
 sub _get_object {
@@ -506,7 +506,7 @@ sub _init {
         my $upload = $opts->{image};
         if ($upload) {
             my $ref = ref($object);
-            ($bisque_id, $bisque_file) = _create_bisque_image(substr($ref, rindex($ref, ':') + 1), $object->id, $upload);
+            ($bisque_id, $bisque_file) = _create_bisque_image(substr($ref, rindex($ref, ':') + 1), $object->id, $upload, $opts->{user});
             return 'error creating image' unless $bisque_id;
         }
         else {
