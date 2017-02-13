@@ -180,7 +180,7 @@ Pipelines/lib/CoGe/Builder/Expression/Analyzer.pm
 Pipelines/lib/CoGe/Builder/PopGen/SummaryStats.pm
 Pipelines/lib/CoGe/Builder/PopGen/MeasureDiversity.pm
 Pipelines/lib/CoGe/Builder/Tools/CoGeBlast.pm
-Pipelines/lib/CoGe/Builder/Tools/NucCounter.pm
+Pipelines/lib/CoGe/Builder/Tools/PercentGCAT.pm
 Pipelines/lib/CoGe/Builder/Tools/SynMap.pm
 Pipelines/lib/CoGe/Builder/Tools/SynMap3D.pm
 Pipelines/lib/CoGe/Builder/Trimming/Trimmer.pm

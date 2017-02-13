@@ -211,7 +211,7 @@ function download_chromosome_sequence(chr) { // FIXME use API genome/sequence (m
     });
 }
 
-function nuccounter(chr, ws, irods) {
+function percent_gc_at(chr, ws, irods) {
     coge.progress.begin();
     var request = {
         type: 'analyze_nucleotides',
@@ -255,15 +255,15 @@ function download_chr_file() {
 	else if (type == 'g')
 		get_gff(id.substring(1));
     else 
-        coge.utils.prompt('Window Size:', 'NucCounter Sliding Window', 200, function(val) {
+        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', 10000, function(val) {
             if (val != '') {
                 var chr = id.substring(1);
-                coge.progress.init({title: 'NucCounter',
-                    onSuccess: function() {
-                        document.location='get_nuccount_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr + '&ws=' + val;
+                coge.progress.init({title: '%GC/AT',
+                    onReset: function() {
+                        document.location='get_percent_gc_at_for_chr.pl?gid=' + GENOME_ID + '&chr=' + chr + '&ws=' + val;
                     }
                 });
-                nuccounter(chr, val);
+                percent_gc_at(chr, val);
             }
         });
 }
@@ -281,12 +281,85 @@ function export_chr_file() {
 	else if (type == 'g')
 		export_gff(id.substring(1));
     else
-        coge.utils.prompt('Window Size:', 'NucCounter Sliding Window', 200, function(val) {
+        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', 10000, function(val) {
             if (val != '') {
-                coge.progress.init({title: 'NucCounter'});
-                nuccounter(id.substring(1), val, true);
+                coge.progress.init({title: '%GC/AT'});
+                percent_gc_at(id.substring(1), val, true);
             }
         });
+}
+
+function update_percent_gc_at_plot_button() {
+	var i = $('input[name=chr]:checked');
+	var id = i.attr('id');
+	var type = id.substring(0,1);
+    var b = $('#percent_gc_at_plot_button');
+    if (type == 'n')
+        b.removeClass('coge-disabled');
+    else
+        b.addClass('coge-disabled');
+}
+
+function plot_percent_gc_at() {
+	var i = $('input[name=chr]:checked');
+	if (!i.length)
+		return;
+	var id = i.attr('id');
+    var chr = id.substring(1);
+    coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', 10000, function(val) {
+        if (val != '') {
+            coge.progress.init({title: '%GC/AT',
+                onReset: function() {
+                    var div = $('<div title="%GC/AT Plot"></div>').appendTo(document.body);
+                    $('<div id="percent_gc_at_plot" style="width:100%;height:100%;"><img id="percent_gc_at_busy" src="picts/ajax-loader.gif" /></div>').appendTo(div);
+                    div.dialog({
+                        modal: true,
+                        resizable: true,
+                        height: $(window).height() - 40,
+                        width: $(window).width() - 40,
+                        close: function() { div.remove(); },
+                        resizeStop: function() { Plotly.Plots.resize($('#percent_gc_at_plot')[0]); }
+                    });
+                    $.ajax({
+                        url: 'get_percent_gc_at_for_chr_json.pl?gid=' + GENOME_ID + '&chr=' + chr + '&ws=' + val,
+                        dataType: "json",
+                        success: function(json) {
+                            $('#percent_gc_at_plot').empty();
+                            Plotly.newPlot('percent_gc_at_plot', [{
+                                name: 'AT',
+                                y: json.at,
+                                mode: 'lines',
+                                line: { color: 'rgb(3,141,243)' }
+                            },{
+                                name: 'GC',
+                                y: json.gc,
+                                mode: 'lines',
+                                line: { color: 'rgb(64,182,77)' }
+                            },{
+                                name: 'N',
+                                y: json.n,
+                                mode: 'lines',
+                                line: { color: 'rgb(243,145,3)' }
+                            },{
+                                name: 'X',
+                                y: json.x,
+                                mode: 'lines',
+                                line: { color: 'rgb(171,3,243)' }
+                            }], {
+                                title: 'Sliding Window for ' + chr,
+                                xaxis: { rangeslider: {}, title: 'Window Iteration' },
+                                yaxis: { title: 'Percentage (%)' }
+                            });
+                        },
+                        error: function(err) {
+                            console.log(err);
+                        }
+                    });
+                }
+            });
+            percent_gc_at(chr, val);
+        }
+    });
 }
 
 function toggle_load_log() {

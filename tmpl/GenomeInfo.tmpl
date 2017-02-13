@@ -8,6 +8,7 @@
 <script type="text/javascript" src="js/pages/genome-info.js"></script>
 <script type="text/javascript" src="js/vendor/moment/moment.js"></script>
 <script type="text/javascript" src="js/vendor/moment-timezone-data/index.js"></script>
+<script src="/js/vendor/plotly/dist/plotly.min.js"></script>
 <script src="js/coge/progress.js"></script>
 <script src="js/coge/services.js"></script>
 <style>
@@ -128,7 +129,8 @@ $(document).ready(function() {
 			<tbody></tbody>
 		</table>
 		<span onclick="export_chr_file()" class="r coge-button" style="margin-left:10px;margin-top:10px;">Send to CyVerse</span>
-		<span onclick="download_chr_file()" class="r coge-button" style="margin-top:10px;">Download</span>
+		<span onclick="download_chr_file()" class="r coge-button" style="margin-left:10px;margin-top:10px;">Download</span>
+		<span id="percent_gc_at_plot_button" onclick="plot_percent_gc_at()" class="r coge-button coge-disabled" style="margin-top:10px;">Plot</span>
 	</div>
 </div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>
