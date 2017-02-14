@@ -258,7 +258,7 @@ function download_chr_file() {
         var num_windows = chromosome_length - 10000;
         if (num_windows > 2000000)
             num_windows = chromosome_length - 2000000;
-        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', chromosome_length - num_windows, function(val) {
+        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', chromosome_length - (chromosome_length - num_windows), function(val) {
             if (val != '') {
                 var chr = id.substring(1);
                 coge.progress.init({title: '%GC/AT',
@@ -288,7 +288,7 @@ function export_chr_file() {
         var num_windows = chromosome_length - 10000;
         if (num_windows > 2000000)
             num_windows = chromosome_length - 2000000;
-        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', chromosome_length - num_windows, function(val) {
+        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', chromosome_length - (chromosome_length - num_windows), function(val) {
             if (val != '') {
                 coge.progress.init({title: '%GC/AT'});
                 percent_gc_at(id.substring(1), val, true);
@@ -320,58 +320,63 @@ function plot_percent_gc_at() {
     var num_windows = chromosome_length - 10000;
     if (num_windows > 2000000)
         num_windows = chromosome_length - 2000000;
-    coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', chromosome_length - num_windows, function(val) {
+    var max_ws = chromosome_length - (chromosome_length - num_windows);
+    coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', max_ws, function(val) {
         if (val != '') {
-            coge.progress.init({title: '%GC/AT',
-                onReset: function() {
-                    var div = $('<div title="%GC/AT Plot"></div>').appendTo(document.body);
-                    $('<div id="percent_gc_at_plot" style="width:100%;height:100%;"><img id="percent_gc_at_busy" src="picts/ajax-loader.gif" /></div>').appendTo(div);
-                    div.dialog({
-                        modal: true,
-                        resizable: true,
-                        height: $(window).height() - 40,
-                        width: $(window).width() - 40,
-                        close: function() { div.remove(); },
-                        resizeStop: function() { Plotly.Plots.resize($('#percent_gc_at_plot')[0]); }
-                    });
-                    $.ajax({
-                        url: 'get_percent_gc_at_for_chr_json.pl?gid=' + GENOME_ID + '&chr=' + chr + '&ws=' + val,
-                        dataType: "json",
-                        success: function(json) {
-                            $('#percent_gc_at_plot').empty();
-                            Plotly.newPlot('percent_gc_at_plot', [{
-                                name: 'AT',
-                                y: json.at,
-                                mode: 'lines',
-                                line: { color: 'rgb(3,141,243)' }
-                            },{
-                                name: 'GC',
-                                y: json.gc,
-                                mode: 'lines',
-                                line: { color: 'rgb(64,182,77)' }
-                            },{
-                                name: 'N',
-                                y: json.n,
-                                mode: 'lines',
-                                line: { color: 'rgb(243,145,3)' }
-                            },{
-                                name: 'X',
-                                y: json.x,
-                                mode: 'lines',
-                                line: { color: 'rgb(171,3,243)' }
-                            }], {
-                                title: 'Sliding Window for ' + chr,
-                                xaxis: { rangeslider: {}, title: 'Window Iteration' },
-                                yaxis: { title: 'Percentage (%)' }
-                            });
-                        },
-                        error: function(err) {
-                            console.log(err);
-                        }
-                    });
-                }
-            });
-            percent_gc_at(chr, val);
+            if (val > max_ws)
+                coge.utils.alert('Please choose a window size less than ' + (max_ws + 1));
+            else {
+                coge.progress.init({title: '%GC/AT',
+                    onReset: function() {
+                        var div = $('<div title="%GC/AT Plot"></div>').appendTo(document.body);
+                        $('<div id="percent_gc_at_plot" style="width:100%;height:100%;"><img id="percent_gc_at_busy" src="picts/ajax-loader.gif" /></div>').appendTo(div);
+                        div.dialog({
+                            modal: true,
+                            resizable: true,
+                            height: $(window).height() - 40,
+                            width: $(window).width() - 40,
+                            close: function() { div.remove(); },
+                            resizeStop: function() { Plotly.Plots.resize($('#percent_gc_at_plot')[0]); }
+                        });
+                        $.ajax({
+                            url: 'get_percent_gc_at_for_chr_json.pl?gid=' + GENOME_ID + '&chr=' + chr + '&ws=' + val,
+                            dataType: "json",
+                            success: function(json) {
+                                $('#percent_gc_at_plot').empty();
+                                Plotly.newPlot('percent_gc_at_plot', [{
+                                    name: 'AT',
+                                    y: json.at,
+                                    mode: 'lines',
+                                    line: { color: 'rgb(3,141,243)' }
+                                },{
+                                    name: 'GC',
+                                    y: json.gc,
+                                    mode: 'lines',
+                                    line: { color: 'rgb(64,182,77)' }
+                                },{
+                                    name: 'N',
+                                    y: json.n,
+                                    mode: 'lines',
+                                    line: { color: 'rgb(243,145,3)' }
+                                },{
+                                    name: 'X',
+                                    y: json.x,
+                                    mode: 'lines',
+                                    line: { color: 'rgb(171,3,243)' }
+                                }], {
+                                    title: 'Sliding Window for ' + chr,
+                                    xaxis: { rangeslider: {}, title: 'Window Iteration' },
+                                    yaxis: { title: 'Percentage (%)' }
+                                });
+                            },
+                            error: function(err) {
+                                console.log(err);
+                            }
+                        });
+                    }
+                });
+                percent_gc_at(chr, val);
+            }
         }
     });
 }
