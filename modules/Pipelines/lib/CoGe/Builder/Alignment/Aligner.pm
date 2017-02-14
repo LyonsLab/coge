@@ -191,7 +191,7 @@ sub bowtie2_index { # shared between Bowtie and Tophat
         $name . ".rev.2.bt2"
     ]);
 
-    return catdir($cache_dir, $name), {
+    return {
         cmd => $cmd,
         args => [
             ["", $fasta, 1],
