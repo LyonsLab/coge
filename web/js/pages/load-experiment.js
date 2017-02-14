@@ -1050,6 +1050,8 @@ $.extend(GeneralOptionsView.prototype, {
             return false;
         }
 
+        console.log(this.data);
+
         return true;
     },
 
