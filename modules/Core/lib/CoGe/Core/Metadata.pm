@@ -26,7 +26,7 @@ BEGIN {
 
 sub create_annotation {
     my %opts = @_;
-
+warn Dumper \%opts;
     my ($error, $type_id, $link, $image_id, $bisque_id, $bisque_file) = _init(\%opts);
     if ($error) {
         warn 'create_annotation: ' . $error;

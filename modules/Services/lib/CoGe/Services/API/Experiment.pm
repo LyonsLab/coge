@@ -166,7 +166,7 @@ sub add_annotation {
         db => $db,
         filename => $self->param('filename'),
         group_name => $self->param('group_name'),
-        image => $self->param('image'),
+#        image => $self->param('image'),
         link => $self->param('link'),
         target_id => int($self->stash('id')),
         target_type => 'experiment',

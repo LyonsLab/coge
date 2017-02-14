@@ -100,6 +100,7 @@ class Annotations {
 			return;
 		}
 		var form_data = new FormData();
+		form_data.append('type_name', type);
 		var annotation_image_file = $('#annotation_image')[0].files[0];
 		if (annotation_image_file) {
 			if (!this.verify_image_file(annotation_image_file))
@@ -116,7 +117,6 @@ class Annotations {
 		if (link)
 			form_data.append('link', link);
 		form_data.append('target_id', this.parent_id);
-		form_data.append('type_name', type);
 		var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations';
 		if (this.aid)
 			url += '/' + this.aid;
@@ -143,6 +143,7 @@ class Annotations {
 		$('#annotation_type_group').val('');
 		$('#annotation_image').val('');
 		$('#annotation_send_button').text('Add');
+		$("#wait_annotation").css('opacity', 0);
 		$("#annotation_dialog").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
 	}
 
@@ -160,6 +161,7 @@ class Annotations {
 			$('#annotation_type_group').val(obj.type_group);
 			$('#annotation_image').val('');
 			$('#annotation_send_button').text('Update');
+			$("#wait_annotation").css('opacity', 0);
 			$("#annotation_dialog").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
 		}).fail(function(jqXHR, textStatus, errorThrown) { 
 			console.error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
