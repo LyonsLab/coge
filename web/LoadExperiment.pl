@@ -148,7 +148,7 @@ sub upload_file {
     my $size = 0;
     my $path;
     if ($fh) {
-        my $tmpfilename = $FORM->tmpFileName( $FORM->param('input_upload_file') );
+        my $tmpfilename = $FORM->tmpFileName( $filename );
         $path = catfile('upload', $filename);
         my $targetpath = catdir($TEMPDIR, 'upload');
         mkpath($targetpath);

@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.5.49, for debian-linux-gnu (x86_64)
+-- MySQL dump 10.13  Distrib 5.6.31, for debian-linux-gnu (x86_64)
 --
 -- Host: localhost    Database: coge
 -- ------------------------------------------------------
--- Server version	5.5.49-0ubuntu0.14.04.1-log
+-- Server version	5.6.31-0ubuntu0.14.04.2-log
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -28,9 +28,9 @@ CREATE TABLE `annotation_type` (
   `description` varchar(1024) DEFAULT NULL,
   `annotation_type_group_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`annotation_type_id`),
-  KEY `name` (`name`),
+  KEY `name` (`name`(255)),
   KEY `annotation_type_group_id` (`annotation_type_group_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -45,8 +45,8 @@ CREATE TABLE `annotation_type_group` (
   `name` varchar(256) NOT NULL,
   `description` varchar(1024) DEFAULT NULL,
   PRIMARY KEY (`annotation_type_group_id`),
-  KEY `name` (`name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+  KEY `name` (`name`(255))
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -62,8 +62,8 @@ CREATE TABLE `data_source` (
   `description` varchar(1024) DEFAULT NULL,
   `link` text,
   PRIMARY KEY (`data_source_id`),
-  KEY `name` (`name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+  KEY `name` (`name`(255))
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -88,7 +88,7 @@ CREATE TABLE `dataset` (
   KEY `data_source_id` (`data_source_id`),
   KEY `name` (`name`),
   KEY `restricted` (`restricted`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -106,7 +106,7 @@ CREATE TABLE `dataset_connector` (
   KEY `dataset_id` (`dataset_id`),
   KEY `dataset_id_2` (`dataset_id`,`genome_id`),
   KEY `dataset_group_id` (`genome_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -130,13 +130,14 @@ CREATE TABLE `experiment` (
   `creator_id` int(11) NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `link` text,
   PRIMARY KEY (`experiment_id`),
   KEY `dataset_group_id` (`genome_id`),
   KEY `data_source_id` (`data_source_id`),
   KEY `restricted` (`restricted`),
   FULLTEXT KEY `name` (`name`),
   FULLTEXT KEY `description` (`description`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -154,11 +155,12 @@ CREATE TABLE `experiment_annotation` (
   `link` text,
   `image_id` int(11) DEFAULT NULL,
   `locked` int(1) NOT NULL DEFAULT '0',
+  `bisque_id` text,
   PRIMARY KEY (`experiment_annotation_id`),
   KEY `experiment_id` (`experiment_id`),
   KEY `annotation_type_id` (`annotation_type_id`),
   FULLTEXT KEY `annotation` (`annotation`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -173,7 +175,7 @@ CREATE TABLE `experiment_type` (
   `name` varchar(255) NOT NULL,
   PRIMARY KEY (`experiment_type_id`),
   FULLTEXT KEY `name` (`name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -190,7 +192,23 @@ CREATE TABLE `experiment_type_connector` (
   PRIMARY KEY (`experiment_type_connector_id`),
   KEY `experiment_type_id` (`experiment_type_id`),
   KEY `experiment_id` (`experiment_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `favorite_connector`
+--
+
+DROP TABLE IF EXISTS `favorite_connector`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `favorite_connector` (
+  `favorite_connector_id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `child_id` int(11) NOT NULL,
+  `child_type` tinyint(1) NOT NULL,
+  PRIMARY KEY (`favorite_connector_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -217,7 +235,7 @@ CREATE TABLE `feature` (
   KEY `chromosome` (`chromosome`),
   KEY `dataset_id_2` (`dataset_id`,`chromosome`),
   KEY `dataset_feature_type` (`feature_type_id`,`dataset_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8
 /*!50100 PARTITION BY HASH (feature_id)
 PARTITIONS 101 */;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -239,7 +257,7 @@ CREATE TABLE `feature_annotation` (
   KEY `feature_id` (`feature_id`),
   KEY `annotation_type_id` (`annotation_type_id`),
   FULLTEXT KEY `annotation` (`annotation`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -250,7 +268,7 @@ DROP TABLE IF EXISTS `feature_name`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `feature_name` (
-  `feature_name_id` int(11) NOT NULL AUTO_INCREMENT,
+  `feature_name_id` bigint(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL,
   `description` varchar(1024) DEFAULT NULL,
   `feature_id` int(10) NOT NULL DEFAULT '0',
@@ -259,7 +277,7 @@ CREATE TABLE `feature_name` (
   KEY `name` (`name`),
   KEY `feature_id` (`feature_id`),
   FULLTEXT KEY `name_2` (`name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -275,7 +293,7 @@ CREATE TABLE `feature_type` (
   `description` varchar(1024) DEFAULT NULL,
   PRIMARY KEY (`feature_type_id`),
   KEY `name` (`name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -298,8 +316,10 @@ CREATE TABLE `genome` (
   `message` text,
   `link` text,
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `certified` tinyint(1) NOT NULL DEFAULT '0',
   `creator_id` int(11) NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `status` tinyint(1) DEFAULT NULL,
   PRIMARY KEY (`genome_id`),
   KEY `name` (`name`),
   KEY `organism_id` (`organism_id`),
@@ -307,7 +327,7 @@ CREATE TABLE `genome` (
   KEY `version` (`version`,`organism_id`),
   KEY `restricted` (`restricted`),
   KEY `creator_id` (`creator_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -325,11 +345,12 @@ CREATE TABLE `genome_annotation` (
   `link` text,
   `image_id` int(11) DEFAULT NULL,
   `locked` int(1) NOT NULL DEFAULT '0',
+  `bisque_id` text,
   PRIMARY KEY (`genome_annotation_id`),
   KEY `genome_id` (`genome_id`),
   KEY `annotation_type_id` (`annotation_type_id`),
   FULLTEXT KEY `annotation` (`annotation`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -348,7 +369,7 @@ CREATE TABLE `genomic_sequence` (
   KEY `chromosome` (`chromosome`),
   KEY `dataset_group_id` (`genome_id`),
   KEY `chromosome_2` (`chromosome`,`genome_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -363,8 +384,8 @@ CREATE TABLE `genomic_sequence_type` (
   `name` varchar(256) NOT NULL,
   `description` varchar(1024) DEFAULT NULL,
   PRIMARY KEY (`genomic_sequence_type_id`),
-  KEY `name` (`name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+  KEY `name` (`name`(255))
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -379,7 +400,7 @@ CREATE TABLE `image` (
   `filename` varchar(255) NOT NULL,
   `image` longblob NOT NULL,
   PRIMARY KEY (`image_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -404,7 +425,7 @@ CREATE TABLE `job` (
   KEY `user_id` (`user_id`),
   FULLTEXT KEY `page` (`page`),
   FULLTEXT KEY `link` (`link`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -426,7 +447,7 @@ CREATE TABLE `list` (
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`list_id`),
   KEY `name` (`name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -444,11 +465,12 @@ CREATE TABLE `list_annotation` (
   `link` text,
   `image_id` int(11) DEFAULT NULL,
   `locked` int(1) NOT NULL DEFAULT '0',
+  `bisque_id` text,
   PRIMARY KEY (`list_annotation_id`),
   KEY `list_id` (`list_id`),
   KEY `annotation_type_id` (`annotation_type_id`),
   FULLTEXT KEY `annotation` (`annotation`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -465,7 +487,7 @@ CREATE TABLE `list_connector` (
   `child_type` tinyint(1) NOT NULL,
   PRIMARY KEY (`list_connector_id`),
   KEY `parent_id` (`parent_id`,`child_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -480,7 +502,7 @@ CREATE TABLE `list_type` (
   `name` varchar(255) NOT NULL,
   `description` varchar(1024) DEFAULT NULL,
   PRIMARY KEY (`list_type_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -491,7 +513,7 @@ DROP TABLE IF EXISTS `location`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `location` (
-  `location_id` int(10) NOT NULL AUTO_INCREMENT,
+  `location_id` bigint(11) NOT NULL AUTO_INCREMENT,
   `start` int(10) NOT NULL DEFAULT '0',
   `stop` int(10) NOT NULL DEFAULT '0',
   `chromosome` varchar(255) NOT NULL,
@@ -500,7 +522,7 @@ CREATE TABLE `location` (
   PRIMARY KEY (`location_id`),
   KEY `feature_id` (`feature_id`),
   KEY `chromosome` (`chromosome`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8
 /*!50100 PARTITION BY HASH (location_id)
 PARTITIONS 101 */;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -529,28 +551,7 @@ CREATE TABLE `log` (
   KEY `type` (`type`),
   KEY `user_id_2` (`user_id`,`type`),
   KEY `time` (`time`,`user_id`,`type`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `man_proof_cns_coge`
---
-
-DROP TABLE IF EXISTS `man_proof_cns_coge`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `man_proof_cns_coge` (
-  `feature_id` int(10) NOT NULL DEFAULT '0',
-  `feature_type_id` int(10) NOT NULL DEFAULT '0',
-  `dataset_id` int(10) NOT NULL DEFAULT '0',
-  `start` int(11) DEFAULT NULL,
-  `stop` int(11) DEFAULT NULL,
-  `strand` tinyint(4) DEFAULT NULL,
-  `chromosome` varchar(255) DEFAULT NULL,
-  `access_count` int(10) NOT NULL DEFAULT '0',
-  `name` varchar(255) NOT NULL,
-  `annotation` text
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -569,23 +570,7 @@ CREATE TABLE `organism` (
   PRIMARY KEY (`organism_id`),
   KEY `name` (`name`),
   KEY `restricted` (`restricted`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `permission`
---
-
-DROP TABLE IF EXISTS `permission`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `permission` (
-  `permission_id` int(10) NOT NULL AUTO_INCREMENT,
-  `name` varchar(256) NOT NULL,
-  `description` varchar(1024) DEFAULT NULL,
-  PRIMARY KEY (`permission_id`),
-  KEY `name` (`name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -600,22 +585,7 @@ CREATE TABLE `role` (
   `name` varchar(255) NOT NULL,
   `description` longtext,
   PRIMARY KEY (`role_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `role_permission_connector`
---
-
-DROP TABLE IF EXISTS `role_permission_connector`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `role_permission_connector` (
-  `role_permission_connector_id` int(11) NOT NULL AUTO_INCREMENT,
-  `role_id` int(11) NOT NULL,
-  `permission_id` int(11) NOT NULL,
-  PRIMARY KEY (`role_permission_connector_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -639,7 +609,7 @@ CREATE TABLE `user` (
   KEY `user_name` (`user_name`),
   KEY `first_name` (`first_name`),
   KEY `last_name` (`last_name`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -657,7 +627,7 @@ CREATE TABLE `user_connector` (
   `child_type` tinyint(1) NOT NULL,
   `role_id` int(11) NOT NULL DEFAULT '4',
   PRIMARY KEY (`user_connector_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -679,7 +649,7 @@ CREATE TABLE `user_group` (
   PRIMARY KEY (`user_group_id`),
   KEY `name` (`name`),
   KEY `role_id` (`role_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -697,7 +667,7 @@ CREATE TABLE `user_session` (
   PRIMARY KEY (`user_session_id`),
   KEY `user_id` (`user_id`),
   KEY `session` (`session`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -715,77 +685,7 @@ CREATE TABLE `web_preferences` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   KEY `page` (`page`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `work`
---
-
-DROP TABLE IF EXISTS `work`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `work` (
-  `work_id` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `page` varchar(255) NOT NULL,
-  `parameter` text,
-  `name` varchar(255) DEFAULT NULL,
-  `description` varchar(1024) DEFAULT NULL,
-  `note` text,
-  `archive` smallint(1) DEFAULT '0' COMMENT '1 for archive',
-  `image_id` int(11) DEFAULT NULL,
-  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `link` text,
-  PRIMARY KEY (`work_id`),
-  KEY `user_id` (`user_id`),
-  KEY `page` (`page`),
-  KEY `image_id` (`image_id`),
-  FULLTEXT KEY `notes` (`note`),
-  FULLTEXT KEY `description` (`description`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `work_order`
---
-
-DROP TABLE IF EXISTS `work_order`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `work_order` (
-  `work_order_id` int(11) NOT NULL AUTO_INCREMENT,
-  `workflow_id` int(11) NOT NULL,
-  `work_id` int(11) NOT NULL,
-  `work_order` int(4) NOT NULL DEFAULT '1' COMMENT 'order in the workflow',
-  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`work_order_id`),
-  KEY `workflow_id` (`workflow_id`),
-  KEY `work_id` (`work_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `workflow`
---
-
-DROP TABLE IF EXISTS `workflow`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `workflow` (
-  `workflow_id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  `description` varchar(1024) DEFAULT NULL,
-  `user_id` int(11) NOT NULL,
-  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `note` text,
-  `link` text,
-  `image_id` int(11) DEFAULT NULL,
-  PRIMARY KEY (`workflow_id`),
-  KEY `user_id` (`user_id`),
-  KEY `name` (`name`),
-  FULLTEXT KEY `description` (`description`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -797,4 +697,4 @@ CREATE TABLE `workflow` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-06-03 10:16:36
+-- Dump completed on 2017-01-19 11:33:04

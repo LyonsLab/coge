@@ -40,7 +40,7 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA     = qw (Exporter);
-    @EXPORT = qw( irods_ils irods_imeta irods_iget irods_chksum irods_imkdir irods_iput irods_irm $IRODS_METADATA_PREFIX );
+    @EXPORT = qw( irods_ils irods_imeta_add irods_imeta_ls irods_iget irods_chksum irods_imkdir irods_iput irods_irm $IRODS_METADATA_PREFIX );
     @EXPORT_OK = qw( irods_get_base_path irods_set_env );
 
     $IRODS_METADATA_PREFIX = 'coge-'; #'ipc-coge-'; # mdb changed 9/27/16 -- getting error from IRODS that 'ipc' is protected AVU
@@ -186,14 +186,14 @@ sub irods_iput {
     return $cmd if $no_execute;
     #print STDERR "cmd: $cmd\n";
     my @result = `$cmd`;
-    #print STDERR "@result";
+    warn Dumper \@result;
 
     return;
 }
 
-sub irods_imeta {
+sub irods_imeta_add {
     my ( $dest, $pHash ) = @_;
-    #print STDERR "irods_imeta $dest\n";
+    #print STDERR "irods_imeta_add $dest\n";
     return unless ( defined $pHash and keys %$pHash );
 
     my $env_file = _irods_get_env_file();
@@ -201,7 +201,7 @@ sub irods_imeta {
 
 	while( my($k, $v) = each %$pHash ) {
 		if (not $k or not $v) {
-			print STDERR "CoGe::Accessory::IRODS::imeta: improper key/value pair\n";
+			print STDERR "CoGe::Accessory::IRODS::imeta_add: improper key/value pair\n";
 			next;
 		}
 
@@ -214,6 +214,19 @@ sub irods_imeta {
     return;
 }
 
+sub irods_imeta_ls {
+    my ( $dest, $attribute ) = @_;
+
+    my $env_file = _irods_get_env_file();
+    return unless $env_file;
+
+    my $cmd = "export irodsEnvFile='$env_file' && imeta ls -d '" . $dest . "' '" . $attribute . "'";
+    my @result = `$cmd`;
+    warn Dumper \@result;
+
+    return \@result;
+}
+
 sub irods_imkdir {
     my $path = shift;
     return 'path not specified' unless $path;
@@ -221,24 +234,22 @@ sub irods_imkdir {
     my $env_file = _irods_get_env_file();
     return 'irods env file missing' unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file' && imkdir '" . $path . "'";
+    my $cmd = "export irodsEnvFile='$env_file' && imkdir -p '" . $path . "'";
     my @result = `$cmd`;
     return $result[0] if scalar @result;
 }
 
-# sub irods_irm {
-#     my $path = shift;
-#     return 'path not specified' unless $path;
+sub irods_irm {
+    my $path = shift;
+    return 'path not specified' unless $path;
 
-#     my $env_file = _irods_get_env_file();
-#     return 'irods env file missing' unless $env_file;
+    my $env_file = _irods_get_env_file();
+    return 'irods env file missing' unless $env_file;
 
-#     $ENV{irodsEnvFile} = $env_file;
-#     warn $path;
-#     my $cmd = "irm -rf '" . $path . "'";
-#     my @result = `$cmd`;
-#     return $result[0] if scalar @result;
-# }
+    my $cmd = "export irodsEnvFile='$env_file' && irm -rf '" . $path . "'";
+    my @result = `$cmd`;
+    return $result[0] if scalar @result;
+}
 
 sub irods_get_base_path {
     my $username = shift;
@@ -263,7 +274,6 @@ sub _irods_get_env_file {
     $env_file //= $conf->{IRODSENV}; # 2: config file
     $env_file //= $ENV{IRODSENV};    # 3: environment variable
     $env_file //= catfile($conf->{_HOME_PATH}, 'irodsEnv'); # 4: default
-    #print STDERR "env_file=$env_file\n";
     
     if ( not defined $env_file or not -e $env_file ) {
         print STDERR "CoGe::Accessory::IRODS: fatal error: iRODS env file missing! env_file=", ($env_file ? $env_file : ''), "\n";

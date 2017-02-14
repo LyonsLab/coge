@@ -22,12 +22,8 @@
 			</div>
 		</td>
 		<td style="padding-left:20px;">
-			<TMPL_IF NAME="LIST_ANNOTATIONS">
-				<span class="bold text">Metadata</span><br>
-				<div id='list_annotations'>
-					<TMPL_VAR NAME="LIST_ANNOTATIONS">
-				</div>
-			</TMPL_IF>
+			<span class="bold text">Metadata</span><br>
+			<div id='notebook_annotations'></div>
 		</td>
 	</tr>
 </table>
@@ -75,7 +71,7 @@
 
 <div id="list_info_edit_box" class="dialog_box hidden" title="Edit Notebook Info"></div>
 
-<TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'> <!-- Add/Edit Annotation Dialog -->
+<TMPL_INCLUDE NAME='widgets/Annotations.tmpl'>
 
 <div id="list_contents_edit_box" class="dialog_box hidden" title="Add Items to Notebook" style="height:auto !important;"></div>
 
@@ -96,6 +92,7 @@ const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER">';
 const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
+var annotations;
 
 $(function() {
 	pageObj = new Object();
@@ -110,24 +107,13 @@ $(function() {
 	});
 
 	$(".dialog_box").dialog({autoOpen: false, width: 450});
-
-	// set_contents_table();
-	// set_annotation_table();
-
-	init_annotation_dialog(NOTEBOOK_ID, '<TMPL_VAR NAME="DEFAULT_TYPE">');
 	
 	// Initialize web services
     coge.services.init({
     	baseUrl: API_BASE_URL,
     	userName: USER_NAME
     });
-	
-    // Initialize newsfeed - not ready to deploy yet
-//	coge.newsfeed.init({ 
-//		element_id: 'newsfeed',
-//		id: NOTEBOOK_ID,
-//		type: "notebook"
-//	});
+    annotations = new Annotations('notebook_annotations', 'notebook', NOTEBOOK_ID, '<TMPL_VAR NAME="USER_CAN_EDIT">', '<TMPL_VAR NAME="DEFAULT_TYPE">');
 });
 </SCRIPT>
 

@@ -30,7 +30,12 @@
         </span>
         </TMPL_IF>
     </TMPL_IF>
-    <a style="color: inherit;" class="coge-button" href="<tmpl_var name=genome_view_url>">
+    <TMPL_IF name="deletable">
+        <span class="coge-button coge-button-danger" onclick="delete_experiment('<TMPL_VAR NAME=DELETE_BUTTON_TEXT>');">
+            <TMPL_VAR NAME=DELETE_BUTTON_TEXT>
+        </span>
+    </TMPL_IF>
+         <a style="color: inherit;" class="coge-button" href="<tmpl_var name=genome_view_url>">
         Browse
     </a>
 </div>

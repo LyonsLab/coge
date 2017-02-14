@@ -1265,36 +1265,6 @@ function continue_to_view() {
     window.location.href = "GenomeInfo.pl?gid=" + GENOME_ID;
 }
 
-function set_annotation_table() {
-    $('#genome_annotation_table').tablesorter({widgets: ['zebra']});
-}
-
-function get_annotations() {
-    $.ajax({
-        data: {
-            fname: 'get_annotations',
-            gid: GENOME_ID,
-        },
-        success : function(data) {
-            $('#genome_annotations').html(data);
-            set_annotation_table();
-        }
-    });
-}
-
-function remove_annotation (gaid) {
-    $.ajax({
-        data: {
-            fname: 'remove_annotation',
-            gid: GENOME_ID,
-            gaid: gaid,
-        },
-        success : function() {
-            get_annotations();
-        },
-    });
-}
-
 function get_datasets() {
     $.ajax({
         data: {

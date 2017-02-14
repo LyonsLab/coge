@@ -1,3 +1,7 @@
+._*
+.agignore
+.gitignore
+*.swp
 *.pyc
 *.o
 .project
@@ -20,8 +24,8 @@ web/js/jbrowse/plugins/*
 !web/js/jbrowse
 !web/js/jbrowse/plugins/
 !web/js/jbrowse/plugins/CoGe
+web/js/jbrowsedev
 web/js/jbrowsedev/*
-web/js/jbrowse1.12/*
 \#*\#
 modules/perl
 /.externalToolBuilders/

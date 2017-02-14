@@ -22,7 +22,7 @@ use vars qw($staging_dir $install_dir $data_file $file_type $metadata_file
   $name $description $version $restricted $ignore_missing_chr $creator_id $normalize
   $gid $source_name $user_name $config $allow_negative $disable_range_check
   $exit_without_error_for_empty_input $link
-  $user_id $annotations $tags $wid $host $port $db $user $pass $P);
+  $user_id $annotations $tags $wid $host $port $dbname $user $pass $P);
 
 #my $MIN_QUANT_COLUMNS = 5;
 #my $MAX_QUANT_COLUMNS = 6;
@@ -121,7 +121,7 @@ unless ($config) {
     exit(-1);
 }
 $P    = CoGe::Accessory::Web::get_defaults($config);
-$db   = $P->{DBNAME};
+$dbname = $P->{DBNAME};
 $host = $P->{DBHOST};
 $port = $P->{DBPORT};
 $user = $P->{DBUSER};
@@ -168,9 +168,9 @@ if ( !$file_type or !$data_type ) {
 }
 
 # Connect to database
-my $connstr = "dbi:mysql:dbname=$db;host=$host;port=$port;";
-my $coge = CoGeX->connect( $connstr, $user, $pass );
-unless ($coge) {
+my $connstr = "dbi:mysql:dbname=$dbname;host=$host;port=$port;";
+my $db = CoGeX->connect( $connstr, $user, $pass );
+unless ($db) {
     print STDOUT "log: couldn't connect to database\n";
     exit(-1);
 }
@@ -178,10 +178,10 @@ unless ($coge) {
 # Retrieve user
 my $user;
 if ($user_id) {
-    $user = $coge->resultset('User')->find($user_id);
+    $user = $db->resultset('User')->find($user_id);
 }
 elsif ($user_name) {
-    $user = $coge->resultset('User')->find( { user_name => $user_name } );
+    $user = $db->resultset('User')->find( { user_name => $user_name } );
 }
 else {
     print STDOUT "log: error user not specified, see user_id or user_name\n";
@@ -196,7 +196,7 @@ unless ($user) {
 # Retrieve creator
 my $creator;
 if ($creator_id) {
-    $creator = $coge->resultset('User')->find($creator_id);
+    $creator = $db->resultset('User')->find($creator_id);
     unless ($creator) {
         print STDOUT "log: error finding creator $creator_id\n";
         exit(-1);
@@ -205,7 +205,7 @@ if ($creator_id) {
 $creator = $user unless $creator;
 
 # Retrieve genome
-my $genome = $coge->resultset('Genome')->find( { genome_id => $gid } );
+my $genome = $db->resultset('Genome')->find( { genome_id => $gid } );
 unless ($genome) {
     print STDOUT "log: error finding genome id$gid\n";
     exit(-1);
@@ -327,7 +327,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 
 # Create data source
 my $data_source =
-  $coge->resultset('DataSource')->find_or_create( {
+  $db->resultset('DataSource')->find_or_create( {
       name => $source_name, description => "" }
   );#, description => "Loaded into CoGe via LoadExperiment" } );
 unless ($data_source) {
@@ -336,7 +336,7 @@ unless ($data_source) {
 }
 
 # Create experiment
-my $experiment = $coge->resultset('Experiment')->create(
+my $experiment = $db->resultset('Experiment')->create(
     {
         name        => $name,
         description => $description,
@@ -358,15 +358,15 @@ if ($tags || $detected_tags) {
         next unless $name;
         
         # Try to find a matching type by name, ignoring description
-        my $type = $coge->resultset('ExperimentType')->find({ name => $name });
+        my $type = $db->resultset('ExperimentType')->find({ name => $name });
         if (!$type) {
-            $type = $coge->resultset('ExperimentType')->create({ name => $name }); # null description
+            $type = $db->resultset('ExperimentType')->create({ name => $name }); # null description
         }
         unless ($type) {
             print STDOUT "log: error creating experiment type\n";
             exit(-1);
         }
-        my $conn = $coge->resultset('ExperimentTypeConnector')->find_or_create({
+        my $conn = $db->resultset('ExperimentTypeConnector')->find_or_create({
             experiment_id => $experiment->id,
             experiment_type_id => $type->id
         });
@@ -380,7 +380,8 @@ if ($tags || $detected_tags) {
 # Create annotations
 if ($annotations || $metadata_file) {
     CoGe::Core::Metadata::create_annotations(
-        db => $coge,
+        db => $db,
+        user => $user,
         target => $experiment,
         annotations => $annotations,
         anno_file => $metadata_file,
@@ -408,7 +409,7 @@ if ( -e $storage_path ) {
 #TODO create experiment type & connector
 
 my $node_types = CoGeX::node_types();
-my $conn       = $coge->resultset('UserConnector')->create(
+my $conn       = $db->resultset('UserConnector')->create(
     {
         parent_id   => $user->id,
         parent_type => $node_types->{user},
@@ -486,6 +487,7 @@ sub max_and_min_of_values {
 #	my %perChr;
 	
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
+    <$in> if $filetype eq 'seg'; # skip first line of column headings
     while ( my $line = <$in> ) {
         $line_num++;
         next if ( $line =~ /^\s*#/ ); # skip comment lines
@@ -535,6 +537,7 @@ sub validate_quant_data_file {
     open( my $in, $filepath ) || die "can't open $filepath for reading: $!";
     my $outfile = $filepath . ".processed";
     open( my $out, ">$outfile" );
+    <$in> if $filetype eq 'seg'; # skip first line of column headings
     while ( my $line = <$in> ) {
         $line_num++;
         next if ( $line =~ /^\s*#/ ); # skip comment lines
@@ -731,6 +734,11 @@ sub parse_quant_line {
             $start += 1;
             $stop += 1;
         }
+    }
+    elsif ($filetype eq 'seg') {
+        @tok = split( /\s+/, $line );
+        ( undef, $chr, $start, $stop, undef, $val1 ) = @tok;
+        $strand = 1;
     }
     else { # unknown file type (should never happen)
         die "fatal error: unknown file type!";

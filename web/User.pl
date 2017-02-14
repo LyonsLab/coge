@@ -15,6 +15,7 @@ use URI::Escape::JavaScript qw(escape unescape);
 use Data::Dumper;
 use Benchmark;
 use File::Path;
+use File::Slurp;
 use File::stat;
 use File::Spec::Functions qw(catdir catfile);
 use CoGeDBI;
@@ -29,7 +30,7 @@ use CoGe::Core::Item qw(get_item);
 use CoGe::Core::Notebook qw(notebookcmp);
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Core::Metadata qw(create_annotations create_image);
+use CoGe::Core::Metadata qw(create_annotations);
 use CoGe::Core::Favorites;
 no warnings 'redefine';
 
@@ -1548,6 +1549,33 @@ sub format_job_status {
     return '<span style="padding-bottom:1px;padding-right:5px;padding-left:5px;border-radius:15px;color:white;background-color:' . $color . ';">' . ucfirst($status) . '</span>';
 }
 
+sub create_image {
+    my %opts = @_;
+    my $fh = $opts{fh};
+    my $filename = $opts{filename};
+    my $db = $opts{db};
+    return unless (($fh || $filename) && $db);
+    
+    unless (defined $fh) {
+        unless (open($fh, $filename)) {
+            print STDERR "Storage::create_image: ERROR, couldn't open file '$filename'\n";
+            return;
+        }
+    }
+    
+    my $contents = read_file($fh, binmode => ':raw');
+    unless ($contents) {
+        print STDERR "Storage::create_image: ERROR, couldn't read file '$filename'\n";
+        return;
+    }
+    
+    my $image = $db->resultset('Image')->create({
+        filename => $filename,
+        image    => $contents
+    });
+    return unless $image;
+}
+
 sub upload_image_file {
     return if ( $USER->user_name eq "public" );
 
@@ -1614,7 +1642,13 @@ sub upload_metadata {
 			    }
 			    if ($can_annotate) {
 				    my $target = $DB->resultset($type eq 'Notebook' ? 'List' : $type)->find($_);
-				    create_annotations(db => $DB, target => $target, annotations => $annotations, locked => 1);
+				    create_annotations(
+                        db => $DB,
+                        user => $USER,
+                        target => $target,
+                        annotations => $annotations,
+                        locked => 1
+                    );
 			    }
 			    else {
 			        push @error_ids, $_;

@@ -658,14 +658,17 @@ class DataGridRow { //FIXME duplicated in search-results.js
             var height = $(window).height() * 0.8;
             var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
                 .dialog({
+					autoOpen: true,
                     //title: title,
                     width: '80%',
                     height: height,
                     open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
                         $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
-                    }
-                })
-                .dialog('open');
+                    },
+					close: function() {
+						schedule_poll(0);
+					}
+                });
         }
     }
 }

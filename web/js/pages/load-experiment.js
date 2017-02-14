@@ -7,7 +7,7 @@ var current_experiment = {};
 var POLY_FILES  = [ "vcf", "gcvf" ];
 var ALIGN_FILES = [ "sam", "bam" ];
 var SEQ_FILES   = [ "fastq", "fq", "sra" ];
-var QUANT_FILES = [ "csv", "tsv", "bed", "wig", "bw", "gff", "gtf" ];
+var QUANT_FILES = [ "csv", "tsv", "bed", "wig", "bw", "gff", "gtf", "seg" ];
 var SUPPORTED_FILE_TYPES = Array.prototype.concat.call(QUANT_FILES, ALIGN_FILES, SEQ_FILES, POLY_FILES);
 
 function create_source() {
