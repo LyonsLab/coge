@@ -183,6 +183,7 @@ $.extend(ExperimentDescriptionView.prototype, {
 
         var edit_genome = this.edit_genome;
 
+// mdb removed 2/7/17 -- no longer needed? breaks loading BAM files for some reason
 //        edit_genome.unbind().change(function() {
 //            // Reset gid when item has changed
 //            self.gid = undefined;
@@ -249,7 +250,7 @@ $.extend(ExperimentDescriptionView.prototype, {
             return false;
         }
 
-       $.extend(this.experiment, {
+        $.extend(this.experiment, {
             metadata: {
                 name: coge.utils.removeSpecialChars(name),
                 description: coge.utils.removeSpecialChars(description),
@@ -1036,18 +1037,20 @@ $.extend(GeneralOptionsView.prototype, {
         var notebook = this.edit_notebook.val();
 
         this.data.notebook = this.el.find("#notebook").is(":checked");
-        this.data.notebook_type = this.el.find("[name=notebook] :checked").val();
+        var notebook_type = this.el.find("input[name='notebook']:checked").val();
         this.data.notebook_name = notebook;
         this.data.notebook_id = this.notebook_id;
         this.data.email = this.el.find("#email").is(":checked");
 
-        if (this.data.notebook && this.data.notebook_type === "existing" && 
+        if (this.data.notebook && notebook_type === "existing" &&
         		(!notebook || !this.notebook_id))
         {
         	if (this.onError)
             	this.onError('Please specify a notebook.');
             return false;
         }
+
+        console.log(this.data);
 
         return true;
     },
@@ -1065,10 +1068,11 @@ $.extend(GeneralOptionsView.prototype, {
         	var option = $(this).val();
         	self.edit_notebook.prop("disabled", (option === 'new' ? true : false));
         });
-        this.edit_notebook.unbind().change(function() {
-            // Reset notebook_id when item has changed
-            self.notebook_id = undefined;
-        });
+// mdb removed 2/13/17 -- no longer needed? breaks using existing notebook for reason now
+//        this.edit_notebook.unbind().change(function() {
+//            // Reset notebook_id when item has changed
+//            self.notebook_id = undefined;
+//        });
 
         // Setup "source" autocomplete
         this.edit_notebook.autocomplete({

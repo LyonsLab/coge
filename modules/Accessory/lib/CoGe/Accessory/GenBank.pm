@@ -53,8 +53,8 @@ sub get_genbank_from_ncbi {
 	my $complexity = $opts{complexity};    #what to return from genbank
 	$complexity = 0                   unless defined $complexity;
 
-	print STDERR "Loading from NCBI: $id\n" if $self->debug();
-	print {$self->logfile} "log: Fetching $id from NCBI\n" if $self->logfile;
+	print STDERR "Fetching $id\n" if $self->debug();
+	print {$self->logfile} "log: Fetching $id\n" if $self->logfile;
 
 	$id         = $self->requested_id unless $id;
 	$file       = $self->srcfile      unless $file;
@@ -102,8 +102,7 @@ sub get_genbank_from_ncbi {
 			{
 				last try_loop if $entry =~ /^LOCUS/;
 				last if $count >= $tries;
-				print STDERR "Warning: $url" . $accn
-				  . " failed\nFetching from NCBI yielding '$1'\nRetrying\n";
+				print STDERR "Warning: $url".$accn." failed\nFetching from NCBI yielding '$entry'\nRetrying\n";
 				sleep 10;
 				$response = $ua->get( $url . "$accn" );
 				$entry    = $response->content;

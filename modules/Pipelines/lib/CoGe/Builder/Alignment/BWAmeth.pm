@@ -45,6 +45,7 @@ sub bwameth_index {
     my $done_file = 'bwameth_index.done';
 
     my $cmd = ($self->conf->{BWAMETH} ? $self->conf->{BWAMETH} : 'bwameth') . ' index';
+    $cmd = 'nice ' . $cmd; # run at lower priority
 
     $cmd = "cd $cache_dir && " .
            "cp $fasta . && " .
