@@ -30,6 +30,7 @@ has 'page'          => ( is => 'rw' );
 has 'tasks'         => ( is => 'rw', isa => 'ArrayRef', default => sub { [] });
 has 'staging_dir'   => ( is => 'rw');#, traits => ['Private'] );
 has 'result_dir'    => ( is => 'rw');#, traits => ['Private'] );
+has 'metadata'      => ( is => 'rw');#, traits => ['Private'] );
 
 # requires 'build'; # must be implemented in sub-class
 
@@ -706,7 +707,7 @@ sub sort_bam {
 sub load_bam { #TODO combine with create_load_experiment_job
     my $self = shift;
     my %opts = @_;
-#    my $annotations = $opts{annotations};
+    my $annotations = $opts{annotations};
     my $bam_file = $opts{bam_file};
     my $metadata = $opts{metadata} || $self->params->{metadata};
     my $additional_metadata = $self->params->{additional_metadata};
@@ -747,10 +748,10 @@ sub load_bam { #TODO combine with create_load_experiment_job
         CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
         push @$args, ['-metadata_file', $metadata_file, 0];
     }
-#    if ($annotations && @$annotations) { # legacy method
-#        my $annotations_str = join(';', @$annotations);
-#        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
-#    }
+    if ($annotations && @$annotations) { # legacy method
+        my $annotations_str = join(';', @$annotations);
+        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
+    }
 
     return {
         cmd => $cmd,

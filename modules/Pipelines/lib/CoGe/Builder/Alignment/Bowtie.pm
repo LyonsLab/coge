@@ -5,6 +5,7 @@ extends 'CoGe::Builder::Alignment::Aligner';
 
 use File::Spec::Functions qw(catdir catfile);
 use File::Path qw(make_path);
+use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils qw(to_filename to_filename_base to_filename_without_extension);
 use CoGe::Accessory::Web qw(get_command_path);

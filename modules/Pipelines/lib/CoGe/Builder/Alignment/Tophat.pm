@@ -54,18 +54,18 @@ sub build {
             $self->add(
                 $self->tophat_alignment([$file], $gff_file)
             );
-            push @{$self->bam_files}, $self->previous_output;
+            push @{$self->bam}, $self->previous_output;
         }
     }
     else { # standard Tophat run (all fastq's at once)
         $self->add(
             $self->tophat_alignment($fastq, $gff_file)
         );
-        push @{$self->bam_files}, $self->previous_output;
+        push @{$self->bam}, $self->previous_output;
     }
 }
 
-sub create_tophat_job {
+sub tophat_alignment {
     my $self  = shift;
     my $fastq = shift;
     my $gff   = shift; # optional
@@ -101,15 +101,14 @@ sub create_tophat_job {
     $arg_str .= "-o . -g $g -p " . $self->NUM_CPUS . " $index_name ";
 
     return {
-        cmd => catfile($self->conf->{SCRIPTDIR}, 'tophat.pl'), # this script was created because JEX can't handle TopHat's paired-end argument syntax
-        script => undef,
+        cmd  => catfile($self->conf->{SCRIPTDIR}, 'tophat.pl'), # this script was created because JEX can't handle TopHat's paired-end argument syntax
         args => [
-            ['-read_type', $read_type, 0],
-            ['-cmd_args', shell_quote($arg_str), 0],
-            ['-output', $output_file, 0],
-            ['-files', shell_quote(join(',', @$fastq)), 0]
+            ['-read_type', $read_type,                      0],
+            ['-cmd_args',  shell_quote($arg_str),           0],
+            ['-output',    $output_file,                    0],
+            ['-files',     shell_quote(join(',', @$fastq)), 0]
         ],
-        inputs => $inputs,
+        inputs  => $inputs,
         outputs => [
             catfile($self->staging_dir, $output_file)
         ],
