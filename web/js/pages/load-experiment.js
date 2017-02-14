@@ -1037,20 +1037,18 @@ $.extend(GeneralOptionsView.prototype, {
         var notebook = this.edit_notebook.val();
 
         this.data.notebook = this.el.find("#notebook").is(":checked");
-        this.data.notebook_type = this.el.find("input[name='notebook']:checked").val();
+        var notebook_type = this.el.find("input[name='notebook']:checked").val();
         this.data.notebook_name = notebook;
         this.data.notebook_id = this.notebook_id;
         this.data.email = this.el.find("#email").is(":checked");
 
-        if (this.data.notebook && this.data.notebook_type === "existing" && 
+        if (this.data.notebook && notebook_type === "existing" &&
         		(!notebook || !this.notebook_id))
         {
         	if (this.onError)
             	this.onError('Please specify a notebook.');
             return false;
         }
-
-        console.log(this.data);
 
         return true;
     },
