@@ -59,19 +59,19 @@ function get_feat_gc(opts){
 
     $.ajax({
         data: {
-                dsgid: GENOME_ID,
-                fname: 'get_gc_for_feature_type',
-                dsid: dsid,
-                typeid: typeid,
-                chr: chr,
-                min: min,
-                max: max,
-                hist_type: hist_type
-            },
-            success: function(data) {
-                elem.html(data);
-            }
-        });
+            dsgid: GENOME_ID,
+            fname: 'get_gc_for_feature_type',
+            dsid: dsid,
+            typeid: typeid,
+            chr: chr,
+            min: min,
+            max: max,
+            hist_type: hist_type
+        },
+        success: function(data) {
+            elem.html(data);
+        }
+    });
 }
 
 function chr_hist (dsgid) {
@@ -254,8 +254,11 @@ function download_chr_file() {
 		download_chromosome_sequence(id.substring(1));
 	else if (type == 'g')
 		get_gff(id.substring(1));
-    else 
-        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', 10000, function(val) {
+    else {
+        var num_windows = chromosome_length - 10000;
+        if (num_windows > 2000000)
+            num_windows = chromosome_length - 2000000;
+        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', chromosome_length - num_windows, function(val) {
             if (val != '') {
                 var chr = id.substring(1);
                 coge.progress.init({title: '%GC/AT',
@@ -266,6 +269,7 @@ function download_chr_file() {
                 percent_gc_at(chr, val);
             }
         });
+    }
 }
 
 function export_chr_file() {
@@ -280,16 +284,23 @@ function export_chr_file() {
 		export_fasta_chr(id.substring(1));
 	else if (type == 'g')
 		export_gff(id.substring(1));
-    else
-        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', 10000, function(val) {
+    else {
+        var num_windows = chromosome_length - 10000;
+        if (num_windows > 2000000)
+            num_windows = chromosome_length - 2000000;
+        coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', chromosome_length - num_windows, function(val) {
             if (val != '') {
                 coge.progress.init({title: '%GC/AT'});
                 percent_gc_at(id.substring(1), val, true);
             }
         });
+    }
 }
 
-function update_percent_gc_at_plot_button() {
+// major hack, rewrite get_chromosomes in GenomeInfo.pl to get json from api, don't send chr_len to this
+var chromosome_length;
+function update_percent_gc_at_plot_button(chr_len) {
+    chromosome_length = chr_len;
 	var i = $('input[name=chr]:checked');
 	var id = i.attr('id');
 	var type = id.substring(0,1);
@@ -306,7 +317,10 @@ function plot_percent_gc_at() {
 		return;
 	var id = i.attr('id');
     var chr = id.substring(1);
-    coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', 10000, function(val) {
+    var num_windows = chromosome_length - 10000;
+    if (num_windows > 2000000)
+        num_windows = chromosome_length - 2000000;
+    coge.utils.prompt('Window Size:', '%GC/AT Sliding Window', chromosome_length - num_windows, function(val) {
         if (val != '') {
             coge.progress.init({title: '%GC/AT',
                 onReset: function() {
