@@ -87,7 +87,7 @@ sub load_vcf {
 
     my $desc = 'Single nucleotide polymorphisms' . ($method ? " (determined by $method method)" : '');
 
-    my $output_path = catdir($self->staging_dir, 'load_vcf'.to_filename_base($vcf));
+    my $output_path = catdir($self->staging_dir, 'load_vcf_'.to_filename_base($vcf));
 
     my $annotations_str = '';
     $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
