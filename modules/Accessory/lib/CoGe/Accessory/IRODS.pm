@@ -136,7 +136,7 @@ sub irods_chksum {
     my $env_file = _irods_get_env_file();
     return unless $env_file;
 
-    my $cmd = "export irodsEnvFile='$env_file' && ichksum $path";
+    my $cmd = "export irodsEnvFile='$env_file' && ichksum '$path'";
     #print STDERR "cmd: $cmd\n";
     my @output = `$cmd`;
     my ($chksum) = $output[0] =~ /\s*\S+\s+(\S+)/;
@@ -181,7 +181,7 @@ sub irods_iput {
 
     my $cmd = "export irodsEnvFile='$env_file' && iput -T";
        $cmd .= " -f " if $overwrite;
-       $cmd .= " $src $dest";
+       $cmd .= " '$src' '$dest'";
 
     return $cmd if $no_execute;
     #print STDERR "cmd: $cmd\n";

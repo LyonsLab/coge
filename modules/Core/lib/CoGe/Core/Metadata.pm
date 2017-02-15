@@ -26,7 +26,7 @@ BEGIN {
 
 sub create_annotation {
     my %opts = @_;
-    my ($error, $type_id, $link, $image_id, $bisque_id, $bisque_file) = _init(\%opts);
+    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
     if ($error) {
         warn 'create_annotation: ' . $error;
         return;
@@ -50,45 +50,30 @@ sub create_annotation {
 
     my $locked = $opts{locked} ? 1 : 0;
     my $text   = $opts{text};
+    my $args = {
+        annotation_type_id => $type_id,
+        annotation => $text,
+        link => $link,
+        image_id => $image_id,
+        locked => $locked
+    };
+    if ($bisque_id) {
+        $args->{bisque_id} = $bisque_id;
+        $args->{bisque_file} = $opts{filename};
+    }
     if (ref($target) =~ /Experiment/) {
-        return $db->resultset('ExperimentAnnotation')->find_or_create({
-            experiment_id => $target->id,
-            annotation_type_id => $type_id,
-            annotation => $text,
-            link => $link,
-            image_id => $image_id,
-            bisque_id => $bisque_id,
-            bisque_file => $bisque_file,
-            locked => $locked
-        });
+        $args->{experiment_id} = $target->id;
+        return $db->resultset('ExperimentAnnotation')->find_or_create($args);
     }
     if (ref($target) =~ /Genome/) {
-        return $db->resultset('GenomeAnnotation')->find_or_create({
-            genome_id => $target->id,
-            annotation_type_id => $type_id,
-            annotation => $text,
-            link => $link,
-            image_id => $image_id,
-            bisque_id => $bisque_id,
-            bisque_file => $bisque_file,
-            locked => $locked
-        });
+        $args->{genome_id} = $target->id;
+        return $db->resultset('GenomeAnnotation')->find_or_create($args);
     }
     if (ref($target) =~ /List/) {
-        return $db->resultset('ListAnnotation')->find_or_create({
-            list_id => $target->id,
-            annotation_type_id => $type_id,
-            annotation => $text,
-            link => $link,
-            image_id => $image_id,
-            bisque_id => $bisque_id,
-            bisque_file => $bisque_file,
-            locked => $locked
-        });
+        $args->{list_id} = $target->id;
+        return $db->resultset('ListAnnotation')->find_or_create($args);
     }
     warn 'create_annotation: unknown target type';
-
-    return;
 }
 
 sub create_annotations {
@@ -336,7 +321,7 @@ sub update_annotation {
         return;
     }
  
-    my ($error, $type_id, $link, $image_id, $bisque_id, $bisque_file) = _init(\%opts);
+    my ($error, $type_id, $link, $image_id, $bisque_id) = _init(\%opts);
     if ($error) {
         warn 'update_annotation: ' . $error;
         return;
@@ -353,8 +338,10 @@ sub update_annotation {
     $annotation->link($link);
     $annotation->annotation_type_id($type_id);
     $annotation->image_id($image_id) if ($image_id);
-    $annotation->bisque_id($bisque_id) if ($bisque_id);
-    $annotation->bisque_file($bisque_file) if ($bisque_file);
+    if ($bisque_id) {
+        $annotation->bisque_id($bisque_id);
+        $annotation->bisque_file($opts{filename});
+    }
     $annotation->update;
 
     return;
@@ -404,30 +391,20 @@ sub tags_to_string {
 }
 
 sub _create_bisque_image {
-    my ($target_type, $target_id, $upload, $user) = @_;
+    my ($target_type, $target_id, $filename, $tmpfilename, $user) = @_;
 
     my $dest = _get_bisque_dir($target_type, $target_id, $user);
     irods_imkdir($dest);
-    $dest = '"' . catfile($dest, basename($upload->filename)) . '"';
-    my $source;
-    if ($upload->asset->is_file) {
-         $source = $upload->asset->path;
-    }
-    else {
-        $source = get_upload_path($user->name, get_unique_id());
-        system('mkdir', '-p', $source);
-        $source = catfile($source, $upload->filename);
-        $upload->asset->move_to($source);
-    }
-    warn $dest;
-    irods_iput($source, $dest);
+    $dest = catfile($dest, basename($filename));
+    irods_iput($tmpfilename, $dest);
+    unlink $tmpfilename;
     for my $i (0..9) {
         sleep 5;
         my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
         if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
             my $bisque_id = substr($result->[2], 7);
             chomp $bisque_id;
-            return $bisque_id, $upload->filename;
+            return $bisque_id;
         }
     }
     warn 'unable to get bisque id';
@@ -462,6 +439,7 @@ sub _create_image {
 
 sub _get_bisque_dir {
     my ($target_type, $target_id, $user) = @_;
+#    return catfile(dirname(irods_get_base_path($user->name)), 'bisque_data');
     return catfile(dirname(irods_get_base_path($user->name)), 'bisque_data', $target_type, $target_id);
 }
 
@@ -479,8 +457,9 @@ sub _get_object {
 
 sub _init {
     my $opts = shift;
+    return 'text parameter required' unless $opts->{text};
     my $type_name = $opts->{type_name};
-    return 'type_name required' unless $type_name;
+    return 'type_name parameter required' unless $type_name;
 
     my $db = $opts->{db};
     my ($error, $object) = _get_object($opts->{target}, $opts->{target_id}, $opts->{target_type}, 1, $db, $opts->{user});
@@ -500,13 +479,12 @@ sub _init {
 
     my $image_id;
     my $bisque_id;
-    my $bisque_file;
     my $filename = $opts->{filename};
     if ($filename) {
-        my $upload = $opts->{image};
-        if ($upload) {
+        my $tmpfilename = $opts->{tmpfilename};
+        if ($tmpfilename) {
             my $ref = ref($object);
-            ($bisque_id, $bisque_file) = _create_bisque_image(substr($ref, rindex($ref, ':') + 1), $object->id, $upload, $opts->{user});
+            $bisque_id = _create_bisque_image(substr($ref, rindex($ref, ':') + 1), $object->id, $filename, $tmpfilename, $opts->{user});
             return 'error creating image' unless $bisque_id;
         }
         else {
@@ -516,7 +494,7 @@ sub _init {
         }
     }
 
-    return (undef, $type_id, $link, $image_id, $bisque_id, $bisque_file);
+    return (undef, $type_id, $link, $image_id, $bisque_id);
 }
 
 1;
