@@ -5,6 +5,7 @@ extends 'CoGe::Builder::Alignment::Aligner';
 
 use File::Spec::Functions qw(catdir catfile);
 use File::Path qw(make_path);
+use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils qw(to_filename to_filename_base to_filename_without_extension);
 use CoGe::Accessory::Web qw(get_command_path);
@@ -93,7 +94,7 @@ sub bwa_alignment {
     my $self  = shift;
     my $fastq = shift;
 
-    my $gid         = $self->request->genome->id;
+    my $gid = $self->request->genome->id;
     
     #my $read_params = $self->params->{read_params} // {};
     #my $encoding    = $read_params->{encoding} // 33;
