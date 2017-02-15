@@ -324,7 +324,7 @@ class DataGridRow { //FIXME duplicated in user.js
             var title = this.getDescription();
             var link  = url || this.getLink();
             var flags = this.getFlags({noSpaces: 1});
-            title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
+            title = flags + ' ' + title + "<br><a class='xsmall' style='color:purple;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
             link = link + "&embed=1";
             console.log('DataGrid.openItem: ' + link);
             var height = $(window).height() * 0.8;

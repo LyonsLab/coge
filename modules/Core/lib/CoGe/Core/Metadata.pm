@@ -26,7 +26,6 @@ BEGIN {
 
 sub create_annotation {
     my %opts = @_;
-warn Dumper \%opts;
     my ($error, $type_id, $link, $image_id, $bisque_id, $bisque_file) = _init(\%opts);
     if ($error) {
         warn 'create_annotation: ' . $error;
@@ -176,7 +175,7 @@ sub delete_annotation {
 
     my $annotation = $db->resultset($object_type . 'Annotation')->find( { lc($object_type) . '_annotation_id' => $aid } );
     if ($annotation->bisque_file) {
-        my $path = catfile(_get_bisque_dir($object_type, $object_id, $user), $annotation->bisque_file);
+        my $path = '"' . catfile(_get_bisque_dir($object_type, $object_id, $user), $annotation->bisque_file) . '"';
         irods_irm($path);
     }
     $annotation->delete();
@@ -409,17 +408,18 @@ sub _create_bisque_image {
 
     my $dest = _get_bisque_dir($target_type, $target_id, $user);
     irods_imkdir($dest);
-    $dest = catfile($dest, basename($upload->filename));
+    $dest = '"' . catfile($dest, basename($upload->filename)) . '"';
     my $source;
     if ($upload->asset->is_file) {
          $source = $upload->asset->path;
     }
     else {
-        $source = get_upload_path('coge', get_unique_id());
+        $source = get_upload_path($user->name, get_unique_id());
         system('mkdir', '-p', $source);
         $source = catfile($source, $upload->filename);
         $upload->asset->move_to($source);
     }
+    warn $dest;
     irods_iput($source, $dest);
     for my $i (0..9) {
         sleep 5;

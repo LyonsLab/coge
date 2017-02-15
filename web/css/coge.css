@@ -36,13 +36,13 @@ select {
 }
 
 a, a:visited {
-    color: #007000;
+    color: #070007;
     outline: none;
     text-decoration: none;
 }
 
 a:hover {
-    color: #009900;
+    color: purple;
     cursor: pointer;
 }
 
@@ -120,11 +120,11 @@ a:hover {
 }
 
 .coge-green {
-    color: #119911;
+    color: #541099;
 }
 
 .coge-bg-green {
-    background-color: #119911;
+    background-color: #541099;
 }
 
 .coge-bg-gray {
@@ -247,35 +247,35 @@ select {
 }
 
 .data {
-  color: #009900;
+  color: #990099;
 }
 
 .data1 {
   font-size: 1.5em; /* 24/16 = 1.5 */
-  color: #009900;
+  color: #990099;
 }
 
 .data2 {
   font-size: 1.25em; /* 20/16 = 1.25 */
-  color: #009900;
+  color: #990099;
 }
 
 .data3 {
   font-size: 1.125em; /* 18/16 = 1.125 */
-  color: #009900;
+  color: #990099;
 }
 
 .data4 {
-  color: #009900;
+  color: #990099;
 }
 
 .data5 {
   font-size: 0.875em; /* 14/16 = 0.875 */
-  color: #009900;
+  color: #990099;
 }
 .data6 {
   font-size: 0.75em; /* 12/16 = 0.75 */
-  color: #009900;
+  color: #990099;
 }
 
 .error-box {
@@ -356,7 +356,7 @@ select {
   font-style: oblique;
   font-weight: bold;
   font-size: 1.5em; /* 24/16 = 1.5 */
-  color: #009900;
+  color: #990099;
 }
 
 .backbox {
@@ -373,7 +373,7 @@ select {
 
 .species {
   font-style: oblique;
-  color: #009900;
+  color: #990099;
 }
 
 .loading {
@@ -444,7 +444,7 @@ select {
   height: 23px;
   background-image: url(/CoGe/picts/table/table_bg_head_t.png);
   font-style: oblique;
-  color: #009900;
+  color: #990099;
 }
 
 .trh {
@@ -714,7 +714,7 @@ tr.ltblue {
   height:22px;
   cursor:pointer;
   text-decoration: none;
-  color: #009900;
+  color: #990099;
   border: 1px solid #00FF36;
     font-size: 0.875em;
 }
@@ -756,7 +756,7 @@ tr.ltblue {
   padding-left:20px;
   cursor:pointer;
   text-decoration: none;
-  color: #009900;
+  color: #990099;
   font-size: 0.875em;
   border-bottom: 1px solid #00FF35;
 }
@@ -929,7 +929,7 @@ tr.highlight {
 }
 
 #feature_count:hover {
-  color: #009900;
+  color: #990099;
   cursor: pointer;
 }
 
@@ -938,19 +938,19 @@ tr.highlight {
 }
 
 div.link:hover {
- color: #009900;
+ color: #990099;
 }
 
 span.link:hover {
- color: #009900;
+ color: #990099;
 }
 
 td.link:hover {
- color: #009900;
+ color: #990099;
 }
 
 .link {
-  color: #007000;
+  color: #070007;
   cursor: pointer;
 }
 
@@ -1048,7 +1048,7 @@ dd {
 .ui-menu-item a.ui-state-active {
 	border:none;
 	margin:0px !important;
-	background:greenyellow;
+	background:#B048B5;
 }
 
 .coge-striped-even > :nth-child(even) {
@@ -1174,7 +1174,7 @@ li {
 
 /* Main Page */
 .welcome {
-    color: #119911;
+    color: #541099;
     text-shadow: #555555 1px 1px;
     font-size: 2.25em; /* 36/16 = 2.25 */
     font-weight: bold;
@@ -1251,14 +1251,14 @@ h5 > small {
     color: #c0c0c0;
 }
 
-.dev:after {
+/*.dev:after {
     content: " Development";
     font-size: 80%;
     color: red;
     position: absolute;
     top: 0;
     left: 0;
-}
+}*/
 
 /* CoGepedia Wiki Feed */
 
@@ -1559,7 +1559,7 @@ h5 > small {
     font-weight: 600;
     font-size: 0.875em;
     line-height: 1.0;
-    background: #9ce76d;
+    background: #a087e5;
     border-radius: 3px;
     vertical-align: middle;
     text-align: center;
@@ -1594,7 +1594,7 @@ h5 > small {
 }
 
 .coge-button:hover {
-    background: #65d022;
+    background: #c521d1;
 }
 
 .coge-button.coge-button-danger:hover {
@@ -1602,7 +1602,7 @@ h5 > small {
 }
 
 .coge-icon {
-    color: #119911;
+    color: #541099;
     font-size: 1.25em;
     padding: 1px;
     border: 1px solid lightgray;
@@ -1611,7 +1611,7 @@ h5 > small {
 
 .coge-icon:hover {
     border-color: #55ae1c;
-    color: #65d022;
+    color: #c521d1;
     outline: none;
 }
 
@@ -1619,7 +1619,7 @@ h5 > small {
     opacity: .35;
 }
 .coge-disabled:not(.coge-icon):hover {
-    background: #9ce76d;
+    background: #a087e5;
     opacity: .35;
 }
 
@@ -1629,11 +1629,11 @@ h5 > small {
  */
 
 .coge-highlight:hover {
-    background-color: greenyellow;
+    background-color: #B048B5;
 }
 
 .coge-selected {
-    background-color: #9CE62A;
+    background-color: #8a29e5;
 }
 
 .coge-list-item {
@@ -1665,13 +1665,13 @@ h5 > small {
     padding-top: 3px;
     padding-bottom: 3px;
 }
-.coge-side-menu ul li span:hover { background: greenyellow }
+.coge-side-menu ul li span:hover { background: #B048B5 }
 .coge-side-menu li span       { padding-left: 0 }
 .coge-side-menu li li span    { padding-left: 1.5em }
 .coge-side-menu li li li span { padding-left: 3em }
 .coge-side-menu .selected { 
     font-weight: bold;
-    color: green;
+    color: purple;
 }
 
 .coge-item-count {
@@ -1695,11 +1695,11 @@ h5 > small {
 }
 
 .coge-dropdown-menu li:hover {
-    background-color: greenyellow;
+    background-color: #B048B5;
 }
 
 .coge-dropdown-menu li a:hover {
-    color: green;
+    color: purple;
 }
 
 /*
@@ -1721,6 +1721,17 @@ div.dataTables_scrollBody {
     border-bottom: none !important;
 }
 
+table.dataTable.hover tbody tr:hover.selected, table.dataTable.hover tbody tr.odd:hover.selected, table.dataTable.hover tbody tr.even:hover.selected, table.dataTable.display tbody tr:hover.selected, table.dataTable.display tbody tr.odd:hover.selected, table.dataTable.display tbody tr.even:hover.selected {
+    background-color: #af79e5 !important;
+}
+table.dataTable tbody tr.selected {
+      background-color: #af79e5 !important; }
+table.dataTable.hover tbody tr:hover,
+  table.dataTable.hover tbody tr.odd:hover,
+  table.dataTable.hover tbody tr.even:hover, table.dataTable.display tbody tr:hover,
+  table.dataTable.display tbody tr.odd:hover,
+  table.dataTable.display tbody tr.even:hover {
+    background-color: #d6aaef !important; }
 /*
  * YouTube widget
  *
@@ -1834,7 +1845,7 @@ div.dataTables_scrollBody {
     float: left;
     margin: 0;
     padding: 0;
-    color: #119911;
+    color: #541099;
     font-style: normal;
     font-size: 1.5em;
 }
@@ -1850,7 +1861,7 @@ div.dataTables_scrollBody {
 }
 
 .header .active {
-    color: #119911;
+    color: #541099;
     font-size: larger;
 }
 
@@ -1887,7 +1898,7 @@ div.dataTables_scrollBody {
 
 .form-group:after,
 .form-field:after {
-    content " ";
+    content: " ";
     clear: both;
 }
 
@@ -1967,7 +1978,7 @@ div.dataTables_scrollBody {
     font-family: impact;
     font-size: 3em;
     font-weight: bold;
-    color: #41AD41;
+    color: #8041ad;
 }
 
 .coge-header-main li {
@@ -1984,10 +1995,10 @@ div.dataTables_scrollBody {
 }
 
 .coge-header-search-button {
-	border-color: #65d022;
+	border-color: purple;
 	margin-top: 0.55em;
 	font-size: 1.25em;
-	color: gray;
+	color: white;
 	padding: 0.2em !important;
 }
 
@@ -2024,11 +2035,11 @@ div.dataTables_scrollBody {
 .coge-header-button > div {
 	font-size: 1.25em;
 	font-family: helvetica;
-	color: #41AD41;
+	color: #8041ad;
 }
 
 .coge-header-button a {
-  color: #41AD41;
+  color: #8041ad;
 }
 
 #advanced_search {
@@ -2073,7 +2084,7 @@ div.dataTables_scrollBody {
 .coge-login-button > div {
 	/*font-family: impact;*/
 	font-size: 12;
-	color: #41AD41;
+	color: #8041ad;
 	text-align: center;
 	white-space: nowrap;
 }
@@ -2139,6 +2150,6 @@ div.dataTables_scrollBody {
 }
 
 .dropdown-link {
-	color: #41AD41;
+	color: #8041ad;
 	display: block;
 }

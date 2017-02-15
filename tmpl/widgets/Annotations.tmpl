@@ -230,7 +230,7 @@ class Annotations {
 
 	verify_image_file(file) {
 		var ext = file.name.split('.').pop().toLowerCase();
-		if (ext != 'jpg' && ext != 'jpeg' && ext != 'gif' && ext != 'png' && ext != 'svg' ) {
+		if (ext != 'jpg' && ext != 'jpeg' && ext != 'gif' && ext != 'png' && ext != 'svg' && ext != 'tif' && ext != 'tiff' ) {
 			coge.utils.alert('Error: specified file is not an image');
 			return false;
 		}
