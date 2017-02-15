@@ -655,6 +655,8 @@ $.extend(AlignmentView.prototype, {
     },
 
     is_valid: function() {
+        var self = this;
+
         var aligner = this.el.find("#alignment :checked").val();
         if (aligner === "gsnap") {
             this.data = {
@@ -673,11 +675,18 @@ $.extend(AlignmentView.prototype, {
             }
         }
         else if (aligner === "bwa") {
+            var read_group_line = '';
+            ['ID', 'CN', 'DS', 'DT', 'FO', 'KS', 'LB', 'PG', 'PI', 'PL', 'PM', 'PU', 'SM'].forEach(function(key) {
+                var val = self.el.find("input[id='"+key+"']").val();
+                if (val)
+                    read_group_line += '\t' + key + ':' + val;
+            });
+
             this.data = {
         		alignment_params: {
         			tool: "bwa",
         			'-M': this.el.find("[id='-M']").is(":checked"),
-        			'-R': this.el.find("[id='-R']").val(),
+        			'-R': (read_group_line ? '@RG' + read_group_line : '')
         		}
         	}
         }
@@ -1049,8 +1058,6 @@ $.extend(GeneralOptionsView.prototype, {
             	this.onError('Please specify a notebook.');
             return false;
         }
-
-        console.log(this.data);
 
         return true;
     },

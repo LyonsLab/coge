@@ -537,10 +537,23 @@ the specified length after this step has been performed.">
                     <label>-M:</label>
                     <input id="-M" type="checkbox"/>
                 </div>
-				<div class="form-entry" title="Set read group line in header (such as '@RG\tID:foo\tSM:bar').  Leave blank to ignore.">
-					<label>Read group line (-R):</label>
-					<input id="-R" type="text"/>
-					<span class="note">(optional)</span>
+				<div class="form-entry" style="clear:left">
+					<div title="Set read groups in header.  Leave blank to ignore.">Read groups (leave blank to ignore, documentation <a href="https://samtools.github.io/hts-specs/SAMv1.pdf" target="_blank">here</a>):</div>
+					<div class="coge-code">
+                        <div class="inline nowrap" title="Read group identifier. Each @RG line must have a unique ID. The value of ID is used in the RG tags of alignment records. Must be unique among all read groups in header section. Read group IDs may be modified when merging SAM files in order to handle collisions."><label>ID:</label><input id="ID" type="text"/></div>
+                        <div class="inline nowrap" title="Name of sequencing center producing the read."><label>CN:</label><input id="CN" type="text"/></div>
+                        <div class="inline nowrap" title="Description."><label>DS:</label><input id="DS" type="text"/></div>
+                        <div class="inline nowrap" title="Date the run was produced (ISO8601 date or date/time)."><label>DT:</label><input id="DT" type="text"/></div>
+                        <div class="inline nowrap" title="Flow order. The array of nucleotide bases that correspond to the nucleotides used for each flow of each read. Multi-base flows are encoded in IUPAC format, and non-nucleotide flows by various other characters. Format: /\*|[ACMGRSVTWYHKDBN]+/"><label>FO:</label><input id="FO" type="text"/></div>
+                        <div class="inline nowrap" title="The array of nucleotide bases that correspond to the key sequence of each read."><label>KS:</label><input id="KS" type="text"/></div>
+                        <div class="inline nowrap" title="Library."><label>LB:</label><input id="LB" type="text"/></div>
+                        <div class="inline nowrap" title="Programs used for processing the read group."><label>PG:</label><input id="PG" type="text"/></div>
+                        <div class="inline nowrap" title="Predicted median insert size."><label>PI:</label><input id="PI" type="text"/></div>
+                        <div class="inline nowrap" title="Platform/technology used to produce the reads. Valid values: CAPILLARY, LS454, ILLUMINA, SOLID, HELICOS, IONTORRENT, ONT, and PACBIO."><label>PL:</label><input id="PL" type="text"/></div>
+                        <div class="inline nowrap" title="Platform model. Free-form text providing further details of the platform/technology used."><label>PM:</label><input id="PM" type="text"/></div>
+                        <div class="inline nowrap" title="Platform unit (e.g. flowcell-barcode.lane for Illumina or slide for SOLiD). Unique identifier."><label>PU:</label><input id="PU" type="text"/></div>
+                        <div class="inline nowrap" title="Sample. Use pool name where a pool is being sequenced."><label>SM:</label><input id="SM" type="text"/></div>
+					</div>
 				</div>
 			</div>
 		</div>
