@@ -311,6 +311,32 @@ function update_percent_gc_at_plot_button(chr_len) {
         b.addClass('coge-disabled');
 }
 
+function calc_min_ws() {
+    if (chromosome_length < 2000000)
+        return 0;
+	var id = $('#ws_dialog').find('input:checked').attr('id');
+    var min_ws = id == 'full' ? Math.floor(chromosome_length / 2000000) : min_ws = 'half' ? Math.floor(chromosome_length / 1000000) : chromosome_length - 2000000;
+    $('#min_ws').text(min_ws);
+}
+
+function ws_dialog(f) {
+    var div = $('<div id="ws_dialog" title="%GC/AT"></div>').appendTo(document.body);
+    var html = '<table style="white-space:nowrap;"><tr><td>Window Size</td><td><input id="ws" value="10000" />';
+    if (chromosome_length > 2000000)
+        html += ' (min: <span id="min_ws"></span>)';
+    html += '</td></tr><tr><td>Window Spacing</td><td><input type="radio" name="ws" id="one" onchange="calc_min_ws()" /> 1bp</td></tr><tr><td></td><td><input type="radio" name="ws" id="half" onchange="calc_min_ws()" /> overlap windows half way</td></tr><tr><td></td><td><input type="radio" name="ws" id="full" onchange="calc_min_ws()" checked /> contiguous</td></tr></table>';
+    $(html).appendTo(div);
+    div.dialog({
+        modal: true,
+        buttons: {
+            Ok: function() { var val=div.find('input').val(); div.remove(); on_ok(val); },
+            Cancel: function() { div.remove(); }
+        },
+        width: 'auto'
+    });
+    calc_min_ws();
+}
+
 function plot_percent_gc_at() {
 	var i = $('input[name=chr]:checked');
 	if (!i.length)
