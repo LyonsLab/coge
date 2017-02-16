@@ -128,9 +128,9 @@ $(document).ready(function() {
 			<thead><tr><th>Chromosome</th><th>Length</th><th></th><th style="text-align:center;">Files</th><th></th></thead>
 			<tbody></tbody>
 		</table>
-		<span onclick="export_chr_file()" class="r coge-button" style="margin-left:10px;margin-top:10px;">Send to CyVerse</span>
-		<span onclick="download_chr_file()" class="r coge-button" style="margin-left:10px;margin-top:10px;">Download</span>
-		<span id="percent_gc_at_plot_button" onclick="ws_dialog(plot_percent_gc_at)" class="r coge-button coge-disabled" style="margin-top:10px;">Plot</span>
+		<span id="chromosome_list_send_button" onclick="ws_dialog(export_chr_file)" class="r coge-button coge-disabled" style="margin-left:10px;margin-top:10px;">Send to CyVerse</span>
+		<span id="chromosome_list_download_button" onclick="ws_dialog(download_chr_file)" class="r coge-button coge-disabled" style="margin-left:10px;margin-top:10px;">Download</span>
+		<span id="chromosome_list_plot_button" onclick="ws_dialog(plot_percent_gc_at)" class="r coge-button coge-disabled" style="margin-top:10px;">Plot</span>
 	</div>
 </div>
 <div class="dialog_box hidden" id="gc_histogram" title="Chromosome Size"></div>

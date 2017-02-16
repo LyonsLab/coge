@@ -12,7 +12,8 @@ from itertools import groupby
 
 fasta_line_source = fileinput.FileInput(sys.argv[1])
 window_size = int(sys.argv[2]);
-file_name = (os.path.splitext(sys.argv[1])[0]) + '_' + sys.argv[2] + '_out.txt'
+window_step = int(sys.argv[3]);
+file_name = (os.path.splitext(sys.argv[1])[0]) + '_' + sys.argv[2] + '_' + sys.argv[3] + '_out.txt'
 
 ###Read each line on the input file and splits sequence headers and sequenced (es a string) into a dictionary
 def lines_to_contigs(lines):
@@ -46,23 +47,20 @@ def group_nucleotides(nucleotide_seqs):
 ### counter updates to discount the removed nucleotide and count the new nucleotide
 ### Percentages are recalculated.
 ### Each window is yielded to a dictionary.
-def sliding_percentages(nucleos, window_size, unique_nucleotides):
+def sliding_percentages(nucleos, window_size, window_step, unique_nucleotides):
     for nucleo in nucleos:
-        sliding_window = collections.deque(itertools.islice(nucleo['sequence'], window_size), maxlen=window_size)
-        counter = collections.Counter({nucleotides: 0 for nucleotides in unique_nucleotides}) 
-        counter.update(sliding_window)
-        window_percentage = {nucleotides: (c / window_size)*100 for nucleotides, c in counter.items()}
+        counter = collections.Counter({nucleotides: 0 for nucleotides in unique_nucleotides})
+        sequence = nucleo['sequence']
+        counter.update(itertools.islice(sequence, window_size))
         w_start=0
-        for base in nucleo['sequence']:
-            w_start = w_start+1
-            itertools.islice(nucleo['sequence'], window_size, None)
-            trailing_nucleotide = sliding_window.popleft()
-            counter.subtract([trailing_nucleotide])
-            w_end = w_start+window_size
-            sliding_window.append(base)
-            counter.update([base])
-            window_percentage = {nucleotides: (c / window_size)*100 for nucleotides, c in counter.items()}
-            yield {'name': nucleo['name'], 'sequence': window_percentage, 'start': w_start, 'end': w_end}
+        w_end = window_size
+        while w_end < len(sequence):
+            counter.subtract(itertools.islice(sequence, window_step))
+            w_start += window_step
+            w_end += window_step
+            counter.update(itertools.islice(sequence, w_end - window_step, w_end))
+            percentages = {nucleotides: (c / window_size)*100 for nucleotides, c in counter.items()}
+            yield {'name': nucleo['name'], 'sequence': percentages, 'start': w_start, 'end': w_end}
         
 ### Turns all values calculated on the previous function and found on the dictionary into list
 ### Output list as a tab delimited format into a .txt file
@@ -82,4 +80,4 @@ def contig_list_creator(nucleos):
         out_file.write(str(nucleo['sequence']['X']) + '\n')
     out_file.close()
 
-contig_list_creator(sliding_percentages(group_nucleotides(lines_to_contigs(fasta_line_source)), window_size, ('AT', 'GC', 'N', 'X')))
+contig_list_creator(sliding_percentages(group_nucleotides(lines_to_contigs(fasta_line_source)), window_size, window_step, ('AT', 'GC', 'N', 'X')))

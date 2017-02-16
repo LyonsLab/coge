@@ -16,7 +16,8 @@ sub build {
 
     my $gid = $self->params->{'gid'};
     my $chr = $self->params->{'chr'};
-    my $ws = $self->params->{'ws'}; # sliding window size
+    my $wsize = $self->params->{'wsize'}; # sliding window size
+    my $wstep = $self->params->{'wstep'}; # sliding window spacing
     my $dir = catfile($self->conf->{SECTEMPDIR}, "downloads/genome", $gid);
 
     my $fasta = catfile($dir, $gid . '_' . $chr . '.faa');
@@ -27,10 +28,10 @@ sub build {
         description => "Generating chromosome sequence",        
     });
 
-    my $filename = $gid . '_' . $chr . '_' . $ws . '_out.txt';
+    my $filename = $gid . '_' . $chr . '_' . $wsize . '_' . $wstep . '_out.txt';
     my $output = catfile($dir, $filename);
     $self->add({
-        cmd         => catfile($self->conf->{SCRIPTDIR}, 'percent_gc_at.py') . ' ' . $fasta . ' ' . $ws,
+        cmd         => catfile($self->conf->{SCRIPTDIR}, 'percent_gc_at.py') . ' ' . $fasta . ' ' . $wsize . ' ' . $wstep,
         inputs      => [$fasta],
         outputs     => [$output],
         description => "Generating nucleotide sliding window percentages",        

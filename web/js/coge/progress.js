@@ -13,6 +13,8 @@ var coge = window.coge = (function(namespace) {
 			this.onSuccess = opts.onSuccess;
 			this.onError = opts.onError;
 			this.onReset = opts.onReset;
+			if (opts.onOK)
+				this.onOK = opts.onOK;
 			this.formatter = opts.formatter || this._default_formatter;
 			this.buttonTemplate = opts.buttonTemplate;
 			
@@ -43,9 +45,14 @@ var coge = window.coge = (function(namespace) {
 		    });
 		    
 		    // Setup button handlers
-		    c.find('.cancel,.ok').click( $.proxy(self.reset, self) );
+		    c.find('.ok').click( $.proxy(self.onOK, self) );
+		    c.find('.cancel').click( $.proxy(self.reset, self) );
 
 		    self.initialized = 1; // set flag to detect that this function was called
+		},
+
+		onOK: function() {
+			this.reset();
 		},
 		
 		reset: function() {

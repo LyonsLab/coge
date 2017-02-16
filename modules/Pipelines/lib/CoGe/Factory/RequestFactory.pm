@@ -46,7 +46,7 @@ my %typeToClass = (
     'analyze_expression'    => 'CoGe::Request::ExperimentAnalysis',
     'analyze_metaplot'      => 'CoGe::Request::ExperimentAnalysis',
     'analyze_diversity'     => 'CoGe::Request::ExperimentAnalysis',
-    'analyze_nucleotides'   => 'CoGe::Request::Genome'
+    'percent_gc_at'         => 'CoGe::Request::Genome'
 );
 
 sub get {

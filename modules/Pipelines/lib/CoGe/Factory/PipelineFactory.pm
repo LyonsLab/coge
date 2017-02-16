@@ -44,7 +44,7 @@ my %typeToClass = (
     'analyze_methylation'   => 'CoGe::Builder::Methylation::Analyzer',
     'analyze_metaplot'      => 'CoGe::Builder::Methylation::Metaplot',
     'analyze_diversity'     => 'CoGe::Builder::PopGen::SummaryStats',
-    'analyze_nucleotides'   => 'CoGe::Builder::Tools::PercentGCAT'
+    'percent_gc_at'         => 'CoGe::Builder::Tools::PercentGCAT'
 );
 
 sub get {

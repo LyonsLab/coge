@@ -9,12 +9,13 @@ use CGI;
 my $q = CGI->new;
 my $gid = $q->param('gid');
 my $chr = $q->param('chr');
-my $ws = $q->param('ws');
+my $wsize = $q->param('wsize');
+my $wstep = $q->param('wstep');
 
 # Connect to the database
 my $conf = CoGe::Accessory::Web->get_defaults();
 
-my $filename = $gid . "_" . $chr . "_" . $ws . "_out.txt";
+my $filename = $gid . "_" . $chr . "_" . $wsize . "_" . $wstep . "_out.txt";
 
 print "Content-Type: application/json\n\n";
 my $path = catfile($conf->{SECTEMPDIR}, "downloads/genome", $gid);

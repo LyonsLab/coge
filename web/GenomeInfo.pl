@@ -868,7 +868,7 @@ sub get_chr_length_hist { #TODO use API Genome Fetch
     return $info . "<br>" . $hist_img;
 }
 
-# major hack, rewrite to get json from api, don't send chr_len to update_percent_gc_at_plot_button
+# major hack, rewrite to get json from api, don't send chr_len to update_chromosome_list_plot_button
 sub get_chromosomes { #TODO use API Genome Fetch
     my %opts  = @_;
     my $gid = $opts{gid};
@@ -883,10 +883,10 @@ sub get_chromosomes { #TODO use API Genome Fetch
 		}
 		$html .= '["' . $c->name . ' <a href=\\"GenomeView.pl?gid=' . $gid . '&loc=' . $c->name . '%3A1..' . ($c->length - 1) .
             '\\" target=\\"_blank\\"><span class=\\"glyphicon glyphicon-eye-open\\" style=\\"color:black;padding-left:20px;\\" title=\\"Browse\\"></span></a>","' .
-            $c->length . '","<input type=\\"radio\\" name=\\"chr\\" id=\\"f' . $c->name . '\\" onchange=\\"update_percent_gc_at_plot_button(' .
+            $c->length . '","<input type=\\"radio\\" name=\\"chr\\" id=\\"f' . $c->name . '\\" onchange=\\"update_chromosome_list_plot_button(' .
             $c->length . ')\\" /> FASTA","<input type=\\"radio\\" name=\\"chr\\" id=\\"g' . $c->name .
-            '\\" onchange=\\"update_percent_gc_at_plot_button(' .
-            $c->length . ')\\" /> GFF","<input type=\\"radio\\" name=\\"chr\\" id=\\"n' . $c->name . '\\" onchange=\\"update_percent_gc_at_plot_button(' .
+            '\\" onchange=\\"update_chromosome_list_plot_button(' .
+            $c->length . ')\\" /> GFF","<input type=\\"radio\\" name=\\"chr\\" id=\\"n' . $c->name . '\\" onchange=\\"update_chromosome_list_plot_button(' .
             $c->length . ')\\" /> %GC/AT"]';
   	}
 	$html .= ']';
