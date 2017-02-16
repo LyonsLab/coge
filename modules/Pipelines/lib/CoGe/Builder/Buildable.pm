@@ -704,7 +704,7 @@ sub sort_bam {
     };
 }
 
-sub load_bam { #TODO combine with create_load_experiment_job
+sub load_bam { #TODO combine with load_experiment
     my $self = shift;
     my %opts = @_;
     my $annotations = $opts{annotations};
