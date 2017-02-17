@@ -292,11 +292,12 @@ function update_chromosome_list_plot_button(chr_len) {
         b.addClass('coge-disabled');
 }
 
+var max_windows = 200000;
 function calc_min_ws() {
-    if (chromosome_length < 2000000)
+    if (chromosome_length < max_windows)
         return 0;
 	var id = $('#ws_dialog').find('input:checked').attr('id');
-    var min_ws = id === 'full' ? Math.floor(chromosome_length / 2000000) : id === 'half' ? Math.floor(chromosome_length / 1000000) : chromosome_length - 2000000;
+    var min_ws = id === 'full' ? Math.floor(chromosome_length / max_windows) : id === 'half' ? Math.floor(chromosome_length / max_windows / 2) : chromosome_length - max_windows;
     $('#min_ws').text(min_ws);
     var ws = $('#ws').val();
     if (ws < min_ws)
@@ -311,7 +312,7 @@ function ws_dialog(on_ok) {
     var chr = i.attr('id').substring(1);
     var div = $('<div id="ws_dialog" title="%GC/AT"></div>').appendTo(document.body);
     var html = '<table style="white-space:nowrap;"><tr><td>Window Size</td><td><input id="ws" value="10000" />';
-    if (chromosome_length > 2000000)
+    if (chromosome_length > max_windows)
         html += ' (min: <span id="min_ws"></span>)';
     html += '</td></tr><tr><td>Window Spacing</td><td><input type="radio" name="ws" id="one" onchange="calc_min_ws()" /> 1bp</td></tr><tr><td></td><td><input type="radio" name="ws" id="half" onchange="calc_min_ws()" /> overlap windows half way</td></tr><tr><td></td><td><input type="radio" name="ws" id="full" onchange="calc_min_ws()" checked /> contiguous</td></tr></table>';
     $(html).appendTo(div);

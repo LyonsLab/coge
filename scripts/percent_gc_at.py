@@ -36,10 +36,10 @@ def lines_to_contigs(lines):
 ###Groups A and T into AT, and C and G into GC. Other nucleotides (including ambiguous characters are added to their own category) 
 def group_nucleotides(nucleotide_seqs):
     nucleotide_group_map = {'A': 'AT','T': 'AT','G': 'GC','C': 'GC','N': 'N','X': 'X', 
-                            'M':'M','R':'R','Y':'Y','S':'S','W':'W','K':'K','B':'B','V':'V','D':'D','H':'H'}
+                            'M':'M','R':'R','Y':'Y','S':'AT','W':'GC','K':'K','B':'B','V':'V','D':'D','H':'H'}
     for nucleotide_seq in nucleotide_seqs:
         nucleotide_groups = (nucleotide_group_map[base] for base in nucleotide_seq['sequence'])
-        yield {'name': nucleotide_seq['name'], 'sequence': nucleotide_groups}
+        yield {'name': nucleotide_seq['name'], 'sequence': nucleotide_groups, 'length': len(nucleotide_seq['sequence'])}
 
 ### Creates a sliding window (size of the window is a global variable). 
 ### Calculates %AT, %GC, %N and %X inside the window. It also calculates %of ambiguous nucleotides if found.
@@ -49,17 +49,49 @@ def group_nucleotides(nucleotide_seqs):
 ### Each window is yielded to a dictionary.
 def sliding_percentages(nucleos, window_size, window_step, unique_nucleotides):
     for nucleo in nucleos:
-        counter = collections.Counter({nucleotides: 0 for nucleotides in unique_nucleotides})
         sequence = nucleo['sequence']
-        counter.update(itertools.islice(sequence, window_size))
+        at = 0
+        gc = 0
+        n = 0
+        x = 0
+        for i in range(0, window_size):
+            c = sequence[i]
+            if c == 'A' or c == 'T' or c == 'S':
+                at += 1
+            elif c == 'C' or c == 'G' or c == 'W':
+                gc += 1
+            elif c == 'N':
+                n += 1
+            elif c == 'X':
+                x += 1
         w_start=0
         w_end = window_size
-        while w_end < len(sequence):
-            counter.subtract(itertools.islice(sequence, window_step))
+        percentages = {'AT': (at/window_size)*100, 'GC': (gc/window_size)*100, 'N': (n/window_size)*100, 'X': (x/window_size)*100}
+        yield {'name': nucleo['name'], 'sequence': percentages, 'start': w_start, 'end': w_end}
+        while w_start < len(sequence) - window_size - window_step:
+            for i in range(w_start, w_start + window_step):
+                c = sequence[i]
+                if c == 'A' or c == 'T' or c == 'S':
+                    at -= 1
+                elif c == 'C' or c == 'G' or c == 'W':
+                    gc -= 1
+                elif c == 'N':
+                    n -= 1
+                elif c == 'X':
+                    x -= 1
             w_start += window_step
+            for i in range(w_end, w_end + window_step):
+                c = sequence[i]
+                if c == 'A' or c == 'T' or c == 'S':
+                    at += 1
+                elif c == 'C' or c == 'G' or c == 'W':
+                    gc += 1
+                elif c == 'N':
+                    n += 1
+                elif c == 'X':
+                    x += 1
             w_end += window_step
-            counter.update(itertools.islice(sequence, w_end - window_step, w_end))
-            percentages = {nucleotides: (c / window_size)*100 for nucleotides, c in counter.items()}
+            percentages = {'AT': (at/window_size)*100, 'GC': (gc/window_size)*100, 'N': (n/window_size)*100, 'X': (x/window_size)*100}
             yield {'name': nucleo['name'], 'sequence': percentages, 'start': w_start, 'end': w_end}
         
 ### Turns all values calculated on the previous function and found on the dictionary into list
@@ -80,4 +112,4 @@ def contig_list_creator(nucleos):
         out_file.write(str(nucleo['sequence']['X']) + '\n')
     out_file.close()
 
-contig_list_creator(sliding_percentages(group_nucleotides(lines_to_contigs(fasta_line_source)), window_size, window_step, ('AT', 'GC', 'N', 'X')))
+contig_list_creator(sliding_percentages(lines_to_contigs(fasta_line_source), window_size, window_step, ('AT', 'GC', 'N', 'X')))
