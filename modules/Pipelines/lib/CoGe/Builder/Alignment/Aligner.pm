@@ -77,6 +77,16 @@ sub build {
         );
     }
 
+    # Reheader the fasta file - needs to happen before trimming for BBDuk
+    my ($reheader_fasta) = $self->add(
+        $self->reheader_fasta($gid)
+    );
+
+    # Index the fasta file
+    $self->add_to_previous(
+        $self->index_fasta($reheader_fasta)
+    );
+
     # Trim the fastq input files #TODO consider moving this and validation in to Load/Experiment
     my @trimmed;
     if ($self->params->{trimming_params}) {
@@ -88,16 +98,6 @@ sub build {
     else { # no trimming
         @trimmed = @$fastq;
     }
-
-    # Reheader the fasta file
-    my ($reheader_fasta) = $self->add(
-        $self->reheader_fasta($gid)
-    );
-
-    # Index the fasta file
-    $self->add_to_previous(
-        $self->index_fasta($reheader_fasta)
-    );
 
     my $aligner;
     switch( $self->_aligner() ) {

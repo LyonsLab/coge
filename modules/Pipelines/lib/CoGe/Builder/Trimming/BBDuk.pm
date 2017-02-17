@@ -91,7 +91,7 @@ sub bbduk {
     );
 
     if ($read_type eq 'paired') { # paired-end
-        $cmd .= join(' ',
+        $cmd .= ' ' . join(' ',
             qq[in2=$fastq->[1]],
             qq[out2=$outputs[1]]
         );
@@ -118,7 +118,10 @@ sub bbduk {
     return {
         cmd         => $cmd,
         args        => [],
-        inputs      => [ @$fastq ],
+        inputs      => [
+            @$fastq,
+            $fasta
+        ],
         outputs     => \@outputs,
         description => 'Trimming (BBDuk) '.join(', ', map { basename($_) } @$fastq)
     };
