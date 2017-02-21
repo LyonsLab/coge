@@ -326,6 +326,10 @@ function ws_dialog(on_ok) {
                     coge.utils.alert('Please choose a window size of at least ' + min_ws);
                     return;
                 }
+                if (ws >= chromosome_length) {
+                    coge.utils.alert('Please choose a window size less than ' + chromosome_length);
+                    return;
+                }
             	var id = div.find('input:checked').attr('id');
                 div.remove();
                 on_ok(chr, ws, id === 'full' ? ws : id === 'half' ? Math.floor(ws / 2) : 1);

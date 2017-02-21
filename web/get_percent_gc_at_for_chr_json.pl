@@ -26,10 +26,10 @@ my (@at, @gc, @n, @x);
 while ($l = <$fh>) {
     chomp $l;
     my @tokens = split /\t/, $l;
-    push @at, $tokens[3];
-    push @gc, $tokens[4];
-    push @n, $tokens[5];
-    push @x, $tokens[6];
+    push @at, $tokens[2];
+    push @gc, $tokens[3];
+    push @n, $tokens[4];
+    push @x, $tokens[5];
 }
 print '{"at":[';
 print join(',', @at);
