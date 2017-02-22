@@ -243,8 +243,9 @@ sub search {
 		$sql .= 'JOIN dataset USING(dataset_id) ' .
 				'JOIN data_source USING(data_source_id) ' .
 				'JOIN dataset_connector USING(dataset_id) ' .
-				'JOIN genome ON dataset_connector.genome_id=genome.genome_id AND !genome.deleted ' .
-				'JOIN organism USING(organism_id) ' .
+				'JOIN genome ON dataset_connector.genome_id=genome.genome_id AND !genome.deleted ';
+		$sql .= 'AND !genome.restricted ' if !$user || $user->is_public;
+		$sql .= 'JOIN organism USING(organism_id) ' .
 				'JOIN genomic_sequence_type USING(genomic_sequence_type_id) ' .
 			'WHERE MATCH(feature_name.name) AGAINST (\'' . (join ',', @{$query->{'search_terms'}}) . '\') ';
 		if ($feature_type) {
