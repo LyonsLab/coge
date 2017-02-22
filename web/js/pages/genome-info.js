@@ -381,7 +381,7 @@ function plot_percent_gc_at(chr, wsize, wstep) {
                         mode: 'lines',
                         line: { color: 'rgb(171,3,243)' }
                     }], {
-                        title: 'Sliding Window for ' + chr,
+                        title: 'Sliding Window for Chromosome ' + chr,
                         xaxis: { rangeslider: {}, title: 'Window Iteration' },
                         yaxis: { title: 'Percentage (%)' }
                     });
