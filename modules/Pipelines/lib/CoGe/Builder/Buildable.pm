@@ -764,7 +764,7 @@ sub load_bam { #TODO combine with load_experiment
             catfile($output_path, "log.done"),
             $result_file
         ],
-        description => "Loading alignment as new experiment"
+        description => 'Loading BAM alignment'
     };
 }
 

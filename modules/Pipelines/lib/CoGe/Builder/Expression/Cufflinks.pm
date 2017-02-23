@@ -275,7 +275,7 @@ sub load_csv {
             catfile($self->staging_dir, "load_csv/log.done"),
             $result_file
         ],
-        description => "Loading FPKM results as new experiment"
+        description => 'Loading FPKM measurements'
     };
 }
 
@@ -323,7 +323,7 @@ sub load_bed {
             catfile($self->staging_dir, "load_bed/log.done"),
             $result_file
         ],
-        description => "Loading read depth measurements as new experiment"
+        description => 'Loading read depth measurements'
     };
 }
 
