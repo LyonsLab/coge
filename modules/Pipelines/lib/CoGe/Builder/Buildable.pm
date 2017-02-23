@@ -504,7 +504,7 @@ sub reheader_fasta {
         outputs => [
             catfile($cache_dir, $output_file)
         ],
-        description => "Reheader fasta file",
+        description => "Reheader FASTA file",
     };
 }
 
