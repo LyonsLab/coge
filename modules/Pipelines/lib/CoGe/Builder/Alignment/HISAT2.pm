@@ -29,26 +29,17 @@ sub build {
     );
 
     # Add one or more alignment tasks
-    my @sam_files;
     if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
         foreach my $file (@$fastq) {
             $self->add(
                 $self->hisat2_alignment([$file])
             );
-            push @sam_files, $self->previous_output;
+            push @{$self->bam}, $self->previous_output;
         }
     }
     else { # standard Bowtie run (all fastq's at once)
         $self->add(
             $self->hisat2_alignment($fastq)
-        );
-        push @sam_files, $self->previous_output;
-    }
-
-    # Add one or more sam-to-bam tasks
-    foreach my $file (@sam_files) {
-        $self->add(
-            $self->sam_to_bam($file)
         );
         push @{$self->bam}, $self->previous_output;
     }
@@ -99,14 +90,10 @@ sub hisat2_alignment {
     my $encoding    = $read_params->{encoding} // 33;
     my $read_type   = $read_params->{read_type} // 'single';
 
-    my ($first_fastq) = @$fastq;
-    my $output_file = to_filename_without_extension($first_fastq) . '.sam';
-
 	my $args = [
 		['-p', $self->NUM_CPUS, 0],
         ['--dta-cufflinks', '', 0], # mdb added 8/9/16 for Cufflinks error "BAM record error: found spliced alignment without XS attribute"
 		['-x', catfile(get_genome_cache_path($gid), 'hisat2_index', 'genome.reheader'), 0],
-		['-S', $output_file,    0]
     ];
 
     if ($encoding eq '64') {
@@ -124,6 +111,11 @@ sub hisat2_alignment {
     	push $args, ['-1', join(',', sort @$m1), 0];
     	push $args, ['-2', join(',', sort @$m2), 0];
 	}
+
+    my $samtools = get_command_path('SAMTOOLS');
+    my ($first_fastq) = @$fastq;
+    my $output_file = to_filename_without_extension($first_fastq) . '.bam';
+    push @$args, ["| $samtools view -bS >", $output_file, 1]; # convert SAM to BAM on the fly for speed
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 
