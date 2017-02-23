@@ -88,7 +88,7 @@ sub tophat_alignment {
     push @$inputs, $gff if $gff;
 
     my ($first_fastq) = @$fastq;
-    my $output_file = to_filename_without_extension($first_fastq) . '.bam';
+    my $output_file = to_filename_without_extension($first_fastq) . '.bam'; # note: the default output from TopHat2 is sorted BAM file
 
     # Build up command/arguments string
     my $cmd = get_command_path('TOPHAT');

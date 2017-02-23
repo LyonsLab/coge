@@ -116,7 +116,7 @@ sub gsnap_alignment {
     my $samtools = get_command_path('SAMTOOLS');
     my ($first_fastq) = @$fastq;
     my $output_file = basename($first_fastq) . '.bam';
-    push @$args, ["| $samtools view -bS >", $output_file, 1]; # convert SAM to BAM on the fly for speed
+    push @$args, ["| $samtools view -bS | $samtools sort >", $output_file, 1]; # convert SAM to BAM and sort on the fly for speed
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 
