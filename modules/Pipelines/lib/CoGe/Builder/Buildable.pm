@@ -676,7 +676,7 @@ sub picard_deduplicate {
         outputs => [
             $output_file
         ],
-        description => "Deduplicating PCR artifacts using Picard"
+        description => "Deduplicating BAM file"
     };
 }
 
