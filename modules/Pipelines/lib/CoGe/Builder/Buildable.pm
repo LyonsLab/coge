@@ -504,7 +504,7 @@ sub reheader_fasta {
         outputs => [
             catfile($cache_dir, $output_file)
         ],
-        description => "Reheader fasta file",
+        description => "Reheader FASTA file",
     };
 }
 
@@ -676,7 +676,7 @@ sub picard_deduplicate {
         outputs => [
             $output_file
         ],
-        description => "Deduplicating PCR artifacts using Picard"
+        description => "Deduplicating BAM file"
     };
 }
 
