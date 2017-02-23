@@ -111,7 +111,7 @@ sub bwa_alignment {
         ['-t', $self->NUM_CPUS,         0],
         ['',   $index_path,             0],
         ['',   join(' ', sort @$fastq), 0],
-        ["| $samtools view -bS >", $output_file, 1] # convert SAM to BAM on the fly for speed
+        ["| $samtools view -bS | $samtools sort >", $output_file, 1] # convert SAM to BAM and sort on the fly for speed
     );
 
 	return {
