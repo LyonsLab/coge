@@ -29,32 +29,17 @@ sub build {
     $self->index([$self->previous_output->[0]]);
 
     # Generate sam file
-    my @sam_files;
     if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
         foreach my $file (@$fastq) {
             $self->add(
                 $self->gsnap_alignment([ $file ])
             );
-            push @sam_files, $self->previous_output;
+            push @{$self->bam}, $self->previous_output;
         }
     }
     else { # standard GSNAP run (all fastq's at once)
         $self->add(
             $self->gsnap_alignment($fastq)
-        );
-        push @sam_files, $self->previous_output;
-    }
-
-    # Add one or more sam-to-bam tasks
-    foreach my $file (@sam_files) {
-        # Filter sam file
-        $self->add(
-            $self->filter_sam($file)
-        );
-
-        # Convert sam file to bam
-        $self->add(
-            $self->sam_to_bam($self->previous_output)
         );
         push @{$self->bam}, $self->previous_output;
     }
@@ -102,7 +87,7 @@ sub gsnap_alignment {
     my $max_mismatches = $alignment_params->{'--max-mismatches'};
 
     my ($first_fastq) = @$fastq;
-    my $output_file = basename($first_fastq) . '.sam';
+    my $output_file = basename($first_fastq) . '.bam';
 
     my $index_name = basename($gmap);
 
@@ -131,7 +116,8 @@ sub gsnap_alignment {
         push @$args, ["", $_, 1];
     }
 
-    push @$args, [">", $output_file, 1];
+    my $samtools = get_command_path('SAMTOOLS');
+    push @$args, ["| $samtools view -bS >", $output_file, 1];
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 
