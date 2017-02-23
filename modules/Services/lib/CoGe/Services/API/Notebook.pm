@@ -92,7 +92,7 @@ sub fetch {
         id => int($notebook->id),
         name => $notebook->name,
         description => $notebook->description,
-        type => $notebook->type->name,
+#        type => $notebook->type->name, # mdb removed 2/22/17 COGE-800
         restricted => $notebook->restricted ? Mojo::JSON->true : Mojo::JSON->false,
         additional_metadata => \@metadata,
         items => \@items
