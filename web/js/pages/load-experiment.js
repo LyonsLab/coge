@@ -471,6 +471,8 @@ $.extend(FindSNPView.prototype, {
                     method: method,
                     '-stand_call_conf': this.el.find("[id='-stand_call_conf']").val(),
                     '-stand_emit_conf': this.el.find("[id='-stand_emit_conf']").val(),
+                    '--filter_reads_with_N_cigar':     this.el.find("[id='--filter_reads_with_N_cigar']").is(":checked"),
+                    '--fix_misencoded_quality_scores': this.el.find("[id='--fix_misencoded_quality_scores']").is(":checked"),
                     'realign':          this.el.find("#realign").is(":checked")
                 };
             }
@@ -1217,10 +1219,7 @@ $.extend(OptionsView.prototype, {
     },
 });
 
-function load(experiment) {
-	coge.progress.begin();
-    newLoad = true;
-
+function build_request(experiment) {
     // Set job type based on data
     var job_type = 'load_experiment';
     if (experiment.data[0].type == 'sra') {
@@ -1253,8 +1252,15 @@ function load(experiment) {
 			load_id:            load_id
 		}
 	};
-	
-    coge.services.submit_job(request) 
+
+	return request;
+}
+
+function load(experiment) {
+	coge.progress.begin();
+    newLoad = true;
+
+    coge.services.submit_job(build_request(experiment))
     	.done(function(response) {
     		if (!response) {
     			coge.progress.failed("Error: empty response from server");

@@ -254,6 +254,14 @@
                 <label>-stand_emit_conf:</label>
                 <input id="-stand_emit_conf" type="number" value="10"/>
             </div>
+            <div class="form-entry" style="clear:left" title="Filter out reads with CIGAR containing the N operator, instead of failing with an error">
+                <label>--filter_reads_with_N_cigar:</label>
+                <input id="--filter_reads_with_N_cigar" type="checkbox"/>
+            </div>
+            <div class="form-entry" title="Fix mis-encoded base quality scores">
+                <label>--fix_misencoded_quality_scores:</label>
+                <input id="--fix_misencoded_quality_scores" type="checkbox"/>
+            </div>
             <div class="form-entry" style="clear:left">
                 <label>Realign reads around INDELS</label>
                 <input id="realign" type="checkbox"/>
