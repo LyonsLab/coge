@@ -414,8 +414,7 @@ class Contents {
 					let c = this.counts[row[0]];
 					tr.append($('<td align="right" class="title5" rowspan="' + c + '" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white">' + names[type] + 's (' + c + ')</td>'));
 				}
-			}
-			else
+			} else
 				tr.append($('<td class="title5">' + names[row[0]] + '</td>'));
 			tr.append($('<td class="data5"><span class="link" onclick="window.open(\'' + pages[type] + '.pl?' + ids[type] + '=' + row[1] + '\')">' + row[2] + '</span></td>'));
 			let td = $('<td class="data5"></td>').appendTo(tr);

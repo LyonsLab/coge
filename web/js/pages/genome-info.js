@@ -1406,12 +1406,21 @@ function get_experiments(e) {
             gid: GENOME_ID
         },
         success:function(html) {
-            experiments
-            	.hide()
-            	.html(html)
-            	.slideDown();
-            var count = experiments.find('span').length;
-            $('#exp_count').html('('+count+')').show();
+            let json = JSON.parse(html);
+            experiments.empty();
+    		let table = $('<table id="experiments_table" class="dataTable compact hover stripe border-top border-bottom" style="margin:0"><thead style="display:none"><tr><td></td></tr></thead><tbody></tbody></table>').appendTo(experiments);
+            table.DataTable({
+                data: json,
+                language: {
+                    info: 'Showing _START_ to _END_ of _TOTAL_ experiments',
+                    infoEmpty: 'No experiments to show',
+                    infoFiltered: '(filtered from _MAX_ total experiments)',
+                    lengthMenu: 'Show _MENU_ experiments',
+                    zeroRecords: 'No matching experiments found'
+                },
+                pageLength: 20
+            })
+            //$('#exp_count').html('(' + json.length + ')').show();
         }
     });
 }

@@ -31,7 +31,12 @@
     border:1px solid transparent !important;
     background:none !important;
 }
-.dataTables_info{ font-size: small; }
+.dataTables_info {
+    font-size: small;
+}
+#experiments_table_paginate, #experiments_table_filter, #experiments_table_length {
+    font-size: 13px !important;
+}
 </style>
 
 <script language="javascript">
@@ -247,15 +252,10 @@ $(document).ready(function() {
 </table>
 
 <div class="bold text" style="padding-top:1em;">Experiments <span id="exp_count" <TMPL_UNLESS NAME="EXP_COUNT">class="hidden"</TMPL_UNLESS> >(<TMPL_VAR NAME="EXP_COUNT">)</span></div>
-<TMPL_IF NAME='EXPERIMENTS'>
-    <table class="small border-top border-bottom">
-        <tr>
-            <td>
-                <TMPL_VAR NAME='EXPERIMENTS'>
-            </td>
-        </tr>
-    </table>
-</TMPL_IF>
+<div id="experiments" style="display:inline-block;">
+<TMPL_VAR NAME='EXPERIMENTS'>
+</div>
+
 <TMPL_IF NAME='USER_CAN_ADD'>
     <div class="panel">
         <span class='coge-button' onclick="location.href='LoadExperiment.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>'">Load Experiment</span>
@@ -486,19 +486,6 @@ Are you sure you want to move this genome into your trash?<p>
     <br>
     <span onClick="update_genome_info();" class='coge-button r'>Update</span>
 </TMPL_IF>
-
-<TMPL_IF NAME='DO_EXPERIMENTS'>
-    <TMPL_LOOP NAME="EXPERIMENT_LOOP">
-        <TMPL_VAR NAME="EXPERIMENT_INFO"><br>
-    </TMPL_LOOP>
-</TMPL_IF>
-
-<TMPL_IF NAME='NOEXPERIMENTS'>
-    <div id="experiments" class="padded">
-        <a onclick="get_experiments();" ondblclick="get_experiments();">Click to display all Experiments</a>
-    </div>
-</TMPL_IF>
-
 
 <TMPL_IF NAME='DO_DATASETS'>
     <TMPL_LOOP NAME="DATASET_LOOP">

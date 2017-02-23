@@ -1332,19 +1332,11 @@ sub get_experiments {
     foreach my $exp ( sort experimentcmp $genome->experiments ) {
         next if ( $exp->deleted );
         next if ( $exp->restricted && !$USER->has_access_to_experiment($exp) );
-
-        my $id = $exp->id;
-        push @rows, { EXPERIMENT_INFO => qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=$id")'>} . $exp->info . "</span>" };
+        my $info = $exp->info;
+        $info =~ tr{\n}{ };
+        push @rows, '["<span class=\\"link\\" onclick=\\"window.open(\'ExperimentView.pl?eid=' . $exp->id . '\')\\">' . $info . '</span>"]';
     }
-    
-    return '<span class="padded note">There are no experiments for this genome.</span>' unless @rows;
-
-    my $template = HTML::Template->new( filename => $config->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param(
-        DO_EXPERIMENTS  => 1,
-        EXPERIMENT_LOOP => \@rows
-    );
-    return $template->output;
+    return '[' . join(',', @rows) . ']';
 }
 
 sub filter_dataset {    # detect chromosome-only datasets
@@ -2165,13 +2157,14 @@ sub generate_body {
     my $exp_count = $genome->experiments->count( { deleted => 0 } );
     my $experiments;
 
-    if ($exp_count < 20) {
+    if ($exp_count == 0) {
+        $experiments = '<span class="padded note">There are no experiments for this genome.</span>';
+    }
+    elsif ($exp_count < 20) {
         $experiments = get_experiments( genome => $genome );
     } 
     else { # too many experiments to show on initial page load (ie, too slow)
-        my $summary_template = HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-        $summary_template->param(NOEXPERIMENTS => 1);
-        $experiments = $summary_template->output;
+        $experiments = '<a onclick="get_experiments();" ondblclick="get_experiments();">Click to display all Experiments</a>';
         $exp_count = 0; # disable count in view
     }
 
