@@ -70,7 +70,7 @@ sub build {
             CoGe::Exception::Generic->throw(message => 'Invalid SNP method');
         }
     }
-    $snp->build(fasta_file => $reheader_fasta, data_files => [$bam_file], is_sorted => $opts{is_sorted});
+    $snp->build(fasta_file => $reheader_fasta, data_files => [$bam_file]);
     $self->add($snp);
     $self->vcf($snp->vcf);
 }
@@ -136,7 +136,7 @@ sub load_vcf { #TODO combine with Buildable::load_experiment
             [$output_path, '1'],
             catfile($output_path, "log.done"),
         ],
-        description => "Loading SNPs as new experiment"
+        description => 'Loading SNPs'
     };
 }
 

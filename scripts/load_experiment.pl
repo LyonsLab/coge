@@ -922,23 +922,22 @@ sub validate_bam_data_file {
 		execute($cmd);
 	}
 	
-	# Sort the bam file
-	# TODO this can be slow, is it possible to detect if it is sorted already?
-	my $sorted_file = "$staging_dir/sorted.bam";
-    $cmd = "$SAMTOOLS sort $newfilepath -o $sorted_file"; # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
-    execute($cmd);
-    if (-e $sorted_file && -s $sorted_file > 0) {
-        # Replace original file with sorted version
-        execute("mv $sorted_file $newfilepath");
-    }
-    else {
-        print STDOUT "log: error: samtools sort produced no result\n";
-        exit(-1);
-    }
+	# Sort the bam file -- mdb removed 2/23/17, input BAM is expected to be sorted already
+#	my $sorted_file = "$staging_dir/sorted.bam";
+#    $cmd = "$SAMTOOLS sort $newfilepath -o $sorted_file"; # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
+#    execute($cmd);
+#    if (-e $sorted_file && -s $sorted_file > 0) {
+#        # Replace original file with sorted version
+#        execute("mv $sorted_file $newfilepath");
+#    }
+#    else {
+#        print STDOUT "log: error: samtools sort produced no result\n";
+#        exit(-1);
+#    }
 
-	# Index the bam file
-	$cmd = "$SAMTOOLS index $newfilepath";
-	execute($cmd);
+	# Index the bam file -- mdb removed 2/23/17, input BAM is expected to be indexed already
+#	$cmd = "$SAMTOOLS index $newfilepath";
+#	execute($cmd);
 
     return ( $newfilepath, undef, $count, \%chromosomes );
 }
