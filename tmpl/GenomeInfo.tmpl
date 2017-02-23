@@ -34,7 +34,7 @@
 .dataTables_info {
     font-size: small;
 }
-#experiments_table_paginate, #experiments_table_filter, #experiments_table_length {
+#datasets_table_paginate, #datasets_table_filter, #datasets_table_length, #experiments_table_paginate, #experiments_table_filter, #experiments_table_length {
     font-size: 13px !important;
 }
 </style>
@@ -188,11 +188,8 @@ $(document).ready(function() {
             </TMPL_IF>
 
             <div class="bold text" style="padding-top:1em;">Sequence & Gene Annotation</div>
-            <TMPL_IF NAME='DATASETS'>
-                <table id="datasets" class="small border-top border-bottom" style="color:gray;">
-                    <TMPL_VAR NAME='DATASETS'>
-                </table>
-            </TMPL_IF>
+            <div id="datasets" style="display:inline-block;"></div>
+            <script>get_datasets();</script>
             <TMPL_IF NAME='USER_CAN_EDIT'>
                 <div class="panel">
                     <span class='coge-button' onclick="location.href='LoadAnnotation.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>'">Load Gene Annotation</span>
@@ -251,10 +248,9 @@ $(document).ready(function() {
     </tr>
 </table>
 
-<div class="bold text" style="padding-top:1em;">Experiments <span id="exp_count" <TMPL_UNLESS NAME="EXP_COUNT">class="hidden"</TMPL_UNLESS> >(<TMPL_VAR NAME="EXP_COUNT">)</span></div>
-<div id="experiments" style="display:inline-block;">
-<TMPL_VAR NAME='EXPERIMENTS'>
-</div>
+<div class="bold text" style="padding-top:1em;">Experiments</div>
+<div id="experiments" style="display:inline-block;"></div>
+<script>get_experiments();</script>
 
 <TMPL_IF NAME='USER_CAN_ADD'>
     <div class="panel">
