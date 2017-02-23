@@ -26,7 +26,8 @@ use CoGe::Exception::Generic;
 use CoGe::Exception::MissingField;
 
 # Settings
-has NUM_CPUS => (is => 'ro', isa => 'Int', default => 16); # number of CPUs to use for alignment tasks
+has NUM_CPUS       => (is => 'ro', isa => 'Int', default => 16); # number of CPUs to use for alignment tasks
+has VALIDATE_FASTQ => (is => 'ro', isa => 'Int', default => 0);  # flag to indicate FASTQ input files should be checked for correct format
 
 # Outputs
 has index   => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # index files
@@ -71,10 +72,12 @@ sub build {
     #
 
     # Validate the input files
-    foreach my $input_file (@$fastq) {
-        $self->add_to_previous( # previous task is file trasfer or decompression
-            $self->validate_fastq($input_file)
-        );
+    if ($self->VALIDATE_FASTQ) {
+        foreach my $input_file (@$fastq) {
+            $self->add_to_previous( # previous task is file trasfer or decompression
+                $self->validate_fastq($input_file)
+            );
+        }
     }
 
     # Reheader the fasta file - needs to happen before trimming for BBDuk
@@ -87,7 +90,7 @@ sub build {
         $self->index_fasta($reheader_fasta)
     );
 
-    # Trim the fastq input files #TODO consider moving this and validation in to Load/Experiment
+    # Trim the fastq input files #TODO consider moving this and validation into Load/Experiment
     my @trimmed;
     if ($self->params->{trimming_params}) {
         my $trimmer = CoGe::Builder::Trimming::Trimmer->new($self);
