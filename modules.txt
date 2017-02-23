@@ -55,6 +55,7 @@ Switch
 Sys::Load
 Sys::Syslog
 Text::Unidecode
+Throwable::Error
 URI
 URI::Escape
 URI::Escape::JavaScript
