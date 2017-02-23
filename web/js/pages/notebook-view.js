@@ -387,83 +387,75 @@ class Contents {
 	constructor() {
 		this.div = $('#list_contents');
 	}
+	add_row(row, name, page, id_name, node_type, tbody) {
+		let tr = $('<tr><td>' + name + '</td></tr>').appendTo(tbody);
+		tr.append($('<td><span class="link" onclick="window.open(\'' + page + '.pl?' + id_name + '=' + row[0] + '\')">' + row[1] + '</span></td>'));
+		let td = $('<td></td>').appendTo(tr);
+		if (row.length > 2 && row[2])
+			td.text(row[2]);
+		if (this.user_can_edit)
+			tr.append($('<td style="padding-left:20px;"><span onClick="remove_list_item(this, {lid: ' + NOTEBOOK_ID + ', item_type: \'' + node_type + '\', item_id: ' + row[0] + '});" class="link ui-icon ui-icon-closethick"></span></td>'));
+	}
 	build() {
 		this.div.empty();
-		let table = $('<table id="list_contents_table" class="dataTable compact hover stripe border-top border-bottom" style="margin:0;width:initial;"></table>').appendTo(this.div);
-		let row = $('<tr></tr>').appendTo($('<thead></thead>').appendTo(table));
-		row.append($('<th id="type_col" class="sorting sorting_asc" onclick="contents.sort(\'type\')" style="cursor:pointer;">Type</th>'))
-			.append($('<th id="name_col" class="sorting" onclick="contents.sort(\'name\')" style="cursor:pointer;">Name</th>'))
-			.append($('<th id="date_col" class="sorting" onclick="contents.sort(\'date\')" style="cursor:pointer;">Date</th>'))
-			.append($('<th>Remove</th>'));
-		this.tbody = $('<tbody></tbody>').appendTo(table);
-		if (this.counts[0] + this.counts[1] + this.counts[2] == 0) {
-			this.div.append($('<table class="border-top border-bottom padded note"><tr><td>This notebook is empty.</tr></td></table>'));
-			return;
-		}
-		let type = -1;
-		let names = ['Genome', 'Experiment', 'Feature', 'Notebook'];
-		let pages = ['GenomeInfo', 'ExperimentView', 'FeatView', 'NotebookView'];
-		let ids = ['gid', 'eid', 'fid', 'nid'];
-		let node_types = [2, 3, 4];
-		let num_rows = 0;
-		this.contents.forEach(function(row){
-			let tr = $('<tr valign="top" class="' + (num_rows % 2 ? 'odd' : 'even') + '"></tr>').appendTo(this.tbody);
-			if (this.sort_col == 'type') {
-				if (row[0] != type) {
-					type = row[0];
-					let c = this.counts[row[0]];
-					tr.append($('<td align="right" class="title5" rowspan="' + c + '" style="padding-right:10px;white-space:nowrap;font-weight:normal;background-color:white">' + names[type] + 's (' + c + ')</td>'));
-				}
-			} else
-				tr.append($('<td class="title5">' + names[row[0]] + '</td>'));
-			tr.append($('<td class="data5"><span class="link" onclick="window.open(\'' + pages[type] + '.pl?' + ids[type] + '=' + row[1] + '\')">' + row[2] + '</span></td>'));
-			let td = $('<td class="data5"></td>').appendTo(tr);
-			if (row.length > 3 && row[3])
-				td.text(row[3]);
-			if (this.user_can_edit)
-				tr.append($('<td style="padding-left:20px;"><span onClick="remove_list_item(this, {lid: ' + NOTEBOOK_ID + ', item_type: \'' + node_types[type] + '\', item_id: ' + row[1] + '});" class="link ui-icon ui-icon-closethick"></span></td>'));
-			++num_rows;
+		let table = $('<table id="contents" class="dataTable compact hover stripe border-top border-bottom" style="font-size:14px;margin:0;"></table>').appendTo(this.div);
+		let tr = $('<tr><th>Type</th><th>Name</th><th>Date</th></tr>').appendTo($('<thead></thead>').appendTo(table));
+		if (this.user_can_edit)
+			$('<th>Remove</th>').appendTo(tr);
+		let tbody = $('<tbody></tbody>').appendTo(table);
+		this.genomes.forEach(function(row) {
+			this.add_row(row, 'Genome', 'GenomeInfo', 'gid', 2, tbody);
 		}.bind(this));
+		this.experiments.forEach(function(row) {
+			this.add_row(row, 'Experiment', 'ExperimentView', 'eid', 3, tbody);
+		}.bind(this));
+		this.features.forEach(function(row) {
+			this.add_row(row, 'Feature', 'FeatView', 'fid', 4, tbody);
+		}.bind(this));
+		let options = {
+			columnDefs: [{
+				targets: 0,
+				render: function(data, type, full, meta) {
+					if (type != 'display')
+						return data;
+//					if (meta.row == 0 || this.type != data) {
+//						this.type = data;
+						return '<span class="title5" style="font-size:inherit">' + data + '</span>'; //s (' + (data == 'Genome' ? this.genomes.length : data == 'Experiment' ? this.experiments.length : this.features.length) + ')</span>';
+//					}
+//					return '';
+				}.bind(this)
+			},{
+				targets: 1,
+				render: function(data, type, full, meta) {
+					if (type == 'sort')
+						return data.replace('\uD83D\uDD12 ', ''); // remove lock char
+					return data;
+				}
+			}],
+			pageLength: 20
+		};
+		let num_entries = this.genomes.length + this.experiments.length + this.features.length;
+		if (num_entries == 0) {
+			options.language.infoEmpty = '';
+		}
+		if (num_entries <= 20) {
+			options.paging = false;
+			options.searching = false;
+		}
+		if (this.user_can_edit)
+			options.columnDefs.push({
+				targets: 3,
+				orderable: false
+			})
+		table.DataTable(options);
 		if (this.user_can_edit)
 			this.div.append($('<div class="padded"><span class="coge-button" onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span></div>'));
 	}
 	set(json) {
-		this.contents = json.contents;
-		this.counts = json.counts;
+		this.experiments = json.experiments;
+		this.features = json.features;
+		this.genomes = json.genomes;
 		this.user_can_edit = json.user_can_edit;
-		this.sort('type');
-	}
-	sort(col) {
-		if (this.sort_col != col) {
-			if (this.sort_col)
-				$('#' + this.sort_col + '_col').removeClass(this.sort_mult == 1 ? 'sorting_asc' : 'sorting_desc');
-			this.sort_col = col;
-			this.sort_mult = 1;
-			$('#' + this.sort_col + '_col').addClass('sorting_asc');
-		} else {
-			let td = $('#' + this.sort_col + '_col');
-			td.removeClass(this.sort_mult == 1 ? 'sorting_asc' : 'sorting_desc');
-			this.sort_mult *= -1;
-			td.addClass(this.sort_mult == 1 ? 'sorting_asc' : 'sorting_desc');
-		}
-		if (col == 'name')
-			this.contents.sort(function(a, b) {
-				return this.sort_mult * case_insensitive_sort(a[2], b[2]);
-			}.bind(this));
-		else if (col == 'date')
-			this.contents.sort(function(a, b) {
-				if (a.length < 4 || !a[3])
-					return this.sort_mult * -1;
-				if (b.length < 4 || !b[3])
-					return this.sort_mult * 1;
-				return this.sort_mult * (a[3] < b[3] ? -1 : a[3] > b[3] ? 1 : case_insensitive_sort(a[2], b[2]));
-			}.bind(this));
-		else
-			this.contents.sort(function(a, b) {
-				if (a[0] == b[0])
-					return case_insensitive_sort(a[2], b[2]);
-				return this.sort_mult * (a[0] - b[0]);
-			}.bind(this));
 		this.build();
 	}
 }
