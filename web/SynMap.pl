@@ -14,7 +14,7 @@ use CoGe::Core::Favorites;
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
-#use CGI::Ajax;
+use CGI::Ajax;
 #use DBIxProfiler;
 use Data::Dumper;
 use Digest::MD5 qw(md5_hex);
@@ -123,27 +123,27 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 	%ajax,
 );
 
-#my $pj = new CGI::Ajax(%FUNCTIONS);
-#if ( $FORM->param('jquery_ajax') ) {
-#	my %args  = $FORM->Vars;
-#	my $fname = $args{fname};
-#
-#	if ( $fname and defined $FUNCTIONS{$fname} ) {
-#	    my $header = $FORM->header;
-#		if ( $args{args} ) {
-#			my @args_list = split( /,/, $args{args} );
-#			print $header, $FUNCTIONS{$fname}->(@args_list);
-#		}
-#		else {
-#			print $header, $FUNCTIONS{$fname}->(%args);
-#		}
-#	}
-#}
-#else {
-#	$pj->js_encode_function('escape');
-#	print $pj->build_html( $FORM, \&gen_html );
-#}
-CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTIONS, \&gen_html );
+my $pj = new CGI::Ajax(%FUNCTIONS);
+if ( $FORM->param('jquery_ajax') ) {
+	my %args  = $FORM->Vars;
+	my $fname = $args{fname};
+
+	if ( $fname and defined $FUNCTIONS{$fname} ) {
+	    my $header = $FORM->header;
+		if ( $args{args} ) {
+			my @args_list = split( /,/, $args{args} );
+			print $header, $FUNCTIONS{$fname}->(@args_list);
+		}
+		else {
+			print $header, $FUNCTIONS{$fname}->(%args);
+		}
+	}
+}
+else {
+	$pj->js_encode_function('escape');
+	print $pj->build_html( $FORM, \&gen_html );
+}
+#CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTIONS, \&gen_html );
 
 ################################################################################
 # Web functions

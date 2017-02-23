@@ -6,7 +6,7 @@ extends 'CoGe::Builder::Alignment::Aligner';
 use File::Spec::Functions qw(catdir catfile);
 use File::Path qw(make_path);
 
-use CoGe::Accessory::Utils qw(to_filename to_filename_base to_filename_without_extension);
+use CoGe::Accessory::Utils;
 use CoGe::Accessory::Web qw(get_command_path);
 use CoGe::Core::Storage qw(get_genome_file get_genome_cache_path);
 use CoGe::Exception::Generic;

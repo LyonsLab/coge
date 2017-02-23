@@ -1,4 +1,5 @@
 AuthCAS
+Array::Utils.pm
 BerkeleyDB
 Bio::TreeIO
 CGI::Ajax
@@ -54,6 +55,7 @@ Switch
 Sys::Load
 Sys::Syslog
 Text::Unidecode
+Throwable::Error
 URI
 URI::Escape
 URI::Escape::JavaScript
