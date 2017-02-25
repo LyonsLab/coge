@@ -10,6 +10,7 @@ use Data::Dumper;
 use Text::Unidecode qw(unidecode);
 
 use CoGeX;
+use CoGe::Accessory::TDS;
 
 BEGIN {
     our (@ISA, $VERSION, @EXPORT);
