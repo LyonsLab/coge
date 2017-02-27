@@ -216,7 +216,7 @@ sub load_genome {
             ['-restricted', ($metadata->{restricted} ? 1 : 0), 0],
             ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
             ['-organism_id', $organism_id, 0],
-            ['-type_id', ( $metadata->{type} ? shell_quote($metadata->{type}) : 1 ), 0], # default to "unmasked"
+            ['-type_name', ( $metadata->{type} ? shell_quote($metadata->{type}) : 'unmasked' ), 0],
             ['-staging_dir', $self->staging_dir, 0],
             ['-fasta_file', shell_quote($fasta_file), 0],
             #['-irods_files', shell_quote($irods_str), 0],
