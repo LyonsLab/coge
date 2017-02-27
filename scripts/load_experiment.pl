@@ -935,9 +935,9 @@ sub validate_bam_data_file {
 #        exit(-1);
 #    }
 
-	# Index the bam file -- mdb removed 2/23/17, input BAM is expected to be indexed already
-#	$cmd = "$SAMTOOLS index $newfilepath";
-#	execute($cmd);
+	# Index the bam file #TODO copy over existing BAM index file instead of regenerating it here
+	$cmd = "$SAMTOOLS index $newfilepath";
+	execute($cmd);
 
     return ( $newfilepath, undef, $count, \%chromosomes );
 }
