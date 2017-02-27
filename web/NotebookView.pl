@@ -585,29 +585,32 @@ sub get_list_contents {
     my @experiments = grep { $USER->has_access_to_experiment($_); } $list->experiments;
     my @features = $list->features;
 
-    my @rows;
+    my @g;
     foreach my $genome ( sort genomecmp @genomes ) {
         my $info = $genome->info;
         $info =~ s/'/\\'/g;
         $info =~ s/\n/<br>/g;
-        push @rows, [ 0, $genome->id, $info, $genome->date eq '0000-00-00 00:00:00' ? undef : $genome->date ];
+        push @g, [ $genome->id, $info, $genome->date eq '0000-00-00 00:00:00' ? undef : $genome->date ];
     }
+    my @e;
     foreach my $experiment ( sort experimentcmp @experiments ) {
         my $info = $experiment->info;
         $info =~ s/'/\\'/g;
         $info =~ s/\n/<br>/g;
-        push @rows, [ 1, $experiment->id, $info, $experiment->date eq '0000-00-00 00:00:00' ? undef : $experiment->date ];
+        push @e, [ $experiment->id, $info, $experiment->date eq '0000-00-00 00:00:00' ? undef : $experiment->date ];
     }
+    my @f;
     foreach my $feature ( sort featurecmp @features ) {
         my $info = $feature->info;
         $info =~ s/'/\\'/g;
         $info =~ s/\n/<br>/g;
-        push @rows, [ 2, $feature->id, $info ];
+        push @f, [ $feature->id, $info ];
     }
 
     return encode_json({
-        contents => \@rows,
-        counts => [scalar @genomes, scalar @experiments, scalar @features],
+        experiments => \@e,
+        features => \@f,
+        genomes => \@g,
         user_can_edit => $list->is_editable($USER) ? JSON::true : JSON::false
     });
 }

@@ -1,5 +1,27 @@
 <TMPL_IF NAME="MAIN">
-<link rel="stylesheet" href="css/dataTables.css" type="text/css">
+<link rel="stylesheet" type="text/css" href="js/vendor/datatables/media/css/jquery.dataTables.min.css"/>
+<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.js"></script>
+<style>
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+	color:#0000EE !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    color:#009900!important;
+    border:1px solid transparent !important;
+    background:none !important;
+}
+.dataTables_info {
+    font-size: small;
+}
+.dataTable th {
+    color: dimgray !important;
+    font-size: small;
+    text-align: left;
+}
+#contents_paginate, #contents_filter, #contents_length {
+    font-size: 13px !important;
+}
+</style>
 
 <TMPL_UNLESS NAME="EMBED">
 <div style="font-size:1em;">
@@ -32,23 +54,10 @@
 	</tr>
 </table>
 
-<br>
-
 <TMPL_IF NAME="LIST_CONTENTS">
-	<style>
-		#list_contents tr {
-			vertical-align: baseline;
-		}
-		#list_contents_table th {
-			color: dimgray !important;
-			font-size: small;
-			text-align: left;
-		}
-	</style>
 	<div style="padding-left:5px;">
 		<span class="bold text">Contents</span><br>
-		<div id="list_contents">
-		</div>
+		<div id="list_contents" style="display:inline-block;"></div>
 	</div>
 	<div class='small padded'>
 		Send contents to:
