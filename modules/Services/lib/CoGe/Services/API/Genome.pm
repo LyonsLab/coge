@@ -1,7 +1,6 @@
 package CoGe::Services::API::Genome;
 
 use Mojo::Base 'Mojolicious::Controller';
-use Mojo::JSON;
 use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 
