@@ -6,6 +6,7 @@ extends 'CoGe::Builder::Buildable';
 use Data::Dumper qw(Dumper);
 
 use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Utils;
 use CoGe::Core::Experiment;
 use CoGe::Builder::Alignment::Aligner;
 use CoGe::Builder::Expression::Analyzer;
