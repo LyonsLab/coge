@@ -107,6 +107,11 @@ sub gsnap_alignment {
     push @$args, ["--max-mismatches=$max_mismatches", "", 0] if $max_mismatches;
     push @$args, ['--force-single-end', '', 0] if ($read_type eq 'single');
 
+    # Add flags for compressed input FASTQ file(s)
+    my ($first_fastq) = @$fastq;
+    push @$args, ["--gunzip",  "", 0] if (is_gzipped($first_fastq));
+    push @$args, ["--bunzip2", "", 0] if (is_bzipped2($first_fastq));
+
     # Sort fastq files in case of paired-end reads,
     # see http://research-pub.gene.com/gmap/src/README
     foreach (sort @$fastq) {
@@ -114,7 +119,6 @@ sub gsnap_alignment {
     }
 
     my $samtools = get_command_path('SAMTOOLS');
-    my ($first_fastq) = @$fastq;
     my $output_file = basename($first_fastq) . '.bam';
     push @$args, ["| $samtools view -bS | $samtools sort >", $output_file, 1]; # convert SAM to BAM and sort on the fly for speed
 

@@ -6,7 +6,7 @@ extends 'CoGe::Builder::Trimming::Trimmer';
 use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
 
-use CoGe::Accessory::Utils qw(to_filename);
+use CoGe::Accessory::Utils;
 use CoGe::Exception::Generic;
 use CoGe::Exception::MissingField;
 
@@ -75,7 +75,7 @@ sub bbduk {
     my $encoding = $read_params->{encoding} // 33;
     my $read_type = $read_params->{read_type} // 'single';
 
-    my @outputs = map { catfile($self->staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
+    my @outputs = map { catfile($self->staging_dir, basename(remove_fastq_ext($_) . '.trimmed.fastq' . to_compressed_ext($_))) } @$fastq;
 
     unless ($self->conf->{BBMAP}) {
         CoGe::Exception::Generic->throw(message => 'Missing BBMAP in configuration file');
