@@ -26,6 +26,11 @@ has 'conf' => (
     required => 1
 );
 
+has 'authRequired' => (
+    is       => 'ro',
+    required => 0
+);
+
 sub type       { shift->payload->{type} }
 sub parameters { shift->payload->{parameters} }
 sub requester  { shift->payload->{requester} }

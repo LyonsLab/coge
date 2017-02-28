@@ -9,7 +9,7 @@ use CoGe::Request::Experiment;
 use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
 use CoGe::Request::TwoGenomes;
-use CoGe::Request::NGenomes; # TODO: replace Genome and TwoGenomes with this
+use CoGe::Request::NGenomes;
 use CoGe::Exception::Generic;
 
 has 'user'    => (
@@ -28,25 +28,25 @@ has 'conf'    => (
 );
 
 my %typeToClass = (
-    'blast'                 => 'CoGe::Request::CoGeBlast',
-    'export_gff'            => 'CoGe::Request::Genome',
-    'export_fasta'          => 'CoGe::Request::Genome',
-    'export_genome'         => 'CoGe::Request::Genome',
-    'export_experiment'     => 'CoGe::Request::Experiment',
-    'load_experiment'       => 'CoGe::Request::Genome',
-    'load_sra'              => 'CoGe::Request::Genome',
-    'load_batch'            => 'CoGe::Request::Genome',
-    'load_genome'           => 'CoGe::Request::Empty',
-    'load_annotation'       => 'CoGe::Request::Genome',
-    'synmap'                => 'CoGe::Request::NGenomes',
-    'synmap3d'              => 'CoGe::Request::NGenomes',
-    'pseudoassembly'        => 'CoGe::Request::TwoGenomes',
-    'dotplot_dots'          => 'CoGe::Request::TwoGenomes',
-    'analyze_snps'          => 'CoGe::Request::ExperimentAnalysis',
-    'analyze_expression'    => 'CoGe::Request::ExperimentAnalysis',
-    'analyze_metaplot'      => 'CoGe::Request::ExperimentAnalysis',
-    'analyze_diversity'     => 'CoGe::Request::ExperimentAnalysis',
-    'percent_gc_at'         => 'CoGe::Request::Genome'
+    'blast'                 => { class => 'CoGe::Request::CoGeBlast',          authRequired => 0 },
+    'export_gff'            => { class => 'CoGe::Request::Genome',             authRequired => 0 },
+    'export_fasta'          => { class => 'CoGe::Request::Genome',             authRequired => 0 },
+    'export_genome'         => { class => 'CoGe::Request::Genome',             authRequired => 0 },
+    'export_experiment'     => { class => 'CoGe::Request::Experiment',         authRequired => 0 },
+    'load_experiment'       => { class => 'CoGe::Request::Genome',             authRequired => 1 },
+    'load_sra'              => { class => 'CoGe::Request::Genome',             authRequired => 1 },
+    'load_batch'            => { class => 'CoGe::Request::Genome',             authRequired => 1 },
+    'load_genome'           => { class => 'CoGe::Request::Empty',              authRequired => 1 },
+    'load_annotation'       => { class => 'CoGe::Request::Genome',             authRequired => 1 },
+    'synmap'                => { class => 'CoGe::Request::NGenomes',           authRequired => 0 },
+    'synmap3d'              => { class => 'CoGe::Request::NGenomes',           authRequired => 0 },
+    'pseudoassembly'        => { class => 'CoGe::Request::TwoGenomes',         authRequired => 0 },
+    'dotplot_dots'          => { class => 'CoGe::Request::TwoGenomes',         authRequired => 0 },
+    'analyze_snps'          => { class => 'CoGe::Request::ExperimentAnalysis', authRequired => 1 },
+    'analyze_expression'    => { class => 'CoGe::Request::ExperimentAnalysis', authRequired => 1 },
+    'analyze_metaplot'      => { class => 'CoGe::Request::ExperimentAnalysis', authRequired => 0 },
+    'analyze_diversity'     => { class => 'CoGe::Request::ExperimentAnalysis', authRequired => 0 },
+    'percent_gc_at'         => { class => 'CoGe::Request::Genome',             authRequired => 0 },
 );
 
 sub get {
@@ -55,16 +55,22 @@ sub get {
         CoGe::Exception::Generic->throw(message => 'Invalid payload', details => Dumper($payload));
     }
 
-    my $className = $typeToClass{$payload->{type}};
+    my $type = $payload->{type};
+    unless ($type) {
+        CoGe::Exception::Generic->throw(message => "Missing job type");
+    }
+
+    my $className = $typeToClass{$type}->{class};
     unless ($className) {
         CoGe::Exception::Generic->throw(message => "Unrecognized job type: " . $payload->{type});
     }
 
     return $className->new(
-        db      => $self->db,
-        conf    => $self->conf,
-        user    => $self->user,
-        payload => $payload
+        db           => $self->db,
+        conf         => $self->conf,
+        user         => $self->user,
+        payload      => $payload,
+        authRequired => $typeToClass{$type}->{authRequired}
     );
 }
 

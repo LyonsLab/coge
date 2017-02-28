@@ -37,10 +37,17 @@ sub add {
         });
     }
 
+    # Check if authentication is required
+    if ($request->authRequired && !$user) {
+        return $self->render(status => 401, json => {
+            error => { Auth => "Authentication required" }
+        });
+    }
+
     # Check user's permission to execute the request
     unless ($request->has_access) {
         return $self->render(status => 401, json => {
-            error => { Auth => "Request denied" }
+            error => { Auth => "Access denied" }
         });
     }
 
