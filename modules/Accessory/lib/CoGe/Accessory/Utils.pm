@@ -44,7 +44,8 @@ BEGIN {
         format_time_diff sanitize_name execute directory_size
         trim js_escape html_escape to_filename to_pathname
         is_fastq_file add_fastq_ext detect_paired_end to_number
-        to_filename_without_extension is_gzipped to_filename_base
+        to_filename_without_extension is_gzipped is_bzipped2
+        to_filename_base to_compressed_ext remove_fastq_ext
     );
 }
 
@@ -219,7 +220,14 @@ sub execute {
 
 sub is_fastq_file {
     my $filename = shift;
-    return ($filename =~ /fastq$/ || $filename =~ /fastq\.gz$/ || $filename =~ /fq$/ || $filename =~ /fq\.gz$/);
+    return (
+        $filename =~ /\.fastq$/      ||
+        $filename =~ /\.fastq\.gz$/  ||
+        $filename =~ /\.fastq\.bz2$/ ||
+        $filename =~ /\.fq$/         ||
+        $filename =~ /\.fq\.gz$/     ||
+        $filename =~ /\.fq\.bz2$/
+    );
 }
 
 sub add_fastq_ext {
@@ -228,6 +236,9 @@ sub add_fastq_ext {
     if ($filename =~ /\.gz/) {
         $filename =~ s/\.gz/\.fastq\.gz/;
     }
+    elsif ($filename =~ /\.bz2/) {
+        $filename =~ s/\.bz2/\.fastq\.bz2/;
+    }
     else {
         $filename .= '.fastq';
     }
@@ -235,9 +246,34 @@ sub add_fastq_ext {
     return $filename;
 }
 
+sub remove_fastq_ext {
+    my $filename = shift;
+
+    foreach my $ext ('.fastq', '.fastq.gz', '.fastq.bz2', '.fq', '.fq.gz', '.fq.bz2') {
+        if ($filename =~ /$ext$/) {
+            $filename =~ s/$ext$//;
+            return $filename;
+        }
+    }
+
+    return $filename;
+}
+
 sub is_gzipped {
     my $filename = shift;
     return ( $filename =~ /\.gz$/ );
+}
+
+sub is_bzipped2 {
+    my $filename = shift;
+    return ( $filename =~ /\.bz2$/ );
+}
+
+sub to_compressed_ext {
+    my $filename = shift;
+    return '.gz' if ($filename =~ /\.gz$/);
+    return '.bz2' if ($filename =~ /\.bz2$/);
+    return '';
 }
 
 # Separate files based on last occurrence of _R1 or _R2 in filename
