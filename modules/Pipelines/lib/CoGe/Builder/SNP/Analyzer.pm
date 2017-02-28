@@ -65,7 +65,9 @@ sub build {
         case 'coge'     { $snp = CoGe::Builder::SNP::CoGeSNPs->new($self) }
         case 'samtools' { $snp = CoGe::Builder::SNP::Samtools->new($self) }
         case 'platypus' { $snp = CoGe::Builder::SNP::Platypus->new($self) }
-        case 'gatk'     { $snp = CoGe::Builder::SNP::GATK->new($self) }
+        case /gatk|gatk-haplotype-vcf|gatk-haplotype-gvcf/ {
+            $snp = CoGe::Builder::SNP::GATK->new($self)
+        }
         default {
             CoGe::Exception::Generic->throw(message => 'Invalid SNP method');
         }

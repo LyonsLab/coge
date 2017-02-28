@@ -158,7 +158,9 @@
                 <option value="coge">CoGe Basic</option>
                 <option value="samtools">SAMtools</option>
                 <option value="platypus">Platypus</option>
-                <option value="gatk">GATK</option>
+                <option value="gatk-haplotype-vcf">GATK HaplotypeCaller (variant-only VCF)</option>
+                <option value="gatk-haplotype-gvcf" disabled>GATK HaplotypeCaller (single-sample GVCF) - coming soon</option>
+                <option value="gatk-unifiedgenotyper" disabled>GATK UnifiedGenotyper - coming soon</option>
             </select>
         </div>
 
@@ -174,7 +176,9 @@
             <option value="coge" selected>CoGe Basic</option>
             <option value="samtools">SAMtools</option>
             <option value="platypus">Platypus</option>
-            <option value="gatk">GATK</option>
+            <option value="gatk-haplotype-vcf">GATK HaplotypeCaller (variant-only VCF)</option>
+            <option value="gatk-haplotype-gvcf">GATK HaplotypeCaller (single-sample GVCF)</option>
+            <option value="gatk-unifiedgenotyper" disabled>GATK UnifiedGenotyper - coming soon</option>
         </select>
     </div>
 
@@ -238,13 +242,58 @@
     </div>
 </script>
 
-<script id="gatk-snp-template" type="text/template">
+<script id="gatk-haplotype-vcf-snp-template" type="text/template">
     <div id="gatk" class="form-field">
         <label class="col-md-2">GATK (<a href="https://software.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php" target="_blank" class="small link">docs</a>):</label>
         <div class="form-group">
             <div class="note" style="padding-bottom:1em;">
                 By selecting this option you are agreeing to use GATK in accordance with the license for
                 <a href="https://software.broadinstitute.org/gatk/download/licensing.php" target="_blank">academic and non-commercial research purposes</a>.
+            </div>
+            <div class="form-entry" style="clear:left" title="The minimum phred-scaled confidence threshold at which variants should be called">
+                <label>-stand_call_conf:</label>
+                <input id="-stand_call_conf" type="number" value="20"/>&nbsp;&nbsp;&nbsp;<span class="small note">Use 20 for RNAseq and 30 for DNAseq</span>
+            </div>
+            <div class="form-entry" style="clear:left" title="Filter out reads with CIGAR containing the N operator, instead of failing with an error">
+                <label>--filter_reads_with_N_cigar:</label>
+                <input id="--filter_reads_with_N_cigar" type="checkbox"/>
+            </div>
+            <div class="form-entry" title="Fix mis-encoded base quality scores">
+                <label>--fix_misencoded_quality_scores:</label>
+                <input id="--fix_misencoded_quality_scores" type="checkbox"/>
+            </div>
+            <div class="form-entry" style="clear:left">
+                <label>Realign reads around INDELS</label>
+                <input id="realign" type="checkbox"/>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="gatk-haplotype-gvcf-snp-template" type="text/template">
+    <div id="gatk" class="form-field">
+        <label class="col-md-2">GATK (<a href="https://software.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php" target="_blank" class="small link">docs</a>):</label>
+        <div class="form-group">
+            <div class="note" style="padding-bottom:1em;">
+                By selecting this option you are agreeing to use GATK in accordance with the license for
+                <a href="https://software.broadinstitute.org/gatk/download/licensing.php" target="_blank">academic and non-commercial research purposes</a>.
+            </div>
+            <div class="form-entry" style="clear:left" title="Mode for emitting reference confidence scores. Cannot be changed at this time.">
+                <label>--emitRefConfidence:</label>
+                <select id="--emitRefConfidence">
+                    <option value="NONE">NONE</option>
+                    <option value="BP_RESOLUTION">BP_RESOLUTION</option>
+                    <option value="GVCF" selected>GVCF</option>
+                </select>
+            </div>
+            <div class="form-entry" title="The PCR indel model to use. Cannot be changed at this time.">
+                <label>--pcr_indel_model:</label>
+                <select id="--pcr_indel_model">
+                    <option value="NONE" selected>NONE</option>
+                    <option value="HOSTILE">HOSTILE</option>
+                    <option value="AGGRESSIVE">AGGRESSIVE</option>
+                    <option value="CONSERVATIVE">CONSERVATIVE</option>
+                </select>
             </div>
             <div class="form-entry" style="clear:left" title="Filter out reads with CIGAR containing the N operator, instead of failing with an error">
                 <label>--filter_reads_with_N_cigar:</label>
