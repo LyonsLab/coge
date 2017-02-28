@@ -41,11 +41,6 @@ sub build {
 
     my $genome = $self->request->genome;
 
-    # Set metadata for the pipeline being used
-    my $annotations = $self->generate_additional_metadata();
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
-    push @$annotations, @annotations2;
-
     #
     # Build the workflow
     #
@@ -87,11 +82,11 @@ sub build {
 
         $self->add_to_previous(
             $self->load_experiment(
-                metadata => $md,
-                gid => $genome->id,
-                input_file => $self->previous_output,
-                name => $name,
-                annotations => $annotations
+                metadata    => $md,
+                gid         => $genome->id,
+                input_file  => $self->previous_output,
+                name        => $name,
+                annotations => $self->generate_additional_metadata()
             )
         );
     }

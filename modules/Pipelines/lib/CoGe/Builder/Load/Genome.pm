@@ -154,7 +154,6 @@ sub sort_fasta {
 
     return {
         cmd => $cmd,
-        script => undef,
         args => [
             ['',  $fasta_file,  1],
             ['>', $output_file, 0]
@@ -181,7 +180,6 @@ sub process_fasta {
 
     return {
         cmd => "$cmd -input_fasta_file $input_file -output_fasta_file $output_file && touch $done_file",
-        script => undef,
         args => [],
         inputs => [
             $input_file
@@ -203,24 +201,30 @@ sub load_genome {
     
 #    my $result_file = get_workflow_results_file($user->name, $wid);
 
+    my $sequence_type = $metadata->{type};
+    $sequence_type = $metadata->{sequence_type} if ($metadata->{sequence_type}); # mdb added 2/28/17 -- based on suggestion by S. Hokin
+
+    my $sequence_type_id = $metadata->{type_id};
+    $sequence_type_id = $metadata->{sequence_type_id} if ($metadata->{sequence_type_id});
+
     return {
         cmd => 'perl ' . catfile($self->conf->{SCRIPTDIR}, "load_genome.pl"),
-        script => undef,
         args => [
-            ['-user_name', $self->user->name, 0],
-            ['-wid', $self->workflow->id, 0],
-            ['-name', ($metadata->{name} ? shell_quote($metadata->{name}) : '""'), 0],
-            ['-desc', ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
-            ['-link', ($metadata->{link} ? shell_quote($metadata->{link}) : '""'), 0],
-            ['-version', ($metadata->{version} ? shell_quote($metadata->{version}) :'""'), 0],
-            ['-restricted', ($metadata->{restricted} ? 1 : 0), 0],
+            ['-user_name',   $self->user->name,   0],
+            ['-wid',         $self->workflow->id, 0],
+            ['-name',        ($metadata->{name}        ? shell_quote($metadata->{name}) : '""'),        0],
+            ['-desc',        ($metadata->{description} ? shell_quote($metadata->{description}) : '""'), 0],
+            ['-link',        ($metadata->{link}        ? shell_quote($metadata->{link}) : '""'),        0],
+            ['-version',     ($metadata->{version}     ? shell_quote($metadata->{version}) :'""'),      0],
+            ['-restricted',  ($metadata->{restricted}  ? 1 : 0), 0],
             ['-source_name', ($metadata->{source_name} ? shell_quote($metadata->{source_name}) : '""'), 0],
-            ['-organism_id', $organism_id, 0],
-            ['-type_id', ( $metadata->{type} ? shell_quote($metadata->{type}) : 1 ), 0], # default to "unmasked"
-            ['-staging_dir', $self->staging_dir, 0],
-            ['-fasta_file', shell_quote($fasta_file), 0],
+            ['-organism_id', $organism_id,                   0],
+            ['-type_name',   shell_quote($sequence_type),    0],
+            ['-type_id',     shell_quote($sequence_type_id), 0],
+            ['-staging_dir', $self->staging_dir,             0],
+            ['-fasta_file',  shell_quote($fasta_file),       0],
             #['-irods_files', shell_quote($irods_str), 0],
-            ['-config', $self->conf->{_CONFIG_PATH}, 0]
+            ['-config',      $self->conf->{_CONFIG_PATH},    0]
         ],
         inputs => [
             $fasta_file,
@@ -253,7 +257,6 @@ sub load_genome_from_NCBI {
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, "genbank_genome_loader.pl"),
-        script => undef,
         args => $args,
         inputs => [],
         outputs => [

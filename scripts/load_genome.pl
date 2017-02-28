@@ -18,7 +18,7 @@ use POSIX qw(ceil);
 use Benchmark;
 
 use vars qw($staging_dir $install_dir $fasta_file $irods_files
-  $name $description $link $version $type_id $restricted $message $wid
+  $name $description $link $version $type_id $type_name $restricted $message $wid
   $organism_id $source_id $source_name $source_desc $user_id $user_name
   $keep_headers $compress $creator_id $ignore_chr_limit $transcriptome
   $host $port $db $user $pass $config $P );
@@ -34,7 +34,8 @@ GetOptions(
     "message=s"		=> \$message,		 # message (JS escaped)
     "link=s"        => \$link,           # link (JS escaped)
     "version=s"     => \$version,        # genome version (JS escaped)
-    "type_id=s"     => \$type_id,        # genomic_sequence_type_id
+    "type_id=s"     => \$type_id,        # genomic sequence type id
+    "type_name=s"   => \$type_name,      # genomic sequence type name (has precedence over type_id)
     "transcriptome=i" => \$transcriptome,# flag indicating this sequence is a transcriptome
     "restricted=i"  => \$restricted,     # genome restricted flag
     "organism_id=i" => \$organism_id,    # organism ID
@@ -239,6 +240,12 @@ else {
 }
 die "Error creating/finding data source" unless $datasource;
 print STDOUT "datasource id: " . $datasource->id . "\n";
+
+# Create sequence type
+if ($type_name) {
+    my $seq_type = $coge->resultset('GenomicSequenceType')->find_or_create({ name => $type_name });
+    $type_id = $seq_type->id;
+}
 
 # Create genome
 my $genome = $coge->resultset('Genome')->create(

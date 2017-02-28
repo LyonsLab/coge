@@ -14,8 +14,8 @@ BEGIN {
     require Exporter;
     $VERSION = 0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @POLYMORPHISM_TYPES @ALIGNMENT_TYPES @SEQUENCE_TYPES @SUPPORTED_TYPES);
-    @EXPORT_OK = qw( 
+    @EXPORT = qw(
+        @QUANT_TYPES @MARKER_TYPES @POLYMORPHISM_TYPES @ALIGNMENT_TYPES @SEQUENCE_TYPES @SUPPORTED_TYPES
         delete_experiment detect_data_type download_data experimentcmp get_data 
         get_fastbit_format get_fastbit_score_column query_data get_irods_metadata
     );

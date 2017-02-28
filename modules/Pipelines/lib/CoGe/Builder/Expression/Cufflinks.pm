@@ -9,6 +9,7 @@ use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Utils;
 use CoGe::Accessory::Web qw(get_command_path);
+use CoGe::Accessory::TDS;
 use CoGe::Core::Storage;
 use CoGe::Core::Metadata;
 use CoGe::Exception::Generic;
@@ -28,8 +29,6 @@ sub build {
 
     # Set metadata for the pipeline being used #TODO migrate to metadata file
     my $annotations = generate_additional_metadata($self->params->{expression_params}, $isAnnotated);
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
-    push @$annotations, @annotations2;
 
     #
     # Build workflow
@@ -231,97 +230,115 @@ sub convert_cufflinks {
     };
 }
 
-sub load_csv {
+sub load_csv { #TODO combine with Buildable::load_experiment
     my $self = shift;
     my %opts = @_;
     my $csv_file = $opts{csv_file};
     my $gid = $opts{gid};
     my $annotations = $opts{annotations};
-
     my $metadata = $self->params->{metadata};
+    my $additional_metadata = $self->params->{additional_metadata};
     
-    my $result_file = get_workflow_results_file($self->user->name, $self->workflow->id);
+    my $output_name = "load_csv_" . to_filename_base($csv_file);
+    my $output_path = catdir($self->staging_dir, $output_name);
     
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
-    
+    my $args = [
+        ['-user_name',   $self->user->name,                                 0],
+        ['-name',        shell_quote($metadata->{name}.' (FPKM)'),          0],
+        ['-desc',        shell_quote('Transcript expression measurements'), 0],
+        ['-version',     shell_quote($metadata->{version}), 0],
+        ['-restricted',  $metadata->{restricted},           0],
+        ['-source_name', shell_quote($metadata->{source}),  0],
+        ['-gid',         $gid,                              0],
+        ['-wid',         $self->workflow->id,               0],
+        ['-staging_dir', $output_name, 0],
+        ['-file_type',   'csv',        0],
+        ['-data_file',   $csv_file,    0],
+        ['-config',      $self->conf->{_CONFIG_PATH}, 0]
+    ];
+
     my @tags = ( 'Expression' ); # add Expression tag
     push @tags, @{$metadata->{tags}} if $metadata->{tags};
     my $tags_str = tags_to_string(\@tags);
+    push @$args, ['-tags', shell_quote($tags_str), 0];
+
+    # Add additional metadata
+    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
+        my $metadata_file = catfile($output_path, 'metadata.dump');
+        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
+        push @$args, ['-metadata_file', $metadata_file, 0];
+    }
+    if ($annotations && @$annotations) { # legacy method
+        my $annotations_str = join(';', @$annotations);
+        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
+    }
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, "load_experiment.pl"),
-        args => [
-            ['-user_name', $self->user->name, 0],
-            ['-name', shell_quote($metadata->{name}.' (FPKM)'), 0],
-            ['-desc', shell_quote('Transcript expression measurements'), 0],
-            ['-version', shell_quote($metadata->{version}), 0],
-            ['-restricted', $metadata->{restricted}, 0],
-            ['-source_name', shell_quote($metadata->{source}), 0],
-            ['-gid', $gid, 0],
-            ['-wid', $self->workflow->id, 0],
-            ['-tags', shell_quote($tags_str), 0],
-            ['-annotations', shell_quote($annotations_str), 0],
-            ['-staging_dir', './load_csv', 0],
-            ['-file_type', 'csv', 0],
-            ['-data_file', $csv_file, 0],
-            ['-config', $self->conf->{_CONFIG_PATH}, 0]
-        ],
+        args => $args,
         inputs => [
             $csv_file
         ],
         outputs => [
-            [ catdir($self->staging_dir, "load_csv"), 1 ],
-            catfile($self->staging_dir, "load_csv/log.done"),
-            $result_file
+            [ $output_path, 1 ],
+            catfile($output_path, "log.done"),
         ],
         description => 'Loading FPKM measurements'
     };
 }
 
-sub load_bed {
+sub load_bed { #TODO combine with Buildable::load_experiment
     my $self = shift;
     my %opts = @_;
     my $annotations = $opts{annotations};
     my $bed_file = $opts{bed_file};
     my $gid = $opts{gid};
-
     my $metadata = $self->params->{metadata};
+    my $additional_metadata = $self->params->{additional_metadata};
 
-    my $result_file = get_workflow_results_file($self->user->name, $self->workflow->id);
-    
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
-    
+    my $output_name = "load_csv_" . to_filename_base($bed_file);
+    my $output_path = catdir($self->staging_dir, $output_name);
+
+    my $args = [
+        ['-user_name',   $self->user->name, 0],
+        ['-name',        shell_quote($metadata->{name}." (read depth)"), 0],
+        ['-desc',        shell_quote('Read depth per position'), 0],
+        ['-version',     shell_quote($metadata->{version}), 0],
+        ['-restricted',  $metadata->{restricted}, 0],
+        ['-gid',         $gid, 0],
+        ['-wid',         $self->workflow->id, 0],
+        ['-source_name', shell_quote($metadata->{source}), 0],
+        ['-staging_dir', $output_name, 0],
+        ['-file_type',   'bed', 0],
+        ['-data_file',   $bed_file, 0],
+        ['-config',      $self->conf->{_CONFIG_PATH}, 0]
+    ];
+
     my @tags = ( 'Expression' ); # add Expression tag
     push @tags, @{$metadata->{tags}} if $metadata->{tags};
     my $tags_str = tags_to_string(\@tags);
+    push @$args, ['-tags', shell_quote($tags_str), 0];
+
+    # Add additional metadata
+    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
+        my $metadata_file = catfile($output_path, 'metadata.dump');
+        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
+        push @$args, ['-metadata_file', $metadata_file, 0];
+    }
+    if ($annotations && @$annotations) { # legacy method
+        my $annotations_str = join(';', @$annotations);
+        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
+    }
     
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, "load_experiment.pl"),
-        args => [
-            ['-user_name',   $self->user->name, 0],
-            ['-name',        shell_quote($metadata->{name}." (read depth)"), 0],
-            ['-desc',        shell_quote('Read depth per position'), 0],
-            ['-version',     shell_quote($metadata->{version}), 0],
-            ['-restricted',  $metadata->{restricted}, 0],
-            ['-gid',         $gid, 0],
-            ['-wid',         $self->workflow->id, 0],
-            ['-source_name', shell_quote($metadata->{source}), 0],
-            ['-tags',        shell_quote($tags_str), 0],
-            ['-annotations', shell_quote($annotations_str), 0],
-            ['-staging_dir', './load_bed', 0],
-            ['-file_type',   'bed', 0],
-            ['-data_file',   $bed_file, 0],
-            ['-config',      $self->conf->{_CONFIG_PATH}, 0]
-        ],
+        args => $args,
         inputs => [
             $bed_file
         ],
         outputs => [
-            [ catdir($self->staging_dir, "load_bed"), 1 ],
-            catfile($self->staging_dir, "load_bed/log.done"),
-            $result_file
+            [ $output_path, 1 ],
+            catfile($output_path, "log.done"),
         ],
         description => 'Loading read depth measurements'
     };

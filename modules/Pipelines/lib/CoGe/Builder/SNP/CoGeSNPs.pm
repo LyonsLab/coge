@@ -40,15 +40,11 @@ sub build {
 
     $self->vcf($self->previous_output);
     
-    my $annotations = $self->generate_additional_metadata();
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
-    push @$annotations, @annotations2;
-
     $self->add(
         $self->load_vcf(
             gid => $gid,
             vcf => $self->vcf,
-            annotations => $annotations
+            annotations => $self->generate_additional_metadata() #TODO use metadata file instead
         )
     );
 }

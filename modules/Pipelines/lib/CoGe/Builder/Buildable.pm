@@ -744,7 +744,6 @@ sub load_bam { #TODO combine with load_experiment
     # Add additional metadata
     if ($additional_metadata && @$additional_metadata) { # new method using metadata file
         my $metadata_file = catfile($output_path, 'metadata.dump');
-        make_path($output_path);
         CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
         push @$args, ['-metadata_file', $metadata_file, 0];
     }
@@ -782,7 +781,6 @@ sub load_experiment {
     my $output_name = "load_experiment_$name";
     my $output_path = catdir($self->staging_dir, $output_name);
 
-
     my $args = [
         ['-gid',         $gid,                0],
         ['-wid',         $self->workflow->id, 0],
@@ -809,10 +807,7 @@ sub load_experiment {
     # Add additional metadata
     if ($additional_metadata && @$additional_metadata) { # new method using metadata file
         my $metadata_file = catfile($output_path, 'metadata.dump');
-        make_path($output_path); #TODO maybe this file should be located somewhere else
-        open(my $fh, ">$metadata_file");
-        print $fh Dumper $additional_metadata;
-        close($fh);
+        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
         push @$args, ['-metadata_file', $metadata_file, 0];
     }
     if ($annotations && @$annotations) { # legacy method

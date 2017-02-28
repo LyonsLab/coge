@@ -136,7 +136,7 @@ sub fetch {
             ended => $task->{ended},
             elapsed => $task->{elapsed},
             description => $task->{description},
-            status => $task->{status},
+            status => lc($task->{status}),
             log => undef
         };
 
@@ -158,7 +158,7 @@ sub fetch {
 
     $self->render(json => {
         id => int($id),
-        status => $job_status->{status},
+        status => lc($job_status->{status}),
         tasks => \@tasks,
         results => $results
     });

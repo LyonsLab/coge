@@ -769,11 +769,11 @@ sub validate_vcf_data_file {
             return;
         }
         
-        # Check for extra genotype columns in GVCF # mdb added 5/4/16
-        if ( !$isGVCF && @tok > 10 ) { 
-            print STDOUT "Detected multisample GVCF file based on ", scalar(@tok), " columns\n";
-            $isGVCF = 1;
-        }
+        # Check for extra genotype columns in GVCF # mdb added 5/4/16 # mdb removed 2/27/17 broken: tagging single-sample VCFs as multisample
+#        if ( !$isGVCF && @tok > 10 ) {
+#            print STDOUT "Detected multisample GVCF file based on ", scalar(@tok), " columns\n";
+#            $isGVCF = 1;
+#        }
 
         # Validate values and set defaults
         my ( $chr, $pos, $id, $ref, $alt, $qual, undef, $info ) = @tok;

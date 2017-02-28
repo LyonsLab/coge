@@ -27,10 +27,6 @@ sub build {
 
     my $gid = $self->request->genome->id;
 
-    my $annotations = generate_additional_metadata();
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
-    push @$annotations, @annotations2;
-
     #
     # Build workflow
     #
@@ -47,7 +43,7 @@ sub build {
     $self->add(
         $self->load_vcf(
             vcf         => $self->vcf,
-            annotations => $annotations,
+            annotations => generate_additional_metadata(), #TODO use metadata file instead
             gid         => $gid
         )
     );

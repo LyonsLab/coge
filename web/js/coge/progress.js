@@ -396,6 +396,7 @@ var coge = window.coge = (function(namespace) {
 		_format_status: function(status) {
             var el = $('<span></span>');
 
+            status = coge.utils.ucfirst(status);
             switch (status.toLowerCase()) {
                 case 'scheduled' : el.append(status).addClass('down bold');                 break;
                 case 'completed' : el.append(status).addClass('completed bold');            break;

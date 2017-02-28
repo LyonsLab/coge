@@ -1,7 +1,6 @@
 package CoGe::Services::API::Genome;
 
 use Mojo::Base 'Mojolicious::Controller';
-use Mojo::JSON;
 use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 
@@ -60,9 +59,9 @@ sub search {
             info => $_->info,
             organism_id  => int($_->organism->id),
             sequence_type => {
-                id => $_->type->id,
-                name => $_->type->name,
-                description => $_->type->description,
+                id => ($_->type ? $_->type->id : 0),
+                name => ($_->type ? $_->type->name : ''),
+                description => ($_->type ? $_->type->description : ''),
             },
             restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
             certified => $_->certified ? Mojo::JSON->true : Mojo::JSON->false,
