@@ -59,7 +59,7 @@ sub search {
             info => $_->info,
             organism_id  => int($_->organism->id),
             sequence_type => {
-                id => ($_->type ? $_->type->id : 0),
+                id => int($_->type ? $_->type->id : 0),
                 name => ($_->type ? $_->type->name : ''),
                 description => ($_->type ? $_->type->description : ''),
             },
@@ -144,8 +144,9 @@ sub fetch {
             description => $genome->organism->description
         },
         sequence_type => {
-            name => $genome->type->name,
-            description => $genome->type->description,
+            id => int($genome->type ? $genome->type->id : 0),
+            name => ($genome->type ? $genome->type->name : ''),
+            description => ($genome->type ? $genome->type->description : ''),
         },
         chromosome_count => int($genome->chromosome_count),
         chromosomes => $chromosomes,
