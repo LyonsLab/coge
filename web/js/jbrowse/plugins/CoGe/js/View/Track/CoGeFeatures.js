@@ -283,72 +283,73 @@ define( [
                     this.updateYScaleFromViewDimensions( coords );
                     this.updateFeatureLabelPositions( coords );
                     this.updateFeatureArrowPositions( coords );
-                    setTimeout(this.adjustLabels.bind(this), 1500);
+                    //setTimeout(this.adjustLabels.bind(this), 1500);
                 },
+
+                max_level: 1,
 
                 adjustLabels: function() {
-                    var labels = document.querySelectorAll('.feature-label');
                     var new_labels = document.querySelectorAll('.feature-new');
+                    if (new_labels.length == 0)
+                        return;
+                    var labels = Array.prototype.slice.call(document.querySelectorAll('.feature-label:not(.feature-new)'));
                     for (var i=0; i<new_labels.length; i++) {
-                        dojo.removeClass(new_labels[i], 'feature-new');
-                        for (var j=0; j<labels.length; j++) {
-                            if (!labels[j].next && this.collide(new_labels[i], labels[j])) {
-                                var end = new_labels[i];
-                                while (end.next)
-                                    end = end.next;
-                                end.next = labels[j];
-                                labels[j].style.top = parseInt(end.style.top) + 15 + 'px';
-                                labels[j].level = end.level ? end.level + 1 : 1;
-                                break;
-                            }
+                        var new_label = new_labels[i];
+                        new_label.level = 0;
+                        var label = this.overlaps(new_label, labels);
+                        while (label) {
+                            new_label.style.top = parseInt(new_label.style.top) + 15 + 'px';
+                            new_label.level++;
+                            label = this.overlaps(new_label, labels);
                         }
-                    }
-                    for (var i=0; i<labels.length; i++) {
-                        var label = labels[i];
-                        if (label.level > 2) {
-                            label.style.visibility = 'hidden';
-                            label.style.backgroundColor = 'white';
-                        } else if (label.level == 2) {
-                            if (label.next && label.innerHTML != '(more)') {
-                                label.save_html = label.innerHTML;
-                                label.innerHTML = '(more)';
-                                on(label, mouse.enter, function(){
-                                    if (this.save_html) {
-                                        this.innerHTML = this.save_html;
-                                        var next = this.next;
-                                        while (next) {
-                                            next.style.visibility = '';
-                                            next = next.next;
-                                        }
-                                    }
-                                });
-                                on(label, mouse.leave, function(){
-                                    if (this.save_html) {
-                                        this.innerHTML = '(more)';
-                                        var next = this.next;
-                                        while (next) {
-                                            next.style.visibility = 'hidden';
-                                            next = next.next;
-                                        }
-                                    }
-                                });
-                            }
-                            label.style.visibility = '';
-                        } else
-                            label.style.visibility = '';
+                        if (new_label.level == this.max_level)
+                            this.label2more(new_label);
+                        else if (new_label.level < this.max_level)
+                            new_label.style.visibility = '';
+                        new_label.classList.remove('feature-new');
+                        labels.push(new_label);
                     }
                 },
 
-                collide: function(el1, el2) {
-                    var rect1 = el1.getBoundingClientRect();
-                    var rect2 = el2.getBoundingClientRect();
+                label2more: function(label) {
+                    label.save_html = label.innerHTML;
+                    label.style.width = label.style.width;
+                    label.innerHTML = '(more)';
+                    label.style.visibility = '';
+                    var self = this;
+                    on(label, mouse.enter, function(){
+                        self.toggle(this, true);
+                    });
+                    on(label, mouse.leave, function(){
+                        self.toggle(this, false);
+                    });
+                },
 
-                    return !(
-                        rect1.top > rect2.bottom ||
-                        rect1.right < rect2.left ||
-                        rect1.bottom < rect2.top ||
-                        rect1.left > rect2.right
-                    );
+                overlaps: function(e, labels) {
+                    var r1 = e.getBoundingClientRect();
+                    for (var i=0; i<labels.length; i++) {
+                        var r2 = labels[i].getBoundingClientRect();
+                        if (!(r1.top > r2.bottom || r1.right < r2.left || r1.bottom < r2.top || r1.left > r2.right))
+                            return labels[i];
+                    }
+                    return null;
+                },
+
+                toggle: function(label, enter) {
+                    var plus = label.classList.contains('coge-plus');
+                    var other_side = document.querySelectorAll(plus ? '.coge-minus' : '.coge-plus');
+                    for (var i=0; i<other_side.length; i++)
+                        other_side[i].style.display = enter ? 'none' : '';
+                    var labels = document.querySelectorAll('.feature-label' + (plus ? '.coge-plus' : '.coge-minus'));
+                    for (var i=0; i<labels.length; i++)
+                        if (labels[i].level == this.max_level && labels[i].save_html)
+                            labels[i].innerHTML = enter ? labels[i].save_html : '(more)';
+                        else if (labels[i].level > this.max_level)
+                            labels[i].style.visibility = enter ? '' : 'hidden';
+                    var tracks = this.div.parentElement.children;
+                    for (var i=0; i<tracks.length; i++)
+                        if (tracks[i] != this.div && tracks[i].id != 'gridtrack')
+                            tracks[i].style.display = enter ? 'none' : '';
                 },
 
                 updateFeatureArrowPositions: function( coords ) {
@@ -683,8 +684,9 @@ define( [
                     function () {
                         //curTrack.heightUpdate(curTrack._getLayout(scale).getTotalHeight(), blockIndex);
                         curTrack.heightUpdate(150, blockIndex); // mdb test 5/29/13
+                        setTimeout(this.adjustLabels.bind(this), 1500);
                         finishCallback();
-                    },
+                    }.bind(this),
                     function( error ) {
                         console.error( error, error.stack );
                         curTrack.fillBlockError( blockIndex, block, error );
@@ -813,12 +815,14 @@ define( [
                     //       including decorations (arrowhead, label, etc) and padding
                     var layoutEnd = featureEnd;
 
+                    var strand = feature.get('strand');
+
                     //     JBrowse now draws arrowheads within feature genome coord bounds
                     //     For WebApollo we're keeping arrow outside of feature genome coord bounds,
                     //           because otherwise arrow can obscure edge-matching, CDS/UTR transitions, small inton/exons, etc.
                     //     Would like to implement arrowhead change in WebApollo plugin, but would need to refactor HTMLFeature more to allow for that
                     if (this.config.style.arrowheadClass) {
-                        switch (feature.get('strand')) {
+                        switch (strand) {
                             case 1:
                             case '+':
                                 layoutEnd   += (this.plusArrowWidth / scale); break;
@@ -893,24 +897,23 @@ define( [
                     }
 
                     var className = feature.get('type');
-                    var strand = feature.get('strand');
-                    dojo.addClass(featDiv, "coge-feature");
+                    featDiv.classList.add("coge-feature");
                     //var className = this.config.style.className;
                     //if (className == "{type}") { className = feature.get('type'); }
                     switch (strand) {
                         case 1:
                         case '+':
-                            dojo.addClass(featDiv, "coge-plus-" + className); break;
+                            featDiv.classList.add('coge-plus', 'coge-plus-' + className); break;
                         case -1:
                         case '-':
-                            dojo.addClass(featDiv, "coge-minus-" + className); break;
+                            featDiv.classList.add('coge-minus', 'coge-minus-' + className); break;
                         default:
-                            dojo.addClass(featDiv, className);
+                            featDiv.classList.add(className);
                     }
                     var phase = feature.get('phase');
                     if ((phase !== null) && (phase !== undefined))
                         //featDiv.className = featDiv.className + " " + featDiv.className + "_phase" + phase;
-                        dojo.addClass(featDiv, className + "_phase" + phase);
+                        featDiv.classList.add(className + "_phase" + phase);
 
                     // check if this feature is highlighted
                     var highlighted = this.isFeatureHighlighted( feature, name );
@@ -919,7 +922,7 @@ define( [
                     // matches the objectName of the global highlight and it's
                     // within the highlighted region
                     if( highlighted )
-                        dojo.addClass( featDiv, 'highlighted' );
+                        featDiv.classList.add('highlighted');
 
                     // Since some browsers don't deal well with the situation where
                     // the feature goes way, way offscreen, we truncate the feature
@@ -932,7 +935,7 @@ define( [
                     var blockWidth = block.endBase - block.startBase;
                     var featwidth = Math.max( this.minFeatWidth, (100 * ((displayEnd - displayStart) / blockWidth)));
 
-                    if (feature.get('strand') >= 0) {
+                    if (strand >= 0) {
                         top = 11;
                     } else {
                         top = 91;
@@ -969,13 +972,13 @@ define( [
                                 case 1:
                                 case '+':
                                     ah.className = "coge-plus-" + this.config.style.arrowheadClass;
-                                    ah.style.cssText =  "right: "+(-this.plusArrowWidth) + "px";
+                                    ah.style.right =  -this.plusArrowWidth + "px";
                                     featDiv.appendChild(ah);
                                     break;
                                 case -1:
                                 case '-':
                                     ah.className = "coge-minus-" + this.config.style.arrowheadClass;
-                                    ah.style.cssText = "left: " + (-this.minusArrowWidth) + "px";
+                                    ah.style.left = -this.minusArrowWidth + "px";
                                     featDiv.appendChild(ah);
                                     break;
                             }
@@ -993,7 +996,7 @@ define( [
                             }
                         if (!exists) {
                             var labelDiv = dojo.create( 'div', {
-                                className: 'feature-label feature-new' + ( highlighted ? ' highlighted' : '' ),
+                                className: 'feature-label feature-new' + (strand >= 0 ? ' coge-plus' : ' coge-minus') + (highlighted ? ' highlighted' : ''),
                                 innerHTML: html,
                                 style: {
                                     top: (top + this.glyphHeight + 34) + 'px',
