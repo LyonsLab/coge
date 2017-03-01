@@ -20,8 +20,7 @@ web/js/jbrowse/plugins/*
 !web/js/jbrowse
 !web/js/jbrowse/plugins/
 !web/js/jbrowse/plugins/CoGe
-web/js/jbrowsedev/*
-web/js/jbrowse1.12/*
+web/js/JBrowse-1.12.1-dev/
 \#*\#
 modules/perl
 /.externalToolBuilders/

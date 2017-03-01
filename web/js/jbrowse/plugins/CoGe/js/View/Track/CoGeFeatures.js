@@ -4,6 +4,7 @@ define( [
     'dojo/_base/array',
     'dojo/dom-construct',
     'dojo/dom-geometry',
+    'dojo/mouse',
     'dojo/on',
     'JBrowse/has',
     'dijit/Dialog',
@@ -23,6 +24,7 @@ define( [
         array,
         dom,
         domGeom,
+        mouse,
         on,
         has,
         dijitDialog,
@@ -92,12 +94,11 @@ define( [
 
                             // not configured by users
                             _defaultHistScale: 4,
-                            _defaultLabelScale: 30,
+                            _defaultLabelScale: 0.15, //30,
                             _defaultDescriptionScale: 120,
 
                             maxDescriptionLength: 70,
-                            showLabels: true
-                                ,
+                            showLabels: true,
                             label: function( feature ) { return feature.get('name') || feature.get('id'); },
                             description: 'note, description',
 
@@ -282,6 +283,72 @@ define( [
                     this.updateYScaleFromViewDimensions( coords );
                     this.updateFeatureLabelPositions( coords );
                     this.updateFeatureArrowPositions( coords );
+                    setTimeout(this.adjustLabels.bind(this), 1500);
+                },
+
+                adjustLabels: function() {
+                    var labels = document.querySelectorAll('.feature-label');
+                    var new_labels = document.querySelectorAll('.feature-new');
+                    for (var i=0; i<new_labels.length; i++) {
+                        dojo.removeClass(new_labels[i], 'feature-new');
+                        for (var j=0; j<labels.length; j++) {
+                            if (!labels[j].next && this.collide(new_labels[i], labels[j])) {
+                                var end = new_labels[i];
+                                while (end.next)
+                                    end = end.next;
+                                end.next = labels[j];
+                                labels[j].style.top = parseInt(end.style.top) + 15 + 'px';
+                                labels[j].level = end.level ? end.level + 1 : 1;
+                                break;
+                            }
+                        }
+                    }
+                    for (var i=0; i<labels.length; i++) {
+                        var label = labels[i];
+                        if (label.level > 2) {
+                            label.style.visibility = 'hidden';
+                            label.style.backgroundColor = 'white';
+                        } else if (label.level == 2) {
+                            if (label.next && label.innerHTML != '(more)') {
+                                label.save_html = label.innerHTML;
+                                label.innerHTML = '(more)';
+                                on(label, mouse.enter, function(){
+                                    if (this.save_html) {
+                                        this.innerHTML = this.save_html;
+                                        var next = this.next;
+                                        while (next) {
+                                            next.style.visibility = '';
+                                            next = next.next;
+                                        }
+                                    }
+                                });
+                                on(label, mouse.leave, function(){
+                                    if (this.save_html) {
+                                        this.innerHTML = '(more)';
+                                        var next = this.next;
+                                        while (next) {
+                                            next.style.visibility = 'hidden';
+                                            next = next.next;
+                                        }
+                                    }
+                                });
+                            }
+                            label.style.visibility = '';
+                        } else
+                            label.style.visibility = '';
+                    }
+                },
+
+                collide: function(el1, el2) {
+                    var rect1 = el1.getBoundingClientRect();
+                    var rect2 = el2.getBoundingClientRect();
+
+                    return !(
+                        rect1.top > rect2.bottom ||
+                        rect1.right < rect2.left ||
+                        rect1.bottom < rect2.top ||
+                        rect1.left > rect2.right
+                    );
                 },
 
                 updateFeatureArrowPositions: function( coords ) {
@@ -915,28 +982,39 @@ define( [
                         }
                     }
 
-                    if (name && this.showLabels && isType(geneTypes) && scale >= labelScale || description ) {
-                        var labelDiv = dojo.create( 'div', {
-                            className: "feature-label" + ( highlighted ? ' highlighted' : '' ),
-                            innerHTML:  ( name ? '<div class="feature-name">'+name+'</div>' : '' )
-                            +( description ? ' <div class="feature-description">'+description+'</div>' : '' ),
-                            style: {
-                                top: (top + this.glyphHeight + 34) + "px",
-                            left: (100 * (layoutStart - block.startBase) / blockWidth)+'%'
+                    if ((name || description) && this.showLabels && isType(geneTypes)) {// && scale >= labelScale ) {
+                        var html = ( name ? '<div class="feature-name">'+name+'</div>' : '' ) + ( description ? ' <div class="feature-description">'+description+'</div>' : '' );
+                        var exists = false;
+                        var labels = block.domNode.parentElement.querySelectorAll('.feature-label');
+                        for (var i=0; i<labels.length; i++)
+                            if (labels[i].innerHTML == html) {
+                                exists = true;
+                                break;
                             }
-                        }, block.domNode );
+                        if (!exists) {
+                            var labelDiv = dojo.create( 'div', {
+                                className: 'feature-label feature-new' + ( highlighted ? ' highlighted' : '' ),
+                                innerHTML: html,
+                                style: {
+                                    top: (top + this.glyphHeight + 34) + 'px',
+                                    left: (100 * (layoutStart - block.startBase) / blockWidth)+'%',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                                    visibility: 'hidden'
+                                }
+                            }, block.domNode );
 
-                        this._connectFeatDivHandlers( labelDiv );
+                            this._connectFeatDivHandlers( labelDiv );
 
-                        featDiv.label = labelDiv;
+                            featDiv.label = labelDiv;
 
-                        // NOTE: ANY DATA ADDED TO THE labelDiv MUST HAVE A
-                        // CORRESPONDING DELETE STATMENT IN cleanupBlock BELOW
-                        labelDiv.feature = feature;
-                        labelDiv.track = this;
-                        // (callbackArgs are the args that will be passed to callbacks
-                        // in this feature's context menu or left-click handlers)
-                        labelDiv.callbackArgs = [ this, featDiv.feature, featDiv ];
+                            // NOTE: ANY DATA ADDED TO THE labelDiv MUST HAVE A
+                            // CORRESPONDING DELETE STATMENT IN cleanupBlock BELOW
+                            labelDiv.feature = feature;
+                            labelDiv.track = this;
+                            // (callbackArgs are the args that will be passed to callbacks
+                            // in this feature's context menu or left-click handlers)
+                            labelDiv.callbackArgs = [ this, featDiv.feature, featDiv ];
+                        }
                     }
 
                     if( featwidth > this.config.style.minSubfeatureWidth ) {

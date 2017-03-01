@@ -193,7 +193,7 @@ sub update {
     }
 
     # Check permissions
-    unless ($user->is_owner_editor(experiment => $id)) {
+    unless ($user->is_owner_editor(experiment => $id) || $user->is_admin) {
         $self->render(json => {
             error => { Auth => "Access denied" }
         }, status => 401);

@@ -162,7 +162,7 @@ sub track_config {
             maxHeight               => 100000,
             minSubfeatureWidth      => 4,
             style                   => {
-                labelScale               => 0.02,
+#                labelScale               => 0.02,
                 arrowheadClass           => "arrowhead",
                 className                => "generic_parent",
                 maxDescriptionLength     => 70,
