@@ -309,7 +309,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 	    exit(-1);
 	}
 
-	print STDOUT "log: Indexing database (may take a few minutes)\n";
+	print STDOUT "log: Indexing database\n";
 	$cmd = "$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
 	print STDOUT $cmd, "\n";
 	$rc = system($cmd);
