@@ -190,7 +190,8 @@ sub ftp_get {
             $cmd # mdb added 11/10/16 -- attempt to fix stuck tasks, COGE-729
         ],
         outputs => [ 
-            $output_file
+            $output_file,
+            qq[$output_file.done] # created by ftp.pl
         ],
         description => "Fetching $url"
     };
