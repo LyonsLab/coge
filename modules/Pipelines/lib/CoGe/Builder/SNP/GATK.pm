@@ -302,7 +302,10 @@ sub gatk_HaplotypeCaller {
         ['-o',                  $output_vcf,         1]
     ];
 
-    push @$args, ['--emitRefConfidence', $emitRefConfidence,  0] if ($emitRefConfidence);
+    if ($emitRefConfidence) {
+        push @$args, [ '--emitRefConfidence', $emitRefConfidence, 0 ];
+        push @$args, ( [ '-variant_index_type', 'LINEAR', 0], [ '-variant_index_parameter', 128000, 0] ); # GATK prints an error message that tese are required for GVCF mode
+    }
     push @$args, ['--pcr_indel_model',   $pcr_indel_model,    0] if ($pcr_indel_model);
     push @$args, ['-stand_call_conf',    $stand_call_conf,    0] if ($stand_call_conf);
 
