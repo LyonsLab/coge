@@ -283,7 +283,6 @@ define( [
                     this.updateYScaleFromViewDimensions( coords );
                     this.updateFeatureLabelPositions( coords );
                     this.updateFeatureArrowPositions( coords );
-                    //setTimeout(this.adjustLabels.bind(this), 1500);
                 },
 
                 max_level: 1,
@@ -292,9 +291,10 @@ define( [
                     var new_labels = document.querySelectorAll('.feature-new');
                     if (new_labels.length == 0)
                         return;
-                    var labels = Array.prototype.slice.call(document.querySelectorAll('.feature-label:not(.feature-new)'));
                     for (var i=0; i<new_labels.length; i++) {
                         var new_label = new_labels[i];
+                        var plus = new_label.classList.contains('coge-plus');
+                        var labels = document.querySelectorAll('.feature-label' + (plus ? '.coge-plus' : '.coge-minus') + ':not(.feature-new)');
                         new_label.level = 0;
                         var label = this.overlaps(new_label, labels);
                         while (label) {
@@ -307,13 +307,12 @@ define( [
                         else if (new_label.level < this.max_level)
                             new_label.style.visibility = '';
                         new_label.classList.remove('feature-new');
-                        labels.push(new_label);
                     }
                 },
 
                 label2more: function(label) {
+                    label.style.width = label.offsetWidth + 1;
                     label.save_html = label.innerHTML;
-                    label.style.width = label.style.width;
                     label.innerHTML = '(more)';
                     label.style.visibility = '';
                     var self = this;
@@ -329,7 +328,7 @@ define( [
                     var r1 = e.getBoundingClientRect();
                     for (var i=0; i<labels.length; i++) {
                         var r2 = labels[i].getBoundingClientRect();
-                        if (!(r1.top > r2.bottom || r1.right < r2.left || r1.bottom < r2.top || r1.left > r2.right))
+                        if (r1.left < r2.right && r1.right > r2.left && r1.top < r2.bottom && r1.bottom > r2.top)
                             return labels[i];
                     }
                     return null;
@@ -684,7 +683,7 @@ define( [
                     function () {
                         //curTrack.heightUpdate(curTrack._getLayout(scale).getTotalHeight(), blockIndex);
                         curTrack.heightUpdate(150, blockIndex); // mdb test 5/29/13
-                        setTimeout(this.adjustLabels.bind(this), 1500);
+                        setTimeout(this.adjustLabels.bind(this), 500);
                         finishCallback();
                     }.bind(this),
                     function( error ) {
