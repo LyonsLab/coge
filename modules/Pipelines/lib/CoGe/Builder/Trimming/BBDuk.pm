@@ -38,7 +38,8 @@ sub build {
         # Create BBDuk task for each file
         foreach (@$fastq1) {
             $self->add(
-                $self->bbduk($_, $reheader_fasta)
+                $self->bbduk($_, $reheader_fasta),
+                qq[$_.done] # done file dependencies are created in Extractor
             );
             push @{$self->fastq}, $self->previous_output;
         }
@@ -46,8 +47,10 @@ sub build {
     else { # paired-end
         # Create BBDuk task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) {
+            my ($f1, $f2) = ($fastq1->[$i], $fastq2->[$i]);
             $self->add(
-                $self->bbduk([ $fastq1->[$i], $fastq2->[$i] ], $reheader_fasta)
+                $self->bbduk([ $fastq1->[$i], $fastq2->[$i] ], $reheader_fasta),
+                [ qq{$f1.done}, qq{$f2.done} ] # done file dependencies are created in Extractor
             );
             push @{$self->fastq}, grep { /\.fastq$/ } @{$self->previous_outputs};
         }

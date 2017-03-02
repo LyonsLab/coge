@@ -27,7 +27,8 @@ sub build {
         # Create cutadapt task for each file
         foreach (@$fastq1) {
             $self->add(
-                $self->cutadapt($_)
+                $self->cutadapt($_),
+                qq[$_.done] # done file dependencies are created in Extractor
             );
             push @{$self->fastq}, $self->previous_output;
         }
@@ -35,8 +36,10 @@ sub build {
     else { # paired-end
         # Create cutadapt task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) {
+            my ($f1, $f2) = ($fastq1->[$i], $fastq2->[$i]);
             $self->add(
-                $self->cutadapt([ $fastq1->[$i], $fastq2->[$i] ])
+                $self->cutadapt([ $f1, $f2 ]),
+                [ qq{$f1.done}, qq{$f2.done} ] # done file dependencies are created in Extractor
             );
             push @{$self->fastq}, grep { /\.fastq$/ } @{$self->previous_outputs};
         }
