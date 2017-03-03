@@ -304,7 +304,7 @@ define( [
                             if (label.level == this.max_level && !label.save_html)
                                 this.label2more(label);
                             new_label.level++;
-                            new_label.style.top = parseInt(new_label.style.top) + 15 + 'px';
+                            new_label.style.top = parseInt(new_label.style.top) + 12 + 'px';
                             new_label.r = new_label.getBoundingClientRect();
                             label = this.overlaps(new_label, labels);
                         }
@@ -688,7 +688,7 @@ define( [
                     function () {
                         //curTrack.heightUpdate(curTrack._getLayout(scale).getTotalHeight(), blockIndex);
                         curTrack.heightUpdate(150, blockIndex); // mdb test 5/29/13
-                        setTimeout(this.adjustLabels.bind(this), 500);
+                        setTimeout(this.adjustLabels.bind(this), 1000);
                         finishCallback();
                     }.bind(this),
                     function( error ) {
@@ -989,7 +989,7 @@ define( [
                         }
                     }
 
-                    if ((name || description) && this.showLabels && isType(geneTypes) && scale >= labelScale) {
+                    if ((name || description) && this.showLabels && isType(geneTypes)) {// && scale >= labelScale ) {
                         var html = ( name ? '<div class="feature-name">'+name+'</div>' : '' ) + ( description ? ' <div class="feature-description">'+description+'</div>' : '' );
                         var exists = false;
                         var labels = block.domNode.parentElement.querySelectorAll('.feature-label');
@@ -1003,6 +1003,7 @@ define( [
                                 className: 'feature-label feature-new' + (strand >= 0 ? ' coge-plus' : ' coge-minus') + (highlighted ? ' highlighted' : ''),
                                 innerHTML: html,
                                 style: {
+                                    'font-size': '11px',
                                     top: (top + this.glyphHeight + 34) + 'px',
                                     left: (100 * (layoutStart - block.startBase) / blockWidth)+'%',
                                     backgroundColor: 'rgba(255, 255, 255, 0.5)',
