@@ -94,7 +94,7 @@ define( [
 
                             // not configured by users
                             _defaultHistScale: 4,
-                            _defaultLabelScale: 0.15, //30,
+                            _defaultLabelScale: 0.1, //30,
                             _defaultDescriptionScale: 120,
 
                             maxDescriptionLength: 70,
@@ -291,22 +291,27 @@ define( [
                     var new_labels = document.querySelectorAll('.feature-new');
                     if (new_labels.length == 0)
                         return;
+                    var plus_labels = Array.prototype.slice.call(document.querySelectorAll('.feature-label.coge-plus:not(.feature-new)'));
+                    var minus_labels = Array.prototype.slice.call(document.querySelectorAll('.feature-label.coge-minus:not(.feature-new)'));
                     for (var i=0; i<new_labels.length; i++) {
                         var new_label = new_labels[i];
                         var plus = new_label.classList.contains('coge-plus');
-                        var labels = document.querySelectorAll('.feature-label' + (plus ? '.coge-plus' : '.coge-minus') + ':not(.feature-new)');
+                        var labels = plus ? plus_labels : minus_labels;
                         new_label.level = 0;
+                        new_label.r = new_label.getBoundingClientRect();
                         var label = this.overlaps(new_label, labels);
                         while (label) {
-                            new_label.style.top = parseInt(new_label.style.top) + 15 + 'px';
+                            if (label.level == this.max_level && !label.save_html)
+                                this.label2more(label);
                             new_label.level++;
+                            new_label.style.top = parseInt(new_label.style.top) + 15 + 'px';
+                            new_label.r = new_label.getBoundingClientRect();
                             label = this.overlaps(new_label, labels);
                         }
-                        if (new_label.level == this.max_level)
-                            this.label2more(new_label);
-                        else if (new_label.level < this.max_level)
+                        if (new_label.level <= this.max_level)
                             new_label.style.visibility = '';
                         new_label.classList.remove('feature-new');
+                        labels.push(new_label);
                     }
                 },
 
@@ -314,7 +319,6 @@ define( [
                     label.style.width = label.offsetWidth + 1;
                     label.save_html = label.innerHTML;
                     label.innerHTML = '(more)';
-                    label.style.visibility = '';
                     var self = this;
                     on(label, mouse.enter, function(){
                         self.toggle(this, true);
@@ -324,13 +328,14 @@ define( [
                     });
                 },
 
-                overlaps: function(e, labels) {
-                    var r1 = e.getBoundingClientRect();
-                    for (var i=0; i<labels.length; i++) {
-                        var r2 = labels[i].getBoundingClientRect();
-                        if (r1.left < r2.right && r1.right > r2.left && r1.top < r2.bottom && r1.bottom > r2.top)
-                            return labels[i];
-                    }
+                overlaps: function(label, labels) {
+                    var r1 = label.r;
+                    for (var i=0; i<labels.length; i++)
+                        if (label.level == labels[i].level) {
+                            var r2 = labels[i].r;
+                            if (r1.left < r2.right && r1.right > r2.left)
+                                return labels[i];
+                        }
                     return null;
                 },
 
@@ -984,12 +989,12 @@ define( [
                         }
                     }
 
-                    if ((name || description) && this.showLabels && isType(geneTypes)) {// && scale >= labelScale ) {
+                    if ((name || description) && this.showLabels && isType(geneTypes) && scale >= labelScale) {
                         var html = ( name ? '<div class="feature-name">'+name+'</div>' : '' ) + ( description ? ' <div class="feature-description">'+description+'</div>' : '' );
                         var exists = false;
                         var labels = block.domNode.parentElement.querySelectorAll('.feature-label');
                         for (var i=0; i<labels.length; i++)
-                            if (labels[i].innerHTML == html) {
+                            if (labels[i].save_html == html || labels[i].innerHTML == html) {
                                 exists = true;
                                 break;
                             }
