@@ -52,9 +52,11 @@ sub build {
     );
 
     # Add read groups
-    $self->add(
-        $self->add_readgroups($self->previous_output)
-    );
+    unless ($self->params->{alignment_params}->{tool} eq 'bwa' && $self->params->{alignment_params}->{'-R'}) {
+        $self->add(
+            $self->add_readgroups($self->previous_output)
+        );
+    }
 
     # Reorder BAM
     ($bam_file) = $self->add_to_previous(
@@ -282,8 +284,6 @@ sub gatk_HaplotypeCaller {
     my $input_fasta = $opts{input_fasta};
     my $input_bam   = $opts{input_bam};
 
-    my $output_vcf = to_filename_base($input_bam) . '.flt.vcf';
-
     my $params = $self->params->{snp_params};
     my $stand_call_conf   = $params->{'-stand_call_conf'};
     my $emitRefConfidence = $params->{'--emitRefConfidence'};
@@ -296,16 +296,15 @@ sub gatk_HaplotypeCaller {
         CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
     }
 
+    my $output_vcf = to_filename_base($input_bam) . ($emitRefConfidence ? '.g.vcf' : '.vcf');
+
     my $args = [
-        ['-R',                  qq[$input_fasta.fa], 0],
-        ['-I',                  $input_bam,          1],
-        ['-o',                  $output_vcf,         1]
+        ['-R', qq[$input_fasta.fa], 0],
+        ['-I', $input_bam,          1],
+        ['-o', $output_vcf,         1]
     ];
 
-    if ($emitRefConfidence) {
-        push @$args, [ '--emitRefConfidence', $emitRefConfidence, 0 ];
-        push @$args, ( [ '-variant_index_type', 'LINEAR', 0], [ '-variant_index_parameter', 128000, 0] ); # GATK prints an error message that tese are required for GVCF mode
-    }
+    push @$args, ['--emitRefConfidence', $emitRefConfidence,  0] if ($emitRefConfidence);
     push @$args, ['--pcr_indel_model',   $pcr_indel_model,    0] if ($pcr_indel_model);
     push @$args, ['-stand_call_conf',    $stand_call_conf,    0] if ($stand_call_conf);
 
@@ -313,7 +312,7 @@ sub gatk_HaplotypeCaller {
         cmd => "ln -sf $input_fasta $input_fasta.fa && " . # mdb added 9/20/16 -- GATK expects the filename to end in .fa or .fasta
                "ln -sf $input_fasta.fai $input_fasta.fa.fai && " .
                "ln -sf $input_fasta.dict $input_fasta.fa.dict && " .
-                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller --genotyping_mode DISCOVERY $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
+                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
         args => $args,
         inputs => [
             $input_bam,
