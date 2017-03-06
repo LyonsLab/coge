@@ -662,7 +662,7 @@ sub picard_deduplicate {
     my $output_file = $bam_file . '-deduplicated.bam';
 
     return {
-        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp ; mv $output_file.tmp $output_file",
+        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp && mv $output_file.tmp $output_file",
         args => [
 #            ['MarkDuplicates', '', 0],
 #            ['REMOVE_DUPLICATES=true', '', 0],
