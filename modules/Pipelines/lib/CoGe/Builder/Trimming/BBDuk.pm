@@ -52,7 +52,7 @@ sub build {
                 $self->bbduk([ $fastq1->[$i], $fastq2->[$i] ], $reheader_fasta),
                 [ qq{$f1.done}, qq{$f2.done} ] # done file dependencies are created in Extractor
             );
-            push @{$self->fastq}, grep { /\.fastq$/ } @{$self->previous_outputs};
+            push @{$self->fastq}, @{$self->previous_outputs};
         }
     }
 }

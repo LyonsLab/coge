@@ -41,7 +41,7 @@ sub build {
                 $self->cutadapt([ $f1, $f2 ]),
                 [ qq{$f1.done}, qq{$f2.done} ] # done file dependencies are created in Extractor
             );
-            push @{$self->fastq}, grep { /\.fastq$/ } @{$self->previous_outputs};
+            push @{$self->fastq}, @{$self->previous_outputs};
         }
     }
 }
