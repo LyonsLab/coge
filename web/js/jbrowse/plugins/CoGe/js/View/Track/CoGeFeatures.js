@@ -310,6 +310,8 @@ define( [
                         }
                         if (new_label.level <= this.max_level)
                             new_label.style.visibility = '';
+                        else
+                            new_label.style.backgroundColor = '#fff';
                         new_label.classList.remove('feature-new');
                         labels.push(new_label);
                     }
@@ -341,9 +343,9 @@ define( [
 
                 toggle: function(label, enter) {
                     var plus = label.classList.contains('coge-plus');
-                    var other_side = document.querySelectorAll(plus ? '.coge-minus' : '.coge-plus');
-                    for (var i=0; i<other_side.length; i++)
-                        other_side[i].style.display = enter ? 'none' : '';
+                    // var other_side = document.querySelectorAll(plus ? '.coge-minus' : '.coge-plus');
+                    // for (var i=0; i<other_side.length; i++)
+                    //     other_side[i].style.display = enter ? 'none' : '';
                     var labels = document.querySelectorAll('.feature-label' + (plus ? '.coge-plus' : '.coge-minus'));
                     for (var i=0; i<labels.length; i++)
                         if (labels[i].level == this.max_level && labels[i].save_html)
