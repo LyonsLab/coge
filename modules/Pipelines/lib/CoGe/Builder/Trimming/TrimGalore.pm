@@ -40,7 +40,7 @@ sub build {
                 $self->trimgalore([ $fastq1->[$i], $fastq2->[$i] ]),
                 [ qq{$f1.done}, qq{$f2.done} ] # done file dependencies are created in Extractor
             );
-            push @{$self->fastq}, $self->previous_outputs;
+            push @{$self->fastq}, @{$self->previous_outputs};
         }
     }
 }
