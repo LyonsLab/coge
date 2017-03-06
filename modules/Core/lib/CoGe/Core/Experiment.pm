@@ -67,6 +67,7 @@ sub detect_data_type {
     # Try to determine type based on file extension
     if (!$filetype or $filetype eq 'autodetect') {
         $filepath =~ s/\.gz$//; # remove extension for compressed files -- mdb added 11/22/16
+        $filepath =~ s/\.bz2$//; # remove extension for compressed files -- mdb added 3/6/17
 
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }
