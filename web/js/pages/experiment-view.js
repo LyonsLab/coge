@@ -1,7 +1,3 @@
-function set_annotation_table() {
-    $('#experiment_annotation_table').tablesorter({widgets: ['zebra']});
-}
-
 function get_experiment_info() {
     $.ajax({
         data: {
@@ -64,6 +60,20 @@ function update_experiment_info () {
             $("#experiment_info_edit_box").dialog('close');
         }
     });
+}
+
+function delete_experiment (action) {
+	coge.utils.confirm(action + ' experiment?', null, function() {
+		$.ajax({
+			data: {
+				fname: 'delete_experiment',
+				eid: EXPERIMENT_ID
+			},
+			success : function(val) {
+				get_experiment_info();
+			},
+		});
+	});
 }
 
 function get_sources () {
@@ -194,10 +204,6 @@ function toggle_load_log() { // TODO: shared with GenomeInfo.pl, move to module
 }
 
 function export_data() {
-    // Make sure user is still logged-in
-    if (!check_and_report_login())
-        return;
-
     coge.progress.begin({
     	title: 'Exporting ...',
     	content: 
@@ -319,14 +325,6 @@ var snpMenu = {
 	},
 	
 	submit: function() { 
-		// Prevent concurrent executions
-		//if ( $("#progress_dialog").dialog( "isOpen" ) )
-		//    return;
-	
-		// Make sure user is still logged-in
-		//if (!check_and_report_login())
-		//    return;
-		
 		var params = this.is_valid();
 	
 		coge.progress.begin({ 
@@ -416,14 +414,6 @@ var expressionMenu = {
 	},
 	
 	submit: function() { 
-		// Prevent concurrent executions
-		//if ( $("#progress_dialog").dialog( "isOpen" ) )
-		//    return;
-	
-		// Make sure user is still logged-in
-		//if (!check_and_report_login())
-		//    return;
-		
 		var params = this.is_valid();
 	
 		coge.progress.begin({ 
@@ -515,14 +505,6 @@ var metaplotMenu = {
 	},
 	
 	submit: function() { 
-		// Prevent concurrent executions
-		//if ( $("#progress_dialog").dialog( "isOpen" ) )
-		//    return;
-	
-		// Make sure user is still logged-in
-		//if (!check_and_report_login())
-		//    return;
-		
 		var params = this.is_valid();
 	
 		coge.progress.begin({ 
@@ -614,14 +596,6 @@ var diversityMenu = {
 	},
 	
 	submit: function() { 
-		// Prevent concurrent executions
-		//if ( $("#progress_dialog").dialog( "isOpen" ) )
-		//    return;
-	
-		// Make sure user is still logged-in
-		//if (!check_and_report_login())
-		//    return;
-		
 		var params = this.is_valid();
 	
 		coge.progress.begin({ 
@@ -673,31 +647,6 @@ function analyze_diversity() {
 		diversityMenu.open();
 }
 
-function check_login() {
-    var logged_in = false;
-
-    $.ajax({
-        async: false,
-        data: {
-            fname: 'check_login'
-        },
-        success : function(rc) {
-            logged_in = rc;
-        }
-    });
-
-    return logged_in;
-}
-
-function check_and_report_login() {
-    if (!check_login()) {
-        alert('Your session has expired, please log in again.');
-        location.reload(true);
-        return false;
-    }
-    return true;
-}
-
 function remove_experiment_tag (opts) {
     etid = opts.etid;
     $.ajax({
@@ -708,32 +657,6 @@ function remove_experiment_tag (opts) {
         },
         success : function(val) {
             get_experiment_info();
-        },
-    });
-}
-
-function get_annotations() {
-    $.ajax({
-        data: {
-            fname: 'get_annotations',
-            eid: EXPERIMENT_ID,
-        },
-        success : function(data) {
-            $('#experiment_annotations').html(data);
-            set_annotation_table();
-        }
-    });
-}
-
-function remove_annotation (eaid) {
-    $.ajax({
-        data: {
-            fname: 'remove_annotation',
-            eid: EXPERIMENT_ID,
-            eaid: eaid,
-        },
-        success : function() {
-            get_annotations();
         },
     });
 }

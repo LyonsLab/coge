@@ -5,12 +5,13 @@ use Mojo::JSON;
 use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 
-use CoGe::Services::Auth qw(init);
-use CoGe::Services::API::Job;
-use CoGe::Core::Genome qw(genomecmp search_genomes);
-use CoGe::Core::Storage qw(get_genome_seq);
-use CoGe::Core::Favorites;
 use CoGe::Accessory::Utils qw(sanitize_name);
+use CoGe::Core::Favorites;
+use CoGe::Core::Genome qw(genomecmp search_genomes);
+use CoGe::Core::Metadata qw( create_annotation delete_annotation get_annotation get_annotations );
+use CoGe::Core::Storage qw(get_genome_seq);
+use CoGe::Services::API::Job;
+use CoGe::Services::Auth qw(init);
 use CoGeDBI qw(get_feature_counts);
 
 sub search {
@@ -91,25 +92,9 @@ sub fetch {
         return;
     }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Get genome
-    my $genome = $db->resultset("Genome")->find($id);
-    unless (defined $genome) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found"}
-        });
-        return;
-    }
-
-    # Verify permission
-    unless ( !$genome->restricted || (defined $user && $user->has_access_to_genome($genome)) ) {
-        $self->render(json => {
-            error => { Auth => "Access denied"}
-        }, status => 401);
-        return;
-    }
+    my $genome = $self->_get_genome($id, 0, $db, $user);
+    return unless $genome;
 
     # Format metadata
     my @metadata = map {
@@ -155,6 +140,27 @@ sub fetch {
     });
 }
 
+sub fetch_annotations {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my ($db) = CoGe::Services::Auth::init($self);
+
+    $self->render(json => get_annotations($id, 'Genome', $db, 1));
+}
+
+sub fetch_annotation {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my $aid = int($self->stash('aid'));
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $genome = $self->_get_genome($id, 0, $db, $user);
+    return unless $genome;
+
+    my $annotation = get_annotation($aid, 'Genome', $db);
+    $self->render(json => $annotation) if $annotation;
+}
+
 sub sequence {
     my $self   = shift;
     my $gid    = $self->stash('id');
@@ -168,23 +174,9 @@ sub sequence {
         (defined $start ? "start=$start " : ''),
         (defined $stop ? "stop=$stop " : ''), "\n";
 
-    # Connect to the database
-    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
-
-    # Retrieve genome
-    my $genome = $db->resultset('Genome')->find($gid);
-    unless ($genome) {
-        print STDERR "Data::Sequence::get genome $gid not found in db\n";
-        return;
-    }
-
-    # Check permissions
-    if ( $genome->restricted
-        and ( not defined $user or not $user->has_access_to_genome($genome) ) )
-    {
-        print STDERR "Data::Sequence::get access denied to genome $gid\n";
-        return;
-    }
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $genome = $self->_get_genome($gid, 0, $db, $user);
+    return unless $genome;
 
     # Force browser to download whole genome as attachment
     my $format;
@@ -254,6 +246,80 @@ sub add {
     };
     
     return CoGe::Services::API::Job::add($self, $request);
+}
+
+sub add_annotation {
+    my $self = shift;
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    create_annotation(
+        db => $db,
+        filename => $self->param('filename'),
+        group_name => $self->param('group_name'),
+        image => $self->param('image'),
+        link => $self->param('link'),
+        target_id => int($self->stash('id')),
+        target_type => 'genome',
+        text => $self->param('annotation'),
+        type_name => $self->param('type_name'),
+        user => $user
+    );
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
+sub delete_annotation {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my $aid = int($self->stash('aid'));
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $error = CoGe::Core::Metadata::delete_annotation($aid, $id, 'Genome', $db, $user);
+    if ($error) {
+        $self->render(status => 400, json => { error => { Error => $error} });
+        return;
+    }
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
+sub update_annotation {
+    my $self = shift;
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    CoGe::Core::Metadata::update_annotation(
+        annotation_id => int($self->stash('aid')),
+        db => $db,
+        filename => $self->param('filename'),
+        group_name => $self->param('group_name'),
+        image => $self->param('image'),
+        link => $self->param('link'),
+        target_type => 'genome',
+        text => $self->param('annotation'),
+        type_name => $self->param('type_name'),
+        user => $user
+    );
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
+sub _get_genome {
+    my ($self, $id, $own_or_edit, $db, $user) = @_;
+    my $genome = $db->resultset("Genome")->find($id);
+    unless (defined $genome) {
+        $self->render(status => 404, json => { error => { Error => "Resource not found" } });
+        return;
+    }
+    if ($own_or_edit) {
+        unless ($user) {
+            $self->render(status => 404, json => { error => { Error => "User not logged in"} });
+            return;
+        }
+        unless ($user->is_owner_editor(genome => $id)) {
+            $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+            return;
+        }
+    }
+    unless ( !$genome->restricted || (defined $user && $user->has_access_to_genome($genome)) ) {
+        $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+        return;
+    }
+    return $genome;
 }
 
 1;

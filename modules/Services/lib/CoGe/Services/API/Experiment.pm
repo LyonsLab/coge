@@ -3,11 +3,11 @@ package CoGe::Services::API::Experiment;
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON qw(decode_json);
 use Data::Dumper;
-#use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Accessory::Utils;
 use CoGe::Core::Experiment qw( delete_experiment );
 use CoGe::Core::Favorites;
+use CoGe::Core::Metadata qw( create_annotation delete_annotation get_annotation get_annotations );
 use CoGe::Services::Auth;
 use CoGe::Services::API::Job;
 
@@ -69,25 +69,9 @@ sub fetch {
         return;
     }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Get experiment
-    my $experiment = $db->resultset("Experiment")->find($id);
-    unless (defined $experiment) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
-        return;
-    }
-
-    # Check permissions
-    unless ( !$experiment->restricted || (defined $user && $user->has_access_to_experiment($experiment)) ) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
-        return;
-    }
+    my $experiment = $self->_get_experiment($id, 0, $db, $user);
+    return unless $experiment;
 
     # Format metadata
     my @metadata = map {
@@ -123,6 +107,27 @@ sub fetch {
     });
 }
 
+sub fetch_annotations {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my ($db) = CoGe::Services::Auth::init($self);
+
+    $self->render(json => get_annotations($id, 'Experiment', $db, 1));
+}
+
+sub fetch_annotation {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my $aid = int($self->stash('aid'));
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $experiment = $self->_get_experiment($id, 0, $db, $user);
+    return unless $experiment;
+
+    my $annotation = get_annotation($aid, 'Experiment', $db);
+    $self->render(json => $annotation) if $annotation;
+}
+
 sub add {
     my $self = shift;
     my $data = $self->req->body; #$self->req->json; # mdb replaced 11/22/16 -- req->json hides JSON errors, doing conversion manually prints them to STDERR
@@ -154,6 +159,38 @@ sub add {
     return CoGe::Services::API::Job::add($self, $request);
 }
 
+sub add_annotation {
+    my $self = shift;
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    create_annotation(
+        db => $db,
+        filename => $self->param('filename'),
+        group_name => $self->param('group_name'),
+#        image => $self->param('image'),
+        link => $self->param('link'),
+        target_id => int($self->stash('id')),
+        target_type => 'experiment',
+        text => $self->param('annotation'),
+        type_name => $self->param('type_name'),
+        user => $user
+    );
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
+sub delete_annotation {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    my $aid = int($self->stash('aid'));
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $error = CoGe::Core::Metadata::delete_annotation($aid, $id, 'Experiment', $db, $user);
+    if ($error) {
+        $self->render(status => 400, json => { error => { Error => $error} });
+        return;
+    }
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
 sub remove {
     my $self = shift;
     my $id = int($self->stash('id'));
@@ -180,25 +217,9 @@ sub update {
         return;
     }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Get experiment
-    my $experiment = $db->resultset("Experiment")->find($id);
-    unless (defined $experiment) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
-        return;
-    }
-
-    # Check permissions
-    unless ($user->is_owner_editor(experiment => $id) || $user->is_admin) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
-        return;
-    }
+    my $experiment = $self->_get_experiment($id, 1, $db, $user);
+    return unless $experiment;
 
     my $data = $self->req->json;
     if (exists($data->{metadata}->{id})) {
@@ -206,6 +227,48 @@ sub update {
     }
 	$experiment->update($data->{metadata});
 	$self->render(json => { success => Mojo::JSON->true });
+}
+
+sub update_annotation {
+    my $self = shift;
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    CoGe::Core::Metadata::update_annotation(
+        annotation_id => int($self->stash('aid')),
+        db => $db,
+        filename => $self->param('filename'),
+        group_name => $self->param('group_name'),
+        image => $self->param('image'),
+        link => $self->param('link'),
+        target_type => 'experiment',
+        text => $self->param('annotation'),
+        type_name => $self->param('type_name'),
+        user => $user
+    );
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
+sub _get_experiment {
+    my ($self, $id, $own_or_edit, $db, $user) = @_;
+    my $experiment = $db->resultset("Experiment")->find($id);
+    unless (defined $experiment) {
+        $self->render(status => 404, json => { error => { Error => "Resource not found" } });
+        return;
+    }
+    if ($own_or_edit) {
+        unless ($user) {
+            $self->render(status => 404, json => { error => { Error => "User not logged in"} });
+            return;
+        }
+        unless ($user->is_owner_editor(experiment => $id)) {
+            $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+            return;
+        }
+    }
+    unless ( !$experiment->restricted || (defined $user && $user->has_access_to_experiment($experiment)) ) {
+        $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+        return;
+    }
+    return $experiment;
 }
 
 1;

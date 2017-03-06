@@ -1,3 +1,7 @@
+._*
+.agignore
+.gitignore
+*.swp
 *.pyc
 *.o
 .project

@@ -1,0 +1,284 @@
+<script language="JavaScript">
+// use: var annotations=new Annotations(div_id, parent_type, parent_id, user_can_edit, default_type); on page load
+
+class Annotations {
+	constructor(div_id, parent_type, parent_id, user_can_edit, default_type) {
+		this.div_id = div_id;
+		this.parent_type = parent_type;
+		this.api_path = parent_type + 's';
+		this.parent_id = parent_id;
+		this.user_can_edit = user_can_edit;
+		this.default_type = default_type;
+
+		this.base_url = '<TMPL_VAR NAME="API_BASE_URL">';
+		this.images = [];
+		this.timers = {};
+		this.show_table();
+
+		$("#annotation_type").autocomplete({source:[]});
+		$("#annotation_type_group").autocomplete({source: this.get_type_groups.bind(this)});
+	}
+
+	delete(aid) {
+		coge.utils.confirm('Delete this annotation?', null, function() {
+			var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations/' + aid;
+			$.ajax({
+				type: 'DELETE',
+				url: url
+			}).done(function() {
+				annotations.show_table();
+			}).fail(function(jqXHR, textStatus, errorThrown) { 
+				console.log('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
+			});
+		}.bind(this));
+	}
+
+	get_type_groups() {
+		var url = this.base_url + 'annotations/type_groups';
+		$.ajax({
+				url: url,
+				dataType: "json",
+				contentType: "application/json"
+			}).done(function(items){
+				$("#annotation_type_group").autocomplete("option", "source", items);
+				$("#annotation_type_group").autocomplete("search");
+			}).fail(function(jqXHR, textStatus, errorThrown) { 
+				console.error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
+			});
+	}
+
+	image_preview(obj, preview) {
+		var id = obj.src; // need a unique identifier for the obj
+		if (this.timers[id]) {
+			clearInterval(this.timers[id]);
+			this.timers[id] = null;
+		}
+		this.timers[id] = setTimeout(
+			function() {
+				var size = preview ? 200 : 40;
+				$(obj).animate({'max-width':size, 'max-height':size});
+				this.timers[id] = null;
+			}.bind(this),
+			500
+		);
+	}
+
+	on_error(img) {
+		this.images.push(img);
+	}
+
+	search_types() {
+		var type_group  = $("#annotation_type_group").val();
+		var search_term = $("#annotation_type").val();
+		if (search_term.length > 2) {
+			var url = this.base_url + 'annotations/search_types';
+			$.ajax({
+				url: url,
+				data: {
+					type_group: type_group,
+					search_term: search_term
+				},
+				dataType: 'json'
+			}).done(function(items) {
+				$("#annotation_type").autocomplete("option", "source", items);
+				$("#annotation_type").autocomplete("search");
+			}).fail(function(jqXHR, textStatus, errorThrown) { 
+				console.error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
+			});
+		}
+	}
+
+	send() {
+		var annotation = $('#annotation').val();
+		if (!annotation) {
+			coge.utils.alert('Please enter some annotation text.');
+			return;
+		}
+		var type = $('#annotation_type').val();
+		if (!type) {
+			coge.utils.alert('Please specify a type.');
+			return;
+		}
+		var form_data = new FormData();
+		form_data.append('type_name', type);
+		var annotation_image_file = $('#annotation_image')[0].files[0];
+		if (annotation_image_file) {
+			if (!this.verify_image_file(annotation_image_file))
+				return;
+			$("#wait_annotation").animate({opacity:1});
+			form_data.append('image', annotation_image_file, annotation_image_file.name);
+			form_data.append('filename', annotation_image_file.name); // for backwards compatability, may be able to remove
+		}
+		form_data.append('annotation', annotation);
+		var group_name = $('#annotation_type_group').val();
+		if (group_name)
+			form_data.append('group_name', group_name);
+		var link = $('#annotation_link').val();
+		if (link)
+			form_data.append('link', link);
+		form_data.append('target_id', this.parent_id);
+		var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations';
+		if (this.aid)
+			url += '/' + this.aid;
+		$.ajax({
+			method: this.aid ? 'POST' : 'PUT',
+			url: url,
+			data: form_data,
+			contentType: false,
+			processData: false
+		}).done(function() {
+			annotations.show_table();
+			$("#wait_annotation").css('opacity', 0);
+			$("#annotation_dialog").dialog('close');
+		}).fail(function(jqXHR, textStatus, errorThrown) { 
+			console.log('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
+		});
+	}
+
+	show_add_dialog() {
+		this.aid = null;
+		$('#annotation').val('');
+		$('#annotation_link').val('');
+		$('#annotation_type').val(this.default_type);
+		$('#annotation_type_group').val('');
+		$('#annotation_image').val('');
+		$('#annotation_send_button').text('Add');
+		$("#wait_annotation").css('opacity', 0);
+		$("#annotation_dialog").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
+	}
+
+	show_edit_dialog(aid) {
+		this.aid = aid;
+		var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations/' + aid;
+		$.ajax({
+			url: url,
+			dataType: "json",
+			contentType: "application/json"
+		}).done(function(obj) {
+			$('#annotation').val(obj.annotation);
+			$('#annotation_link').val(obj.link);
+			$('#annotation_type').val(obj.type);
+			$('#annotation_type_group').val(obj.type_group);
+			$('#annotation_image').val('');
+			$('#annotation_send_button').text('Update');
+			$("#wait_annotation").css('opacity', 0);
+			$("#annotation_dialog").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
+		}).fail(function(jqXHR, textStatus, errorThrown) { 
+			console.error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
+		});
+	}
+
+	show_table() {
+		var div = $('#' + this.div_id);
+		div.empty();
+		var table = $('<table id="annotation_table" class="border-top border-bottom small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"></table>');
+		var thead = $('<thead style="display:none"></thead>').appendTo(table);
+		var tbody = $('<tbody></tbody>').appendTo(table);
+		var user_can_edit = this.user_can_edit;
+		var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations';
+		$.ajax({
+			url: url,
+			dataType: "json",
+			contentType: "application/json"
+		}).done(function(json){
+			var groups = Object.keys(json);
+			if (groups.length) {
+				var prev_group = '';
+				var even = 1;
+				groups.sort().forEach(function(group){
+					var prev_type;
+					Object.keys(json[group]).sort().forEach(function(type){
+						json[group][type].sort(annotation_type_sort).forEach(function(annotation){
+							var tr = $('<tr class="' + (even ? 'even' : 'odd') + '" style="vertical-align:top;"></tr>').appendTo(tbody);
+							even ^= 1;
+							if (groups.length > 1)
+								if (group && group !== prev_group) {
+									$('<th class="title4" style="background:white;padding-right:10px;text-align:left;white-space:nowrap;">' + group + '</th>').appendTo(tr);
+									prev_group = group;
+								} else
+									$('<th style="background:white;"></th>').appendTo(tr);
+							if (type != prev_type) {
+								$('<th class="title4" style="background:white;font-weight:normal;padding-right:10px;text-align:left;white-space:nowrap;">' + type + '</th>').appendTo(tr);
+								prev_type = type;
+							} else
+								$('<th style="background:white;"></th>').appendTo(tr);
+							var td = $('<td class="data4"></td>').appendTo(tr);
+							if (annotation.image_id) {
+								var image_link = 'image.pl?id=' + annotation.image_id;
+								$('<a href=' + image_link + ' target="_blank" title="click for full-size image"><img height="40" width="40" src="' + image_link + '" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray margin-right:5px;"></a>').appendTo(td);
+							} else if (annotation.bisque_id)
+								$('<a href="http://bisque.iplantcollaborative.org/client_service/view?resource=http://bisque.iplantcollaborative.org/data_service/' + annotation.bisque_id + '" target="_blank" title="click to view in BisQue"><img src="http://bisque.iplantcollaborative.org/image_service/' + annotation.bisque_id + '?thumbnail=200,200" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray;max-width:40px;margin-right:5px;"></a>').appendTo(td);
+							td.append(document.createTextNode(annotation.annotation));
+							td = $('<td style="padding-left:5px;"></td>').appendTo(tr);
+							if (annotation.link)
+								td.append($('<span class="link" onclick="window.open(\'' + annotation.link + '\')">Link</span>'));
+							if (user_can_edit && !annotation.locked)
+								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="$(this).fadeOut(); annotations.delete(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
+							else
+								$('<th></th>').appendTo(tr);
+						});
+					});
+				});
+			} else
+				$('<tr><td class="padded note">There are no metadata items for this ' + annotations.parent_type + '.</td></tr>').appendTo(tbody);
+			table.appendTo(div);
+			$('<div class="padded"><span onClick="annotations.show_add_dialog();" class="coge-button">Add</span></div>').appendTo(div);
+		}).fail(function(jqXHR, textStatus, errorThrown) {
+			console.error('ajax error: status="' + jqXHR.status + '" statusText="' + jqXHR.statusText + '" url=' + url); 
+		});
+	}
+
+	verify_image_file(file) {
+		var ext = file.name.split('.').pop().toLowerCase();
+		if (ext != 'jpg' && ext != 'jpeg' && ext != 'gif' && ext != 'png' && ext != 'svg' ) {
+			coge.utils.alert('Error: specified file is not an image');
+			return false;
+		}
+		return true;
+	}
+
+	wait_to_search() {
+		if (this.time)
+			clearTimeout(pageObj.time);
+		this.time = setTimeout(this.search_types, 500);
+	}
+}
+var annotation_type_sort = function(a,b) {
+	var annotation_a = a.annotation.toLowerCase();
+	var annotation_b = b.annotation.toLowerCase();
+	if (annotation_a < annotation_b)
+		return -1;
+	if (annotation_a > annotation_b)
+		return 1;
+	return 0;
+}
+</script>
+
+<div id="annotation_dialog" class="dialog_box hidden">
+  <table class="small">
+    <tr valign='top'>
+      <td>Annotation:</td>
+      <td><textarea id="annotation" rows=5 style="width:380px;" ></textarea></td>
+    </tr>
+    <tr>
+      <td>Link:</td>
+      <td><input id="annotation_link" type="textbox" style="width:380px;" /></td>
+    </tr>
+    <tr>
+      <td>Type:</td>
+      <td><input id="annotation_type" onkeypress="annotations.wait_to_search();" style="width:380px;" /></td>
+    </tr>
+    <tr>
+      <td>Type&nbsp;Group:</td>
+      <td><input id="annotation_type_group" style="width:300px;" /> (optional)</td>
+    </tr>
+    <tr>
+      <td valign='top'>Image:</td>
+      <td>
+        <input id="annotation_image" name="annotation_image" type="file" />
+      </td>
+    </tr>
+  </table>
+  <span id='annotation_send_button' onClick="annotations.send();" class='coge-button r'>Add</span>
+  <img id="wait_annotation" src="picts/ajax-loader.gif" style="opacity: 0;" />
+</div>

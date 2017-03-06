@@ -16,12 +16,12 @@ BEGIN {
     @ISA = qw(Exporter);
     @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @POLYMORPHISM_TYPES @ALIGNMENT_TYPES @SEQUENCE_TYPES @SUPPORTED_TYPES);
     @EXPORT_OK = qw( 
-        delete_experiment detect_data_type download_data experimentcmp get_data 
+        delete_experiment undelete_experiment detect_data_type download_data experimentcmp get_data 
         get_fastbit_format get_fastbit_score_column query_data get_irods_metadata
     );
     
     # Setup supported experiment file types
-    @QUANT_TYPES        = qw(csv tsv bed wig bw);
+    @QUANT_TYPES        = qw(csv tsv bed wig bw seg);
     @MARKER_TYPES       = qw(gff gtf gff3);
     @POLYMORPHISM_TYPES = qw(vcf gvcf);
     @ALIGNMENT_TYPES    = qw(sam bam);
@@ -55,6 +55,21 @@ sub delete_experiment {
     return 'permission denied' unless $user->is_admin or $user->is_owner(experiment => $experiment);
 
     $experiment->deleted(1);
+    $experiment->update;
+    return undef;
+}
+
+sub undelete_experiment {
+    my $id = shift;
+    my $db = shift;
+    my $user = shift;
+
+    my $experiment = $db->resultset('Experiment')->find($id);
+    return 'experiment not found' unless $experiment;
+
+    return 'permission denied' unless $user->is_admin or $user->is_owner(experiment => $experiment);
+
+    $experiment->deleted(0);
     $experiment->update;
     return undef;
 }

@@ -110,6 +110,26 @@ $r->put("/genomes")
     ->name("genomes-add")
     ->to("genome#add", namespace => 'CoGe::Services::API');
 
+$r->get("/genomes/:id/annotations" => [id => qr/\d+/])
+    ->name("genomes-fetch-annotations")
+    ->to("genome#fetch_annotations", namespace => 'CoGe::Services::API', id => undef);
+
+$r->get("/genomes/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("genomes-fetch-annotation")
+    ->to("genome#fetch_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
+$r->put("/genomes/:id/annotations" => [id => qr/\d+/])
+    ->name("genomes-add_annotation")
+    ->to("genome#add_annotation", namespace => 'CoGe::Services::API');
+
+$r->post("/genomes/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("genomes-update-annotation")
+    ->to("genome#update_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
+$r->delete("/genomes/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("genomes-delete-annotation")
+    ->to("genome#delete_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
 # Dataset routes
 #$r->get("/genomes/search/#term")
 #    ->name("genomes-search")
@@ -157,6 +177,26 @@ $r->delete("/experiments/:id" => [id => qr/\d+/])
     ->name("experiments-remove")
     ->to("experiment#remove", namespace => 'CoGe::Services::API', id => undef);
 
+$r->get("/experiments/:id/annotations" => [id => qr/\d+/])
+    ->name("experiments-fetch-annotations")
+    ->to("experiment#fetch_annotations", namespace => 'CoGe::Services::API', id => undef);
+
+$r->get("/experiments/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("experiments-fetch-annotation")
+    ->to("experiment#fetch_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
+$r->put("/experiments/:id/annotations" => [id => qr/\d+/])
+    ->name("experiments-add_annotation")
+    ->to("experiment#add_annotation", namespace => 'CoGe::Services::API');
+
+$r->post("/experiments/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("experiments-update-annotation")
+    ->to("experiment#update_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
+$r->delete("/experiments/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("experiments-delete-annotation")
+    ->to("experiment#delete_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
 # Notebook routes
 $r->get("/notebooks/search/#term")
     ->name("notebooks-search")
@@ -181,7 +221,36 @@ $r->delete("/notebooks/:id" => [id => qr/\d+/])
 $r->post("/notebooks/:id/items/add" => [id => qr/\d+/])
     ->name("notebooks-items-add")
     ->to("notebook#add_items", id => undef);
+
+$r->get("/notebooks/:id/annotations" => [id => qr/\d+/])
+    ->name("notebooks-fetch-annotations")
+    ->to("notebook#fetch_annotations", namespace => 'CoGe::Services::API', id => undef);
+
+$r->get("/notebooks/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("notebooks-fetch-annotation")
+    ->to("notebook#fetch_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
+$r->put("/notebooks/:id/annotations" => [id => qr/\d+/])
+    ->name("notebooks-add_annotation")
+    ->to("notebook#add_annotation", namespace => 'CoGe::Services::API');
+
+$r->post("/notebooks/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("notebooks-update-annotation")
+    ->to("notebook#update_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
+$r->delete("/notebooks/:id/annotations/:aid" => [id => qr/\d+/,aid => qr/\d+/])
+    ->name("notebooks-delete-annotation")
+    ->to("notebook#delete_annotation", namespace => 'CoGe::Services::API', id => undef, aid => undef);
+
+# Annotation routes
+$r->get("/annotations/type_groups")
+    ->name("annotations-type-groups")
+    ->to("annotations#fetch_type_groups");
     
+$r->get("/annotations/search_types")
+    ->name("annotations-search-types")
+    ->to("annotations#search_types");
+
 # User routes -- not documented, only for internal use
 $r->post("/notebooks/:id/items/remove" => [id => qr/\d+/])
     ->name("notebooks-items-remove")

@@ -157,31 +157,6 @@ function get_list_contents() {
 	});
 }
 
-function get_annotations() {
-	$.ajax({
-		data: {
-			fname: 'get_annotations',
-			lid: NOTEBOOK_ID,
-		},
-		success : function(data) {
-			$('#list_annotations').html(data);
-		}
-	});
-}
-
-function remove_annotation (laid) {
-	$.ajax({
-		data: {
-			fname: 'remove_annotation',
-			lid: NOTEBOOK_ID,
-			laid: laid,
-		},
-		success : function(val) {
-			get_annotations();
-		},
-	});
-}
-
 function wait_to_search (search_func, search_term) {  //TODO use version in utils
 	if (!search_term || search_term.length > 2) {
 		pageObj.search_term = search_term;

@@ -6,6 +6,7 @@ use warnings;
 use base 'DBIx::Class::Core';
 use base 'Class::Accessor';
 use Data::Dumper;
+use Switch;
 
 =head1 NAME
 
@@ -276,6 +277,16 @@ sub is_public {
 =cut
 
 ################################################## subroutine header end ##
+
+sub has_access_to {
+	my ($self, $object) = @_;
+	switch (ref($object)) {
+		case 'CoGeX::Result::Experiment' { return $self->has_access_to_experiment($object); }
+		case 'CoGeX::Result::Genome' { return $self->has_access_to_genome($object); }
+		case 'CoGeX::Result::List' { return $self->has_access_to_list($object); }
+	}
+	return 0;
+}
 
 sub has_access_to_list {
 	my ($self, $list) = @_;

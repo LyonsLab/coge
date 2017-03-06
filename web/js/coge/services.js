@@ -78,7 +78,7 @@ var coge = window.coge = (function(namespace) {
 		submit_job: function(request) {
 			return this._ajax("PUT", this.baseUrl + "jobs/", request);
 		},
-		
+
 		fetch_job: function(id) {
 			this._debug('fetch_job');
 			if (!id) {

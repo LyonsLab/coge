@@ -45,7 +45,6 @@
 var job_id = "<TMPL_VAR NAME=JOB_ID>",
     GENOME_ID = "<TMPL_VAR NAME=GID>",
     load_id = "<TMPL_VAR NAME=LOAD_ID>",
-    default_type = "<TMPL_VAR NAME=DEFAULT_TYPE>",
     irods_home_path = "<TMPL_VAR NAME=IRODS_HOME>",
     CERTIFIED = "<TMPL_VAR NAME='CERTIFIED'>",
     PAGE_NAME = "<TMPL_VAR NAME=PAGE_NAME>",
@@ -63,8 +62,8 @@ var download_error = $("<p></p>")
     .addClass("alert");
 var spinner = $("<img></img>").attr("src", "picts/ajax-loader.gif");
 var message = $("<div></div>").text("Please wait...  ").append(spinner.clone());
-var note = $("<p></p>").addClass("small")
-        .text("(This may take several minutes)");
+var note = $("<p></p>").addClass("small").text("(This may take several minutes)");
+var annotations;
 
 $(document).ready(function() {
     pageObj = new Object();
@@ -86,10 +85,6 @@ $(document).ready(function() {
 
     $("#export_dialog").dialog({modal: true});
 
-    set_annotation_table();
-
-    init_annotation_dialog(GENOME_ID, default_type);
-    
     $("#edit_user").autocomplete({
         source:[],
         focus: function() { return false; },
@@ -121,6 +116,7 @@ $(document).ready(function() {
     	baseUrl: API_BASE_URL,
     	userName: pageObj.user
     });
+    annotations = new Annotations('genome_annotations', 'genome', GENOME_ID, '<TMPL_VAR NAME="USER_CAN_EDIT">', '<TMPL_VAR NAME="DEFAULT_TYPE">');
 });
 
 </script>
@@ -178,14 +174,10 @@ $(document).ready(function() {
                 <span class='coge-button' onclick='location.href="GenomeView.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>"'>Browse</span>
             </div>
 
-            <TMPL_IF NAME="GENOME_ANNOTATIONS">
             <div style="padding-top:1em;">
 	            <div class="bold text">Metadata</div>
-	            <div id="genome_annotations">
-	            	<TMPL_VAR NAME="GENOME_ANNOTATIONS">
-	            </div>
+	            <div id="genome_annotations"></div>
             </div>
-            </TMPL_IF>
 
             <div class="bold text" style="padding-top:1em;">Sequence & Gene Annotation</div>
             <div id="datasets" style="display:inline-block;"></div>
@@ -355,7 +347,7 @@ Are you sure you want to move this genome into your trash?<p>
     <span id="annotate_ok_button" onClick="$('#annotate_dialog').dialog('close');" style="float:right;" class="hidden coge-button">OK</span>
 </div>
 
-<TMPL_INCLUDE NAME='widgets/AddAnnotation.tmpl'>
+<TMPL_INCLUDE NAME='widgets/Annotations.tmpl'>
 <TMPL_INCLUDE NAME="widgets/Overlay.tmpl">
 <TMPL_INCLUDE NAME="widgets/Progress.tmpl">
 </TMPL_IF>
