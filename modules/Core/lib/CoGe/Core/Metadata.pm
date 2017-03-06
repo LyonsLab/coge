@@ -26,7 +26,6 @@ BEGIN {
 
 sub create_annotation {
     my %opts = @_;
-warn Dumper \%opts;
     my ($error, $type_id, $link, $image_id, $bisque_id, $bisque_file) = _init(\%opts);
     if ($error) {
         warn 'create_annotation: ' . $error;
@@ -462,7 +461,7 @@ sub _create_image {
 
 sub _get_bisque_dir {
     my ($target_type, $target_id, $user) = @_;
-    return catfile(dirname(irods_get_base_path($user->name)), 'bisque_data', $target_type, $target_id);
+    return catfile(dirname(irods_get_base_path('coge')), 'bisque_data', $target_type, $target_id);
 }
 
 sub _get_object {

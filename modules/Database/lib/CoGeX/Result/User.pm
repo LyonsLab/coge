@@ -478,7 +478,7 @@ sub is_role {
 	my $group = $opts{group};
 	my $dsg  = $opts{dsg}; #FIXME rename to 'genome'
 	my $ds   = $opts{ds};
-	my $list = $opts{list};
+	my $list = $opts{list} || $opts{notebook};
 	my $experiment = $opts{experiment};
 	my $item = $opts{item};
 	return 0 unless $dsg || $ds || $list || $experiment || $group || $item;

@@ -19,7 +19,6 @@ sub search_types {
     my $type_group = $self->param('type_group');
     my ($db) = CoGe::Services::Auth::init($self);
     my $types = search_annotation_types($search_term, $type_group, $db);
-    warn Dumper $types;
     $self->render(json => $types) if $types;
 }
 
