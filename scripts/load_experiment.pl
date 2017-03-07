@@ -785,7 +785,8 @@ sub validate_vcf_data_file {
             log_line('missing required value in a column', $line_num, $line);
             return;
         }
-        next if ( $alt eq '.' );    # skip monomorphic sites
+        next if ( $alt eq '.' ); # skip monomorphic sites
+        next if ( uc($alt) eq '<NON_REF>' ); # mdb added 3/7/17 - skip non-variant GVCF blocks, added for GATK GVCF file format
         $id   = '.' if ( not defined $id );
         $qual = 0   if ( not defined $qual );
         $info = ''  if ( not defined $info );
@@ -800,6 +801,8 @@ sub validate_vcf_data_file {
         # Each line could encode multiple alleles
         my @alleles = split( ',', $alt );
         foreach my $a (@alleles) {
+            next if ( uc($a) eq '<NON_REF>' ); # mdb added 3/7/17 - skip NON_REF allels, added for GATK GVCF file format
+
             # Determine site type
             my $type = detect_site_type( $ref, $a );
 
