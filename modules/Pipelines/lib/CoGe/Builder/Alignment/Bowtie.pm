@@ -90,7 +90,7 @@ sub bowtie2_alignment {
     my $samtools = get_command_path('SAMTOOLS');
     my ($first_fastq) = @$fastq;
     my $output_file = to_filename_without_extension($first_fastq) . '.bam';
-    $cmd .= " | $samtools view -bS | $samtools sort > $output_file"; # convert SAM to BAM and sort on the fly for speed
+    $cmd .= " | $samtools view -uSh | $samtools sort > $output_file"; # convert SAM to BAM and sort on the fly for speed
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 

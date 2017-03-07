@@ -106,12 +106,15 @@ sub bwa_alignment {
 
     my @args;
     push @args, ['-M', '', 0] if $M;
-    push @args, ['-R', shell_quote($R), 0] if $R;
+    if ($R) {
+        $R =~ s/\t/\\t/g; # escape tabs
+        push @args, ['-R', shell_quote($R), 0];
+    }
     push @args, (
         ['-t', $self->NUM_CPUS,         0],
         ['',   $index_path,             0],
         ['',   join(' ', sort @$fastq), 0],
-        ["| $samtools view -bS | $samtools sort >", $output_file, 1] # convert SAM to BAM and sort on the fly for speed
+        ["| $samtools view -uSh | $samtools sort >", $output_file, 1] # convert SAM to BAM and sort on the fly for speed
     );
 
 	return {
