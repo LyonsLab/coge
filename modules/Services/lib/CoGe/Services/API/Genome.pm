@@ -252,8 +252,9 @@ sub add {
 
 sub add_annotation {
     my $self = shift;
-    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     create_annotation(
+        conf => $conf,
         db => $db,
         filename => $self->param('filename'),
         group_name => $self->param('group_name'),
@@ -273,8 +274,8 @@ sub delete_annotation {
     my $id = int($self->stash('id'));
     my $aid = int($self->stash('aid'));
 
-    my ($db, $user) = CoGe::Services::Auth::init($self);
-    my $error = CoGe::Core::Metadata::delete_annotation($aid, $id, 'Genome', $db, $user);
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+    my $error = CoGe::Core::Metadata::delete_annotation($aid, $id, 'Genome', $db, $user, $conf);
     if ($error) {
         $self->render(status => 400, json => { error => { Error => $error} });
         return;
@@ -284,9 +285,10 @@ sub delete_annotation {
 
 sub update_annotation {
     my $self = shift;
-    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     CoGe::Core::Metadata::update_annotation(
         annotation_id => int($self->stash('aid')),
+        conf => $conf,
         db => $db,
         filename => $self->param('filename'),
         group_name => $self->param('group_name'),

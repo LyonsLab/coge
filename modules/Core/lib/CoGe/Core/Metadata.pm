@@ -170,7 +170,7 @@ sub create_annotations {
 }
 
 sub delete_annotation {
-    my ($aid, $object_id, $object_type, $db, $user) = @_;
+    my ($aid, $object_id, $object_type, $db, $user, $conf) = @_;
     return 'delete_annotation: missing parameter' unless $aid && $object_id && $object_type && $db;
 
     my ($error, $object) = _get_object(undef, $object_id, $object_type, 1, $db, $user);
@@ -182,7 +182,7 @@ sub delete_annotation {
         irods_irm($path);
         my $ua = LWP::UserAgent->new();
         my $req = HTTP::Request->new(DELETE => 'https://bisque.cyverse.org/data_service/' . $annotation->bisque_id);
-        $req->authorization_basic('coge', 'C0G3Rules!');
+        $req->authorization_basic('coge', $conf->{BISQUE_PASS});
         my $res = $ua->request($req);
         warn Dumper $res;
     }
@@ -412,7 +412,7 @@ sub tags_to_string {
 }
 
 sub _create_bisque_image {
-    my ($target_type, $target_id, $upload, $user) = @_;
+    my ($target_type, $target_id, $upload, $user, $conf) = @_;
 
     my $dest = _get_bisque_dir($target_type, $target_id, $user);
     irods_imkdir($dest);
@@ -436,7 +436,7 @@ sub _create_bisque_image {
             chomp $bisque_id;
             my $ua = LWP::UserAgent->new();
             my $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id . '/auth?notify=false', ['Content-Type' => 'application/xml']);
-            $req->authorization_basic('coge', 'C0G3Rules!');
+            $req->authorization_basic('coge', $conf->{BISQUE_PASS});
             $req->content('<auth user="' . $user->name . '" permission="edit" />');
             my $res = $ua->request($req);
             warn Dumper $res;
@@ -519,7 +519,7 @@ sub _init {
         my $upload = $opts->{image};
         if ($upload) {
             my $ref = ref($object);
-            ($bisque_id, $bisque_file) = _create_bisque_image(substr($ref, rindex($ref, ':') + 1), $object->id, $upload, $opts->{user});
+            ($bisque_id, $bisque_file) = _create_bisque_image(substr($ref, rindex($ref, ':') + 1), $object->id, $upload, $opts->{user}, $opts->{conf});
             return 'error creating image' unless $bisque_id;
         }
         else {
