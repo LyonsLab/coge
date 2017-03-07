@@ -112,11 +112,18 @@ sub bwa_alignment {
         $R =~ s/\t/\\t/g; # escape tabs
         push @args, ['-R', shell_quote($R), 0];
     }
+
+    # Build input file list -- decompress bz2 files on-the-fly since bwa only supports decompressed/gzipped files (https://sourceforge.net/p/bio-bwa/mailman/bio-bwa-help/thread/512E3D0C.1030807@bcgsc.ca/)
+    my $input_str = join(' ',
+        map { (is_bzipped2($_) ? qq['<bunzip2 -c $_'] : $_) }
+        sort @$fastq
+    );
+
     push @args, (
-        ['-t', $CPU,                    0],
-        ['',   $index_path,             0],
-        ['',   join(' ', sort @$fastq), 0],
-        ["| $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU >", $output_file, 1] # convert SAM to BAM and sort on the fly for speed
+        ['-t', $CPU,        0],
+        ['',   $index_path, 0],
+        ['',   $input_str,  0],
+        ["| $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU >", $output_file, 1] # convert SAM to BAM and sort on-the-fly for speed
     );
 
 	return {
