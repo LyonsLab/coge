@@ -133,8 +133,7 @@ sub build {
         );
 
         # Load alignment
-        my $load_bam = $self->params->{alignment_params}->{load_bam};
-        if (!defined($load_bam) || $load_bam) {
+        if ($self->params->{alignment_params} && $self->params->{alignment_params}->{load_bam}) {
             # Get custom metadata to add to experiment
             my $annotations = $self->generate_additional_metadata();
 
@@ -161,7 +160,6 @@ sub validate_fastq {
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, "validate_fastq.pl"),
-        script => undef,
         args => [
             ["", $fastq, 0] # mdb changed 3/1/16 from 1 to 0, COGE-707
         ],

@@ -662,7 +662,7 @@ sub picard_deduplicate {
     my $output_file = $bam_file . '-deduplicated.bam';
 
     return {
-        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp ; mv $output_file.tmp $output_file",
+        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp && mv $output_file.tmp $output_file",
         args => [
 #            ['MarkDuplicates', '', 0],
 #            ['REMOVE_DUPLICATES=true', '', 0],
@@ -744,7 +744,6 @@ sub load_bam { #TODO combine with load_experiment
     # Add additional metadata
     if ($additional_metadata && @$additional_metadata) { # new method using metadata file
         my $metadata_file = catfile($output_path, 'metadata.dump');
-        make_path($output_path);
         CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
         push @$args, ['-metadata_file', $metadata_file, 0];
     }
@@ -764,7 +763,7 @@ sub load_bam { #TODO combine with load_experiment
             catfile($output_path, "log.done"),
             $result_file
         ],
-        description => "Loading alignment as new experiment"
+        description => 'Loading BAM alignment'
     };
 }
 
@@ -781,7 +780,6 @@ sub load_experiment {
 
     my $output_name = "load_experiment_$name";
     my $output_path = catdir($self->staging_dir, $output_name);
-
 
     my $args = [
         ['-gid',         $gid,                0],
@@ -809,10 +807,7 @@ sub load_experiment {
     # Add additional metadata
     if ($additional_metadata && @$additional_metadata) { # new method using metadata file
         my $metadata_file = catfile($output_path, 'metadata.dump');
-        make_path($output_path); #TODO maybe this file should be located somewhere else
-        open(my $fh, ">$metadata_file");
-        print $fh Dumper $additional_metadata;
-        close($fh);
+        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
         push @$args, ['-metadata_file', $metadata_file, 0];
     }
     if ($annotations && @$annotations) { # legacy method

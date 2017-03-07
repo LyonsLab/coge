@@ -714,14 +714,16 @@ sub jwt_decode_token {
         return;
     }
     my $current_time = time;
-    unless ($claims->{exp} && $claims->{iat} && 
-            $current_time > $claims->{iat} &&
-            $current_time < $claims->{exp})
-    {
+# mdb removed 2/24/18 -- this check can fail when the system times out out of sync.  Removed after checking with Dennis.
+#    if (defined $claims->{iat} && $current_time < $claims->{iat}) {
+#        print STDERR "Web::jwt_decode_token ERROR: early token, current_time=$current_time, claims=", Dumper $claims, "\n";
+#        return;
+#    }
+    if (defined($claims->{exp}) && $current_time > $claims->{exp}) {
         print STDERR "Web::jwt_decode_token ERROR: expired token, current_time=$current_time, claims=", Dumper $claims, "\n";
         return;
     }
-    
+
     # Format signature (see http://stackoverflow.com/questions/30305759/what-is-the-right-public-key-to-verify-a-gtoken-jwt-from-google-identity-toolkit)
     $signature64 =~ s/\-/+/g;
     $signature64 =~ s/\_/\//g;

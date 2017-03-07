@@ -1300,7 +1300,7 @@ function get_datasets() {
             let options = {
                 data: json,
                 language: {
-                    info: 'Showing _START_ to _END_ of _TOTAL_ sequence & gene annotations',
+                    info: '', //'Showing _START_ to _END_ of _TOTAL_ sequence & gene annotations',
                     infoEmpty: 'No sequence & gene annotations to show',
                     infoFiltered: '(filtered from _MAX_ total sequence & gene annotations)',
                     lengthMenu: 'Show _MENU_ sequence & gene annotations',

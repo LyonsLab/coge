@@ -37,10 +37,17 @@ sub add {
         });
     }
 
+    # Check if authentication is required
+    if ($request->authRequired && !$user) {
+        return $self->render(status => 401, json => {
+            error => { Auth => "Authentication required" }
+        });
+    }
+
     # Check user's permission to execute the request
     unless ($request->has_access) {
         return $self->render(status => 401, json => {
-            error => { Auth => "Request denied" }
+            error => { Auth => "Access denied" }
         });
     }
 
@@ -129,7 +136,7 @@ sub fetch {
             ended => $task->{ended},
             elapsed => $task->{elapsed},
             description => $task->{description},
-            status => $task->{status},
+            status => lc($task->{status}),
             log => undef
         };
 
@@ -151,7 +158,7 @@ sub fetch {
 
     $self->render(json => {
         id => int($id),
-        status => $job_status->{status},
+        status => lc($job_status->{status}),
         tasks => \@tasks,
         results => $results
     });

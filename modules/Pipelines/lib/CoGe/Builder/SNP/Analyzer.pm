@@ -13,6 +13,7 @@ use String::ShellQuote qw(shell_quote);
 
 use CoGe::Accessory::Web qw(get_defaults get_command_path);
 use CoGe::Accessory::Utils;
+use CoGe::Accessory::TDS;
 use CoGe::Core::Storage;
 use CoGe::Core::Metadata;
 use CoGe::Builder::SNP::GATK;
@@ -65,12 +66,14 @@ sub build {
         case 'coge'     { $snp = CoGe::Builder::SNP::CoGeSNPs->new($self) }
         case 'samtools' { $snp = CoGe::Builder::SNP::Samtools->new($self) }
         case 'platypus' { $snp = CoGe::Builder::SNP::Platypus->new($self) }
-        case 'gatk'     { $snp = CoGe::Builder::SNP::GATK->new($self) }
+        case /gatk|gatk-haplotype-vcf|gatk-haplotype-gvcf/ {
+            $snp = CoGe::Builder::SNP::GATK->new($self)
+        }
         default {
             CoGe::Exception::Generic->throw(message => 'Invalid SNP method');
         }
     }
-    $snp->build(fasta_file => $reheader_fasta, data_files => [$bam_file], is_sorted => $opts{is_sorted});
+    $snp->build(fasta_file => $reheader_fasta, data_files => [$bam_file]);
     $self->add($snp);
     $self->vcf($snp->vcf);
 }
@@ -117,10 +120,7 @@ sub load_vcf { #TODO combine with Buildable::load_experiment
     # Add additional metadata
     if ($additional_metadata && @$additional_metadata) { # new method using metadata file
         my $metadata_file = catfile($output_path, 'metadata.dump');
-        make_path($output_path); #TODO maybe this file should be located somewhere else
-        open(my $fh, ">$metadata_file");
-        print $fh Dumper $additional_metadata;
-        close($fh);
+        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
         push @$args, ['-metadata_file', $metadata_file, 0];
     }
     if ($annotations && @$annotations) { # legacy method
@@ -136,7 +136,7 @@ sub load_vcf { #TODO combine with Buildable::load_experiment
             [$output_path, '1'],
             catfile($output_path, "log.done"),
         ],
-        description => "Loading SNPs as new experiment"
+        description => 'Loading SNPs'
     };
 }
 

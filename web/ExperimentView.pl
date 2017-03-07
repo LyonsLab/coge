@@ -21,6 +21,8 @@ use CoGe::Core::Experiment qw(get_irods_metadata);
 use CoGe::Core::Favorites;
 use CoGe::Core::Metadata;
 use CoGe::Core::Storage;
+use CoGe::Core::Experiment qw(get_irods_metadata);
+use CoGe::Algos::PopGen::FileFormats qw(detectGVCF);
 
 use vars qw(
     $P $PAGE_TITLE $USER $LINK $DB $FORM $EMBED %FUNCTION $ERROR $WORKFLOW_ID $LOAD_ID $TEMPDIR
@@ -390,6 +392,7 @@ sub gen_body {
         STATUS_URL        => 'jex/status/',
         ALIGNMENT_TYPE    => ($exp->data_type == $DATA_TYPE_ALIGN),
         POLYMORPHISM_TYPE => ($exp->data_type == $DATA_TYPE_POLY),
+        IS_GVCF           => ($exp->data_type == $DATA_TYPE_POLY && detectGVCF(get_experiment_files($exp->id, $exp->data_type)->[0]) == 1),
         POPGEN_RESULT_URL => $popgenUrl,
         PUBLIC            => $USER->user_name eq "public" ? 1 : 0,
         ADMIN_AREA        => $USER->is_admin,

@@ -44,11 +44,6 @@ sub build {
 
     my $genome = $self->request->genome;
 
-    # Set metadata for the pipeline being used
-    my $annotations = $self->generate_additional_metadata();
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
-    push @$annotations, @annotations2;
-
     my $chipseq_params = $self->params->{chipseq_params};
     unless ($chipseq_params->{input}) {
         CoGe::Exception::Generic->throw(message => 'Missing input designation');
@@ -112,7 +107,7 @@ sub build {
                 input_file  => $self->previous_outputs,
                 name        => $replicate_tag,
                 normalize   => 'percentage',
-                annotations => $annotations
+                annotations => $self->generate_additional_metadata()
             )
         );
     }

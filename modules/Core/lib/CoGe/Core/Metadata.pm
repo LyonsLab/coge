@@ -16,6 +16,7 @@ use CoGeX;
 use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_imkdir irods_iput irods_irm);
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_upload_path);
+use CoGe::Accessory::TDS;
 
 BEGIN {
     our (@ISA, $VERSION, @EXPORT);

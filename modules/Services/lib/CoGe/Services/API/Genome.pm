@@ -1,7 +1,6 @@
 package CoGe::Services::API::Genome;
 
 use Mojo::Base 'Mojolicious::Controller';
-use Mojo::JSON;
 use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 
@@ -46,6 +45,7 @@ sub search {
             info => $_->info,
             certified  => $_->certified ? Mojo::JSON->true : Mojo::JSON->false,
             restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+            deleted    => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
             favorited  => $favorites->is_favorite($_) ? Mojo::JSON->true : Mojo::JSON->false
           }
         } @$filtered;
@@ -53,24 +53,25 @@ sub search {
     else {
         @result = map {
           {
-            id => int($_->id),
-            name => $_->name,
+            id          => int($_->id),
+            name        => $_->name,
             description => $_->description,
-            link => $_->link,
-            version => $_->version,
-            info => $_->info,
-            organism_id  => int($_->organism->id),
+            link        => $_->link,
+            version     => $_->version,
+            info        => $_->info,
+            organism_id   => int($_->organism->id),
             sequence_type => {
-                id => $_->type->id,
-                name => $_->type->name,
-                description => $_->type->description,
+                id          => ($_->type ? $_->type->id : 0),
+                name        => ($_->type ? $_->type->name : ''),
+                description => ($_->type ? $_->type->description : ''),
             },
             restricted => $_->restricted ? Mojo::JSON->true : Mojo::JSON->false,
-            certified => $_->certified ? Mojo::JSON->true : Mojo::JSON->false,
+            certified  => $_->certified ? Mojo::JSON->true : Mojo::JSON->false,
+            deleted    => $_->deleted ? Mojo::JSON->true : Mojo::JSON->false,
             chromosome_count => int($_->chromosome_count),
             organism => {
-                id => int($_->organism->id),
-                name => $_->organism->name,
+                id          => int($_->organism->id),
+                name        => $_->organism->name,
                 description => $_->organism->description
             }
           }
@@ -130,8 +131,9 @@ sub fetch {
             description => $genome->organism->description
         },
         sequence_type => {
-            name => $genome->type->name,
-            description => $genome->type->description,
+            id => int($genome->type ? $genome->type->id : 0),
+            name => ($genome->type ? $genome->type->name : ''),
+            description => ($genome->type ? $genome->type->description : ''),
         },
         chromosome_count => int($genome->chromosome_count),
         chromosomes => $chromosomes,

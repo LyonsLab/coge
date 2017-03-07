@@ -14,8 +14,8 @@ BEGIN {
     require Exporter;
     $VERSION = 0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw(@QUANT_TYPES @MARKER_TYPES @POLYMORPHISM_TYPES @ALIGNMENT_TYPES @SEQUENCE_TYPES @SUPPORTED_TYPES);
-    @EXPORT_OK = qw( 
+    @EXPORT = qw(
+        @QUANT_TYPES @MARKER_TYPES @POLYMORPHISM_TYPES @ALIGNMENT_TYPES @SEQUENCE_TYPES @SUPPORTED_TYPES
         delete_experiment undelete_experiment detect_data_type download_data experimentcmp get_data 
         get_fastbit_format get_fastbit_score_column query_data get_irods_metadata
     );
@@ -82,6 +82,7 @@ sub detect_data_type {
     # Try to determine type based on file extension
     if (!$filetype or $filetype eq 'autodetect') {
         $filepath =~ s/\.gz$//; # remove extension for compressed files -- mdb added 11/22/16
+        $filepath =~ s/\.bz2$//; # remove extension for compressed files -- mdb added 3/6/17
 
         ($filetype) = lc($filepath) =~ /\.([^\.]+)$/;
     }

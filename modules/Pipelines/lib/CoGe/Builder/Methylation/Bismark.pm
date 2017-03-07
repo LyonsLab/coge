@@ -29,11 +29,6 @@ sub build {
 
     my $gid = $self->request->genome->id;
 
-    # Set metadata for the pipeline being used #TODO use metadata file instead
-    my $annotations = $self->generate_additional_metadata();
-    my @annotations2 = CoGe::Core::Metadata::to_annotations($self->params->{additional_metadata});
-    push @$annotations, @annotations2;
-
     #
     # Build the workflow
     #
@@ -72,7 +67,7 @@ sub build {
                 gid         => $gid,
                 input_file  => $self->previous_output,
                 name        => $name,
-                annotations => $annotations
+                annotations => $self->generate_additional_metadata() #TODO use metadata file instead
             )
         );
     }

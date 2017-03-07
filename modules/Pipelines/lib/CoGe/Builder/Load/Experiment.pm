@@ -6,6 +6,7 @@ extends 'CoGe::Builder::Buildable';
 use Data::Dumper qw(Dumper);
 
 use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Utils;
 use CoGe::Core::Experiment;
 use CoGe::Builder::Alignment::Aligner;
 use CoGe::Builder::Expression::Analyzer;
@@ -79,12 +80,21 @@ sub build {
                     $self->sam_to_bam($bam_file)
                 );
             }
+
+            ($bam_file) = $self->add(
+                $self->sort_bam($bam_file)
+            );
+
+            $self->add(
+                $self->index_bam($bam_file)
+            );
+
             $self->add(
                 $self->load_bam(
                     bam_file => $bam_file
                 )
             );
-            @bam_files = @$input_files;
+            @bam_files = ($bam_file);
         }
         else {
             CoGe::Exception::Generic->throw(message => 'Invalid file type');
@@ -99,9 +109,8 @@ sub build {
         
         # Add SNP workflow (if specified)
         if ( $self->params->{snp_params} ) {
-            my $isBamSorted = ($file_type ne 'bam');
             my $snp = CoGe::Builder::SNP::Analyzer->new($self);
-            $snp->build(data_files => \@bam_files, is_sorted => $isBamSorted);
+            $snp->build(data_files => \@bam_files);
             $self->add($snp);
         }
         

@@ -391,21 +391,22 @@ $.extend(FindSNPView.prototype, {
         this.el = $($("#snp-template").html());
         this.snp_container = this.el.find("#snp-container");
 
-        this.snp_templates = {
+        this.snp_templates = { //TODO this can be automated
             coge:     $($("#coge-snp-template").html()),
             samtools: $($("#samtools-snp-template").html()),
             platypus: $($("#platypus-snp-template").html()),
-            gatk:     $($("#gatk-snp-template").html())
+            "gatk-haplotype-vcf":  $($("#gatk-haplotype-vcf-snp-template").html()),
+            "gatk-haplotype-gvcf": $($("#gatk-haplotype-gvcf-snp-template").html())
         };
     },
 
     render: function() {
         var self = this;
 
-        var method = this.el.find("#snp-method");
         this.el.find("#snps").unbind().change(this.update_snp.bind(this));
 
         // Events to rebind when the view is added to the dom
+        var method = this.el.find("#snp-method");
         method.unbind().change(function() {
             var selected = $(this).val();
             render_template(self.snp_templates[selected], self.snp_container);
@@ -431,7 +432,7 @@ $.extend(FindSNPView.prototype, {
             this.snp_container.slideDown();
             var selected = $("#snp-method").val();
             render_template(this.snp_templates[selected], this.snp_container);
-        } 
+        }
         else {
             this.data.snp_params = undefined;
             method.attr("disabled", 1);
@@ -456,24 +457,36 @@ $.extend(FindSNPView.prototype, {
                     'min-allele-freq':  this.el.find("#min-allele-freq").val(),
                     scale: this.el.find("#scale").val()
                 };
-            } else if (method === "samtools") {
+            }
+            else if (method === "samtools") {
                 this.data.snp_params = {
                     method: method,
                     'min-read-depth': this.el.find("#min-read-depth").val(),
                     'max-read-depth': this.el.find("#max-read-depth").val(),
                 };
-            } else if (method === "platypus") {
+            }
+            else if (method === "platypus") {
                 this.data.snp_params = {
                     method: method
                 };
-            } else if (method === "gatk") {
+            }
+            else if (method === "gatk-haplotype-vcf") {
                 this.data.snp_params = {
                     method: method,
-                    '-stand_call_conf': this.el.find("[id='-stand_call_conf']").val(),
-                    '-stand_emit_conf': this.el.find("[id='-stand_emit_conf']").val(),
+                    '-stand_call_conf':                this.el.find("[id='-stand_call_conf']").val(),
                     '--filter_reads_with_N_cigar':     this.el.find("[id='--filter_reads_with_N_cigar']").is(":checked"),
                     '--fix_misencoded_quality_scores': this.el.find("[id='--fix_misencoded_quality_scores']").is(":checked"),
-                    'realign':          this.el.find("#realign").is(":checked")
+                    'realign':                         this.el.find("#realign").is(":checked")
+                };
+            }
+            else if (method === "gatk-haplotype-gvcf") {
+                this.data.snp_params = {
+                    method: method,
+                    '--emitRefConfidence':             this.el.find("[id='--emitRefConfidence']").val(),
+                    '--pcr_indel_model':               this.el.find("[id='--pcr_indel_model']").val(),
+                    '--filter_reads_with_N_cigar':     this.el.find("[id='--filter_reads_with_N_cigar']").is(":checked"),
+                    '--fix_misencoded_quality_scores': this.el.find("[id='--fix_misencoded_quality_scores']").is(":checked"),
+                    'realign':                         this.el.find("#realign").is(":checked")
                 };
             }
         }

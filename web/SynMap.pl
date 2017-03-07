@@ -1895,13 +1895,20 @@ sub _filename_to_link {
 			$url =~ s/$DIR/$URL/;
 		}
 
+#		$link =
+#		    q{<span class="}
+#		  . $opts{styles} . q{"}
+#		  . q{onclick="window.open('}
+#		  . $url . q{')">}
+#		  . $opts{msg}
+#		  . "</span><br>";
 		$link =
-		    q{<span class="}
+		    q{<a class="}
 		  . $opts{styles} . q{"}
-		  . q{onclick="window.open('}
-		  . $url . q{')">}
+		  . q{target="_blank" href="}
+		  . $url . q{">}
 		  . $opts{msg}
-		  . "</span><br>";
+		  . "</a><br>";
 	}
 	elsif ( $opts{required} ) {
 		$link = q{<span class="alert">} . $opts{msg} . q{ (missing)} . q{</span};
