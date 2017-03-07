@@ -324,7 +324,7 @@ sub gatk_HaplotypeCaller {
         outputs => [
             catfile($self->staging_dir, $output_vcf)
         ],
-        description => "Identifying SNPs using GATK method"
+        description => "Identifying SNPs using GATK"
     };
 }
 

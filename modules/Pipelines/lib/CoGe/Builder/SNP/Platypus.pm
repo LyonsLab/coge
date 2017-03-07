@@ -77,7 +77,7 @@ sub platypus {
         outputs => [
             catfile($self->staging_dir, $output_file)
         ],
-        description => "Identifying SNPs using Platypus method"
+        description => "Identifying SNPs using Platypus"
     };
 }
 
