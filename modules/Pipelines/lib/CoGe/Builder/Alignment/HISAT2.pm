@@ -90,8 +90,10 @@ sub hisat2_alignment {
     my $encoding    = $read_params->{encoding} // 33;
     my $read_type   = $read_params->{read_type} // 'single';
 
+    my $CPU = $self->NUM_CPUS;
+
 	my $args = [
-		['-p', $self->NUM_CPUS, 0],
+		['-p', $CPU, 0],
         ['--dta-cufflinks', '', 0], # mdb added 8/9/16 for Cufflinks error "BAM record error: found spliced alignment without XS attribute"
 		['-x', catfile(get_genome_cache_path($gid), 'hisat2_index', 'genome.reheader'), 0],
     ];
@@ -115,7 +117,7 @@ sub hisat2_alignment {
     my $samtools = get_command_path('SAMTOOLS');
     my ($first_fastq) = @$fastq;
     my $output_file = to_filename_without_extension($first_fastq) . '.bam';
-    push @$args, ["| $samtools view -uSh | $samtools sort >", $output_file, 1]; # convert SAM to BAM and sort on the fly for speed
+    push @$args, ["| $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU >", $output_file, 1]; # convert SAM to BAM and sort on the fly for speed
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 

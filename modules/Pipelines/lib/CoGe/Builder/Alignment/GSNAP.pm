@@ -88,13 +88,15 @@ sub gsnap_alignment {
 
     my $index_name = basename($gmap);
 
+    my $CPU = $self->NUM_CPUS;
+
     my $cmd = get_command_path('GSNAP');
     $cmd = 'nice ' . $cmd; # run at lower priority
 
     my $args = [
         ["-D", ".", 0],
         ["-d", $index_name, 0],
-        ["--nthreads=" . $self->NUM_CPUS, '', 0],
+        ["--nthreads=" . $CPU, '', 0],
         ["-n", $n, 0],
         ["-N", $N, 0],
         ["--format=sam", '', 0],
@@ -120,7 +122,7 @@ sub gsnap_alignment {
 
     my $samtools = get_command_path('SAMTOOLS');
     my $output_file = basename($first_fastq) . '.bam';
-    push @$args, ["| $samtools view -uSh | $samtools sort >", $output_file, 1]; # convert SAM to BAM and sort on the fly for speed
+    push @$args, ["| $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU >", $output_file, 1]; # convert SAM to BAM and sort on the fly for speed
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 

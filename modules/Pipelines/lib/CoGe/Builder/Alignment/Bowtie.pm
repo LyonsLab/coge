@@ -61,6 +61,8 @@ sub bowtie2_alignment {
     my $presets     = $alignment_params->{presets} // '--sensitive';
     my $read_group  = $alignment_params->{read_group} // '';
 
+    my $CPU = $self->NUM_CPUS;
+
     # Setup input dependencies
     my $inputs = [
         @$fastq,
@@ -70,7 +72,7 @@ sub bowtie2_alignment {
     # Build up command/arguments string
     my $cmd = $self->conf->{BOWTIE2} || 'bowtie2';
     $cmd = 'nice ' . $cmd; # run at lower priority
-    $cmd .= ' -p ' . $self->NUM_CPUS;
+    $cmd .= ' -p ' . $CPU;
     $cmd .= ' ' . shell_quote($presets);
     $cmd .= ' --rg-id ' . shell_quote($read_group) if $read_group;
     $cmd .= ' --phred64' if ($encoding eq '64'); # default is --phred33
@@ -90,7 +92,7 @@ sub bowtie2_alignment {
     my $samtools = get_command_path('SAMTOOLS');
     my ($first_fastq) = @$fastq;
     my $output_file = to_filename_without_extension($first_fastq) . '.bam';
-    $cmd .= " | $samtools view -uSh | $samtools sort > $output_file"; # convert SAM to BAM and sort on the fly for speed
+    $cmd .= " | $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU > $output_file"; # convert SAM to BAM and sort on the fly for speed
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 
