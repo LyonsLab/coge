@@ -14,8 +14,8 @@ use CoGe::Exception::Generic;
 use CoGe::Exception::MissingField;
 
 sub build {
-    my $self = shift;
-    my %opts = @_;
+    my $self  = shift;
+    my %opts  = @_;
     my $fasta = $opts{fasta_file}; # reheadered fasta file
     my $fastq = $opts{data_files}; # array ref of FASTQ files
     unless ($fastq && @$fastq) {
@@ -30,26 +30,17 @@ sub build {
     );
 
     # Add one or more alignment tasks
-    my @sam_files;
     if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
         foreach my $file (@$fastq) {
             $self->add(
                 $self->bwa_alignment([$file])
             );
-            push @sam_files, $self->previous_output;
+            push @{$self->bam}, $self->previous_output;
         }
     }
     else { # standard Bowtie run (all fastq's at once)
         $self->add(
             $self->bwa_alignment($fastq)
-        );
-        push @sam_files, $self->previous_output;
-    }
-
-    # Add one or more sam-to-bam tasks
-    foreach my $file (@sam_files) {
-        $self->add(
-            $self->sam_to_bam($file)
         );
         push @{$self->bam}, $self->previous_output;
     }
@@ -105,20 +96,25 @@ sub bwa_alignment {
     my $R = $alignment_params->{'-R'} // '';
 
     my ($first_fastq) = @$fastq;
-    my $output_file = to_filename_without_extension($first_fastq) . '.sam';
+    my $output_file = to_filename_without_extension($first_fastq) . '.bam';
 
     my $index_path = catfile(get_genome_cache_path($gid), 'bwa_index', 'genome.reheader');
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 
+    my $samtools = get_command_path('SAMTOOLS');
+
     my @args;
     push @args, ['-M', '', 0] if $M;
-    push @args, ['-R', shell_quote($R), 0] if $R;
+    if ($R) {
+        $R =~ s/\t/\\t/g; # escape tabs
+        push @args, ['-R', shell_quote($R), 0];
+    }
     push @args, (
         ['-t', $self->NUM_CPUS,         0],
         ['',   $index_path,             0],
         ['',   join(' ', sort @$fastq), 0],
-        ['>',  $output_file,            1]
+        ["| $samtools view -uSh | $samtools sort >", $output_file, 1] # convert SAM to BAM and sort on the fly for speed
     );
 
 	return {

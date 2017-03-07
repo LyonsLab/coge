@@ -17,7 +17,6 @@ sub build {
     my %opts = @_;
     my $fasta_file = $opts{fasta_file};
     my ($bam_file) = @{$opts{data_files}};
-    my $isSorted = $opts{is_sorted}; # input bam file is already sorted (for passing sorted bam file from Experiment.pm)
 
     unless ($fasta_file) {
         CoGe::Exception::Generic->throw(message => 'Missing fasta');
@@ -32,24 +31,9 @@ sub build {
     # Build workflow
     #
 
-    my $sorted_bam_file;
-    if ($isSorted) {
-        $sorted_bam_file = $bam_file
-    }
-    else {
-        $self->add(
-            $self->sort_bam($bam_file)
-        );
-        $sorted_bam_file = $self->previous_output;
-        
-        $self->add(
-            $self->index_bam($sorted_bam_file)
-        );
-    }
-
     $self->add(
         $self->platypus(
-            bam   => $sorted_bam_file,
+            bam   => $bam_file, # assumes sorted BAM file
             fasta => $fasta_file
         )
     );
@@ -93,7 +77,7 @@ sub platypus {
         outputs => [
             catfile($self->staging_dir, $output_file)
         ],
-        description => "Identifying SNPs using Platypus method"
+        description => "Identifying SNPs using Platypus"
     };
 }
 

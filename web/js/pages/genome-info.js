@@ -381,7 +381,7 @@ function plot_percent_gc_at(chr, wsize, wstep) {
                         mode: 'lines',
                         line: { color: 'rgb(171,3,243)' }
                     }], {
-                        title: 'Sliding Window for ' + chr,
+                        title: 'Sliding Window for Chromosome ' + chr,
                         xaxis: { rangeslider: {}, title: 'Window Iteration' },
                         yaxis: { title: 'Percentage (%)' }
                     });
@@ -1315,13 +1315,38 @@ function remove_annotation (gaid) {
 }
 
 function get_datasets() {
+    var datasets = $("#datasets");
+    datasets.html("Loading sequence & gene annotations... ").append(spinner.clone());
+
     $.ajax({
         data: {
             fname: 'get_datasets',
-            gid: GENOME_ID,
+            gid: GENOME_ID
         },
-        success : function(data) {
-            $('#datasets').html(data);
+        success:function(html) {
+            let json = JSON.parse(html);
+            datasets.empty();
+    		let table = $('<table id="datasets_table" class="dataTable compact hover stripe border-top border-bottom" style="font-size:14px;margin:0;"><thead style="display:none"><tr><th></th></tr></thead><tbody></tbody></table>').appendTo(datasets);
+            let options = {
+                data: json,
+                language: {
+                    info: '', //'Showing _START_ to _END_ of _TOTAL_ sequence & gene annotations',
+                    infoEmpty: 'No sequence & gene annotations to show',
+                    infoFiltered: '(filtered from _MAX_ total sequence & gene annotations)',
+                    lengthMenu: 'Show _MENU_ sequence & gene annotations',
+                    zeroRecords: 'No matching sequence & gene annotations found'
+                },
+                pageLength: 20
+            };
+            if (json.length == 0) {
+                options.language.infoEmpty = '';
+                options.language.zeroRecords = 'There are no sequence & gene annotations for this genome.';
+            }
+            if (json.length <= 20) {
+                options.paging = false;
+                options.searching = false;
+            }
+            table.DataTable(options);
         }
     });
 }
@@ -1396,7 +1421,7 @@ function get_content_dialog(id, request, chromosome) {
     })
 }
 
-function get_experiments(e) {
+function get_experiments() {
     var experiments = $("#experiments");
     experiments.html("Loading experiments... ").append(spinner.clone());
 
@@ -1406,12 +1431,29 @@ function get_experiments(e) {
             gid: GENOME_ID
         },
         success:function(html) {
-            experiments
-            	.hide()
-            	.html(html)
-            	.slideDown();
-            var count = experiments.find('span').length;
-            $('#exp_count').html('('+count+')').show();
+            let json = JSON.parse(html);
+            experiments.empty();
+    		let table = $('<table id="experiments_table" class="dataTable compact hover stripe border-top border-bottom" style="font-size:14px;margin:0;"><thead style="display:none"><tr><th></th></tr></thead><tbody></tbody></table>').appendTo(experiments);
+            let options = {
+                data: json,
+                language: {
+                    info: 'Showing _START_ to _END_ of _TOTAL_ experiments',
+                    infoEmpty: 'No experiments to show',
+                    infoFiltered: '(filtered from _MAX_ total experiments)',
+                    lengthMenu: 'Show _MENU_ experiments',
+                    zeroRecords: 'No matching experiments found'
+                },
+                pageLength: 20
+            };
+            if (json.length == 0) {
+                options.language.infoEmpty = '';
+                options.language.zeroRecords = 'There are no experiments for this genome.';
+            }
+            if (json.length <= 20) {
+                options.paging = false;
+                options.searching = false;
+            }
+            table.DataTable(options);
         }
     });
 }

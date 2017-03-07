@@ -504,7 +504,7 @@ sub reheader_fasta {
         outputs => [
             catfile($cache_dir, $output_file)
         ],
-        description => "Reheader fasta file",
+        description => "Reheader FASTA file",
     };
 }
 
@@ -662,7 +662,7 @@ sub picard_deduplicate {
     my $output_file = $bam_file . '-deduplicated.bam';
 
     return {
-        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp ; mv $output_file.tmp $output_file",
+        cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp && mv $output_file.tmp $output_file",
         args => [
 #            ['MarkDuplicates', '', 0],
 #            ['REMOVE_DUPLICATES=true', '', 0],
@@ -676,7 +676,7 @@ sub picard_deduplicate {
         outputs => [
             $output_file
         ],
-        description => "Deduplicating PCR artifacts using Picard"
+        description => "Deduplicating BAM file"
     };
 }
 
@@ -763,7 +763,7 @@ sub load_bam { #TODO combine with load_experiment
             catfile($output_path, "log.done"),
             $result_file
         ],
-        description => "Loading alignment as new experiment"
+        description => 'Loading BAM alignment'
     };
 }
 

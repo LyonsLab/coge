@@ -31,7 +31,6 @@ has VALIDATE_FASTQ => (is => 'ro', isa => 'Int', default => 0);  # flag to indic
 
 # Outputs
 has index   => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # index files
-has raw_bam => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # unprocessed bam files
 has bam     => (is => 'rw', isa => 'ArrayRef', default => sub { [] }); # processed bam files (sorted and indexed)
 
 sub build {
@@ -103,7 +102,7 @@ sub build {
     }
 
     my $aligner;
-    switch( $self->_aligner() ) {
+    switch( $self->_aligner ) {
         case 'hisat2'  { $aligner = CoGe::Builder::Alignment::HISAT2->new($self)  }
         case 'bowtie2' { $aligner = CoGe::Builder::Alignment::Bowtie->new($self)  }
         case 'tophat'  { $aligner = CoGe::Builder::Alignment::Tophat->new($self)  }
@@ -117,18 +116,20 @@ sub build {
     }
     $aligner->build(fasta_file => $reheader_fasta, data_files => \@trimmed);
     $self->add_to_all($aligner);
-    push @{$self->raw_bam}, @{$aligner->bam};
+    push @{$self->bam}, @{$aligner->bam};
 
     # Process and load each alignment output
-    foreach my $bam_file (@{$self->raw_bam}) {
-        # Sort and index the bam output file(s)
-        my ($sorted_bam_file) = $self->add(
-            $self->sort_bam($bam_file)
-        );
-        push @{$self->bam}, $sorted_bam_file;
+    foreach my $bam_file (@{$self->bam}) {
+        # Sort BAM file(s) -- bismark only (because methylation analysis requires unsorted BAM file), other aligner modules perform sort internally
+        if ($self->_aligner eq 'bismark') {
+            ($bam_file) = $self->add(
+                $self->sort_bam($bam_file)
+            );
+        }
 
-        $self->add_to_previous(
-            $self->index_bam($sorted_bam_file)
+        # Index BAM file -- requires sorted BAM
+        $self->add(
+            $self->index_bam($bam_file)
         );
 
         # Load alignment
@@ -138,15 +139,15 @@ sub build {
 
             # Add bam filename to experiment name for ChIP-seq pipeline
             my $md = clone($metadata);
-            if (@{$self->raw_bam} > 1) {
-                $md->{name} .= ' (' . to_filename_base($sorted_bam_file) . ')';
+            if (@{$self->bam} > 1) {
+                $md->{name} .= ' (' . to_filename_base($bam_file) . ')';
             }
 
             $self->add(
                 $self->load_bam(
                     metadata    => $md,
                     annotations => $annotations,
-                    bam_file    => $sorted_bam_file
+                    bam_file    => $bam_file
                 )
             );
         }

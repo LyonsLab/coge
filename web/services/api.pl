@@ -147,6 +147,10 @@ $r->get("/features/:id/sequence/" => [id => qr/\d+/])
     ->name("features-sequence")
     ->to("feature#sequence", id => undef);
 
+$r->put("/features")
+    ->name("features-add")
+    ->to("feature#add", namespace => 'CoGe::Services::API');
+
 # Experiment routes
 $r->get("/experiments/search/#term")
     ->name("experiments-search")

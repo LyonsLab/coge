@@ -283,7 +283,7 @@ sub load_csv { #TODO combine with Buildable::load_experiment
             [ $output_path, 1 ],
             catfile($output_path, "log.done"),
         ],
-        description => "Loading FPKM results as new experiment"
+        description => 'Loading FPKM measurements'
     };
 }
 
@@ -340,7 +340,7 @@ sub load_bed { #TODO combine with Buildable::load_experiment
             [ $output_path, 1 ],
             catfile($output_path, "log.done"),
         ],
-        description => "Loading read depth measurements as new experiment"
+        description => 'Loading read depth measurements'
     };
 }
 

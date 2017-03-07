@@ -29,32 +29,17 @@ sub build {
     $self->index([$self->previous_output->[0]]);
 
     # Generate sam file
-    my @sam_files;
     if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
         foreach my $file (@$fastq) {
             $self->add(
                 $self->gsnap_alignment([ $file ])
             );
-            push @sam_files, $self->previous_output;
+            push @{$self->bam}, $self->previous_output;
         }
     }
     else { # standard GSNAP run (all fastq's at once)
         $self->add(
             $self->gsnap_alignment($fastq)
-        );
-        push @sam_files, $self->previous_output;
-    }
-
-    # Add one or more sam-to-bam tasks
-    foreach my $file (@sam_files) {
-        # Filter sam file
-        $self->add(
-            $self->filter_sam($file)
-        );
-
-        # Convert sam file to bam
-        $self->add(
-            $self->sam_to_bam($self->previous_output)
         );
         push @{$self->bam}, $self->previous_output;
     }
@@ -101,9 +86,6 @@ sub gsnap_alignment {
     my $nofails = $alignment_params->{'--nofails'} // 1;
     my $max_mismatches = $alignment_params->{'--max-mismatches'};
 
-    my ($first_fastq) = @$fastq;
-    my $output_file = basename($first_fastq) . '.sam';
-
     my $index_name = basename($gmap);
 
     my $cmd = get_command_path('GSNAP');
@@ -125,13 +107,20 @@ sub gsnap_alignment {
     push @$args, ["--max-mismatches=$max_mismatches", "", 0] if $max_mismatches;
     push @$args, ['--force-single-end', '', 0] if ($read_type eq 'single');
 
+    # Add flags for compressed input FASTQ file(s)
+    my ($first_fastq) = @$fastq;
+    push @$args, ["--gunzip",  "", 0] if (is_gzipped($first_fastq));
+    push @$args, ["--bunzip2", "", 0] if (is_bzipped2($first_fastq));
+
     # Sort fastq files in case of paired-end reads,
     # see http://research-pub.gene.com/gmap/src/README
     foreach (sort @$fastq) {
         push @$args, ["", $_, 1];
     }
 
-    push @$args, [">", $output_file, 1];
+    my $samtools = get_command_path('SAMTOOLS');
+    my $output_file = basename($first_fastq) . '.bam';
+    push @$args, ["| $samtools view -uSh | $samtools sort >", $output_file, 1]; # convert SAM to BAM and sort on the fly for speed
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 

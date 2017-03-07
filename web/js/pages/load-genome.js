@@ -378,7 +378,7 @@ $.extend(GenomeDescriptionView.prototype, {
             this.el.find('#edit_name').val(this.metadata.name);
             this.el.find('#edit_description').val(this.metadata.description);
             this.el.find('#edit_version').val(this.metadata.version);
-            this.select_type.val(this.metadata.type);
+            this.select_type.val(this.metadata.type_id);
             this.edit_source.val(this.metadata.source_name);
 
             if (!this.metadata.restricted)
@@ -458,13 +458,13 @@ $.extend(GenomeDescriptionView.prototype, {
     },
 
     is_valid: function() {
-        var name = this.el.find('#edit_name').val();
+        var name        = this.el.find('#edit_name').val();
         var description = this.el.find('#edit_description').val();
-        var link = this.el.find('#edit_link').val();
-        var version = this.el.find('#edit_version').val();
-        var type = this.el.find('#select_type').val();
-        var restricted = this.el.find('#restricted').is(':checked');
-        var organism = this.el.find('#edit_organism').val();
+        var link        = this.el.find('#edit_link').val();
+        var version     = this.el.find('#edit_version').val();
+        var type_id     = this.el.find('#select_type').val();
+        var restricted  = this.el.find('#restricted').is(':checked');
+        var organism    = this.el.find('#edit_organism').val();
 
         if (!organism || !this.organism_id) {
         	if (this.onError)
@@ -487,14 +487,14 @@ $.extend(GenomeDescriptionView.prototype, {
 
        $.extend(this.genome, {
             metadata: {
-                name: coge.utils.removeSpecialChars(name),
-                description: coge.utils.removeSpecialChars(description),
-                link: link,
-                version: coge.utils.removeSpecialChars(version),
-                type: type,
-                restricted: restricted,
-                source_name: coge.utils.removeSpecialChars(source),
-                organism: organism
+                name:             coge.utils.removeSpecialChars(name),
+                description:      coge.utils.removeSpecialChars(description),
+                link:             link,
+                version:          coge.utils.removeSpecialChars(version),
+                sequence_type_id: type_id,
+                restricted:       restricted,
+                source_name:      coge.utils.removeSpecialChars(source),
+                organism:         organism
             },
             organism_id: this.organism_id
         });

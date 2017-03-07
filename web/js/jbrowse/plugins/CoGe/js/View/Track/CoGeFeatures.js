@@ -664,7 +664,7 @@ define( [
                     //determine dimensions of labels (height, per-character width)
                     var heightTest = document.createElement("div");
                     heightTest.className = "coge-feature-label";
-                    heightTest.style.height = "auto";
+                    heightTest.style.height = '150px';//"auto";
                     heightTest.style.visibility = "hidden";
                     heightTest.appendChild(document.createTextNode("1234567890"));
                     document.body.appendChild(heightTest);

@@ -30,26 +30,17 @@ sub build {
     );
 
     # Add one or more alignment tasks
-    my @sam_files;
     if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
         foreach my $file (@$fastq) {
             $self->add(
                 $self->bowtie2_alignment([$file])
             );
-            push @sam_files, $self->previous_output;
+            push @{$self->bam}, $self->previous_output;
         }
     }
     else { # standard Bowtie run (all fastq's at once)
         $self->add(
             $self->bowtie2_alignment($fastq)
-        );
-        push @sam_files, $self->previous_output;
-    }
-
-    # Add one or more sam-to-bam tasks
-    foreach my $file (@sam_files) {
-        $self->add(
-            $self->sam_to_bam($file)
         );
         push @{$self->bam}, $self->previous_output;
     }
@@ -96,9 +87,10 @@ sub bowtie2_alignment {
         $cmd .= '-U ' . join(',', sort @$fastq);
     }
 
+    my $samtools = get_command_path('SAMTOOLS');
     my ($first_fastq) = @$fastq;
-    my $output_file = to_filename_without_extension($first_fastq) . '.sam';
-    $cmd .= " -S $output_file";
+    my $output_file = to_filename_without_extension($first_fastq) . '.bam';
+    $cmd .= " | $samtools view -uSh | $samtools sort > $output_file"; # convert SAM to BAM and sort on the fly for speed
 
     my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 

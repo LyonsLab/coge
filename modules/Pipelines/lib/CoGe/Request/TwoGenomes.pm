@@ -27,12 +27,11 @@ sub is_valid {
 
 sub has_access {
     my $self = shift;
-    return unless defined $self->{user};
 
-    unless ($self->user->has_access_to_genome($self->genome1)) {
+    if ($self->genome1->restricted && (!$self->user || !$self->user->has_access_to_genome($self->genome1))) {
         CoGe::Exception::AccessDenied->throw(type => 'genome', id => $self->genome1->id);
     }
-    unless ($self->user->has_access_to_genome($self->genome2)) {
+    if ($self->genome2->restricted && (!$self->user || !$self->user->has_access_to_genome($self->genome2))) {
         CoGe::Exception::AccessDenied->throw(type => 'genome', id => $self->genome2->id);
     }
 

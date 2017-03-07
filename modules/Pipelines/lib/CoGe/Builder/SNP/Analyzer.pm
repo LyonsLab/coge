@@ -66,12 +66,14 @@ sub build {
         case 'coge'     { $snp = CoGe::Builder::SNP::CoGeSNPs->new($self) }
         case 'samtools' { $snp = CoGe::Builder::SNP::Samtools->new($self) }
         case 'platypus' { $snp = CoGe::Builder::SNP::Platypus->new($self) }
-        case 'gatk'     { $snp = CoGe::Builder::SNP::GATK->new($self) }
+        case /gatk|gatk-haplotype-vcf|gatk-haplotype-gvcf/ {
+            $snp = CoGe::Builder::SNP::GATK->new($self)
+        }
         default {
             CoGe::Exception::Generic->throw(message => 'Invalid SNP method');
         }
     }
-    $snp->build(fasta_file => $reheader_fasta, data_files => [$bam_file], is_sorted => $opts{is_sorted});
+    $snp->build(fasta_file => $reheader_fasta, data_files => [$bam_file]);
     $self->add($snp);
     $self->vcf($snp->vcf);
 }
@@ -134,7 +136,7 @@ sub load_vcf { #TODO combine with Buildable::load_experiment
             [$output_path, '1'],
             catfile($output_path, "log.done"),
         ],
-        description => "Loading SNPs as new experiment"
+        description => 'Loading SNPs'
     };
 }
 

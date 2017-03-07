@@ -574,12 +574,12 @@ var coge = window.coge = (function(namespace) {
 
         wait_for_job: function(id, promise) {
             coge.services.fetch_job(id).then(function(response) {
-                switch(response.status) {
-                    case "Completed":
+                switch(response.status.toLowerCase()) {
+                    case "completed":
                     	//console.log(response);
                         promise.resolve(response);
                         break;
-                    case "Failed":
+                    case "failed":
                     	console.warn(response);
                         promise.reject("The workflow has failed");
                         break;

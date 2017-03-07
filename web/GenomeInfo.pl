@@ -1332,19 +1332,11 @@ sub get_experiments {
     foreach my $exp ( sort experimentcmp $genome->experiments ) {
         next if ( $exp->deleted );
         next if ( $exp->restricted && !$USER->has_access_to_experiment($exp) );
-
-        my $id = $exp->id;
-        push @rows, { EXPERIMENT_INFO => qq{<span class="link" onclick='window.open("ExperimentView.pl?eid=$id")'>} . $exp->info . "</span>" };
+        my $info = $exp->info;
+        $info =~ tr{\n}{ };
+        push @rows, '["<span class=\\"link\\" onclick=\\"window.open(\'ExperimentView.pl?eid=' . $exp->id . '\')\\">' . $info . '</span>"]';
     }
-    
-    return '<span class="padded note">There are no experiments for this genome.</span>' unless @rows;
-
-    my $template = HTML::Template->new( filename => $config->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param(
-        DO_EXPERIMENTS  => 1,
-        EXPERIMENT_LOOP => \@rows
-    );
-    return $template->output;
+    return '[' . join(',', @rows) . ']';
 }
 
 sub filter_dataset {    # detect chromosome-only datasets
@@ -1368,18 +1360,11 @@ sub get_datasets {
     my @rows;
     foreach my $ds ( sort { $a->id <=> $b->id } $genome->datasets ) {
         #next if ($exclude_seq && filter_dataset($ds)); #FIXME add dataset "type" field instead?
-        push @rows, { DATASET_INFO => '<span>' . $ds->info . '</span>' .
-            ($ds->link ? '&nbsp;&nbsp;&nbsp;&nbsp;<a href="' . $ds->link . '" target=_new>Link</a>' : '') };
+        my $info = $ds->info;
+        $info =~ tr{\n}{ };
+        push @rows, '["<span>' . $info . '</span>' . ($ds->link ? '&nbsp;&nbsp;&nbsp;&nbsp;<a href=\\"' . $ds->link . '\\" target=_new>Link</a>' : '') . '"]';
     }
-    return '' unless @rows;
-
-    my $template =
-      HTML::Template->new( filename => $config->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
-    $template->param(
-        DO_DATASETS  => 1,
-        DATASET_LOOP => \@rows
-    );
-    return $template->output;
+    return '[' . join(',', @rows) . ']';
 }
 
 sub delete_genome {
@@ -2162,19 +2147,6 @@ sub generate_body {
     my $user_can_edit = $genome->is_editable($USER);
     my $user_can_delete = $genome->is_deletable($USER);
 
-    my $exp_count = $genome->experiments->count( { deleted => 0 } );
-    my $experiments;
-
-    if ($exp_count < 20) {
-        $experiments = get_experiments( genome => $genome );
-    } 
-    else { # too many experiments to show on initial page load (ie, too slow)
-        my $summary_template = HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-        $summary_template->param(NOEXPERIMENTS => 1);
-        $experiments = $summary_template->output;
-        $exp_count = 0; # disable count in view
-    }
-
     $template->param( OID => $genome->organism->id );
 
     my $title = $genome->info;
@@ -2193,9 +2165,6 @@ sub generate_body {
         LOGON           => ( $USER->user_name ne "public" ),
         GENOME_ANNOTATIONS => get_annotations( gid => $gid ) || undef,
         DEFAULT_TYPE    => 'note', # default annotation type
-        EXP_COUNT       => $exp_count,
-        EXPERIMENTS     => $experiments || undef,
-        DATASETS        => get_datasets( genome => $genome, exclude_seq => 1 ) || undef,
         USER_CAN_EDIT   => $user_can_edit,
         USER_CAN_ADD    => ( (!$genome->restricted and !$USER->is_public) or $user_can_edit ),
         USER_CAN_DELETE => $user_can_delete,

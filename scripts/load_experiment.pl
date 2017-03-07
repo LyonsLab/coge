@@ -309,7 +309,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 	    exit(-1);
 	}
 
-	print STDOUT "log: Indexing database (may take a few minutes)\n";
+	print STDOUT "log: Indexing database\n";
 	$cmd = "$FASTBIT_QUERY -d $staging_dir -v -b \"<binning precision=2/><encoding equality/>\"";
 	print STDOUT $cmd, "\n";
 	$rc = system($cmd);
@@ -785,7 +785,8 @@ sub validate_vcf_data_file {
             log_line('missing required value in a column', $line_num, $line);
             return;
         }
-        next if ( $alt eq '.' );    # skip monomorphic sites
+        next if ( $alt eq '.' ); # skip monomorphic sites
+        next if ( uc($alt) eq '<NON_REF>' ); # mdb added 3/7/17 - skip non-variant GVCF blocks, added for GATK GVCF file format
         $id   = '.' if ( not defined $id );
         $qual = 0   if ( not defined $qual );
         $info = ''  if ( not defined $info );
@@ -800,6 +801,8 @@ sub validate_vcf_data_file {
         # Each line could encode multiple alleles
         my @alleles = split( ',', $alt );
         foreach my $a (@alleles) {
+            next if ( uc($a) eq '<NON_REF>' ); # mdb added 3/7/17 - skip NON_REF allels, added for GATK GVCF file format
+
             # Determine site type
             my $type = detect_site_type( $ref, $a );
 
@@ -922,21 +925,20 @@ sub validate_bam_data_file {
 		execute($cmd);
 	}
 	
-	# Sort the bam file
-	# TODO this can be slow, is it possible to detect if it is sorted already?
-	my $sorted_file = "$staging_dir/sorted.bam";
-    $cmd = "$SAMTOOLS sort $newfilepath -o $sorted_file"; # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
-    execute($cmd);
-    if (-e $sorted_file && -s $sorted_file > 0) {
-        # Replace original file with sorted version
-        execute("mv $sorted_file $newfilepath");
-    }
-    else {
-        print STDOUT "log: error: samtools sort produced no result\n";
-        exit(-1);
-    }
+	# Sort the bam file -- mdb removed 2/23/17, input BAM is expected to be sorted already
+#	my $sorted_file = "$staging_dir/sorted.bam";
+#    $cmd = "$SAMTOOLS sort $newfilepath -o $sorted_file"; # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
+#    execute($cmd);
+#    if (-e $sorted_file && -s $sorted_file > 0) {
+#        # Replace original file with sorted version
+#        execute("mv $sorted_file $newfilepath");
+#    }
+#    else {
+#        print STDOUT "log: error: samtools sort produced no result\n";
+#        exit(-1);
+#    }
 
-	# Index the bam file
+	# Index the bam file #TODO copy over existing BAM index file instead of regenerating it here
 	$cmd = "$SAMTOOLS index $newfilepath";
 	execute($cmd);
 

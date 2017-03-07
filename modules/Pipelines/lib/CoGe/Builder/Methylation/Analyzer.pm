@@ -12,9 +12,9 @@ use CoGe::Exception::MissingField;
 sub build {
     my $self = shift;
     my %opts = @_;
-    my ($bam_file, $raw_bam_file) = @{$opts{data_files}};
-    unless ($bam_file && $raw_bam_file) {
-        CoGe::Exception::Generic->throw( message => 'Missing bam inputs' );
+    my ($bam_file) = @{$opts{data_files}};
+    unless ($bam_file) {
+        CoGe::Exception::Generic->throw( message => 'Missing bam input' );
     }
 
     # Validate inputs (that weren't already checked in Request)
@@ -32,7 +32,7 @@ sub build {
     my $method = lc($self->params->{methylation_params}->{method});
     if ($method eq 'bismark') {
         $analyzer = CoGe::Builder::Methylation::Bismark->new($self);
-        $analyzer->build(data_files => [$raw_bam_file]);
+        $analyzer->build(data_files => [$bam_file]);
     }
     elsif ($method eq 'bwameth') {
         $analyzer = CoGe::Builder::Methylation::BWAmeth->new($self);

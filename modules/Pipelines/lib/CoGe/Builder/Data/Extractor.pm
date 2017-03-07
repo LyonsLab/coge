@@ -8,7 +8,7 @@ use File::Basename qw(basename dirname);
 use File::Spec::Functions qw(catfile catdir);
 use String::ShellQuote qw(shell_quote);
 
-use CoGe::Accessory::Utils qw(get_unique_id);
+use CoGe::Accessory::Utils;
 use CoGe::Accessory::Web qw(split_url get_command_path);
 use CoGe::Accessory::IRODS qw(irods_iget irods_set_env);
 use CoGe::Core::Storage qw(get_upload_path);
@@ -91,7 +91,7 @@ sub build {
     # Add processing tasks
     foreach my $input_file (@input_files) {
         my $done_file = qq[$input_file.done];
-        # Decompress and/or unarchive file
+        # Unarchive tar file
         if ( $input_file =~ /\.tgz|\.tar\.gz$/ ) {
             my $output_dir = catdir($self->staging_dir, 'untarred');
             $self->add(
@@ -103,6 +103,7 @@ sub build {
             );
             $self->data_dir($output_dir);
         }
+        # Decompress ZIP file
         if ( $input_file =~ /\.zip$/ ) {
             my $output_dir = catdir($self->staging_dir, 'unzipped');
             $self->add(
@@ -114,14 +115,14 @@ sub build {
             );
             $self->data_dir($output_dir);
         }
-        elsif ( $input_file =~ /\.gz$/ ) {
+        elsif ( $input_file =~ /\.gz$/ && !is_fastq_file($input_file) ) {
             $self->add(
                 $self->gunzip($input_file),
                 $done_file
             );
             push @{$self->data_files}, $self->previous_output;
         }
-        elsif ( $input_file =~ /\.bz2$/ ) {
+        elsif ( $input_file =~ /\.bz2$/ && !is_fastq_file($input_file) ) {
             $self->add(
                 $self->bunzip2($input_file),
                 $done_file
@@ -189,7 +190,8 @@ sub ftp_get {
             $cmd # mdb added 11/10/16 -- attempt to fix stuck tasks, COGE-729
         ],
         outputs => [ 
-            $output_file
+            $output_file,
+            qq[$output_file.done] # created by ftp.pl
         ],
         description => "Fetching $url"
     };

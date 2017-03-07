@@ -21,6 +21,8 @@ var EXPERIMENT_ID = '<TMPL_VAR NAME="EXPERIMENT_ID">';
 var WORKFLOW_ID = '<TMPL_VAR NAME="WORKFLOW_ID">';
 var newLoad = false;
 
+console.log('is GVCF = ' +  '<TMPL_VAR NAME="IS_GVCF">');
+
 $(document).ready(function() {
     pageObj = new Object();
     pageObj.timers = new Array();
@@ -144,6 +146,7 @@ $(document).ready(function() {
 			        </TMPL_UNLESS>
 			        </TMPL_IF>
 			        <TMPL_IF NAME="POLYMORPHISM_TYPE">
+			        <TMPL_IF NAME="IS_GVCF">
 		            <tr style="padding:3px;">
                     	<td>
                     		<span class="title5">Analyze:</span>
@@ -152,6 +155,7 @@ $(document).ready(function() {
                     		<span class="data5 link" ondblclick="analyze_diversity();" onclick="analyze_diversity();">Diversity</span>
                     	</td>
 			        </tr>
+			        </TMPL_IF>
 			        </TMPL_IF>
 			    </table>
 		    </div>

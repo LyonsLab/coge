@@ -6,7 +6,7 @@ extends 'CoGe::Builder::Trimming::Trimmer';
 use File::Basename qw(basename);
 use File::Spec::Functions qw(catdir catfile);
 
-use CoGe::Accessory::Utils qw(to_filename);
+use CoGe::Accessory::Utils;
 use CoGe::Exception::Generic;
 use CoGe::Exception::MissingField;
 
@@ -38,7 +38,8 @@ sub build {
         # Create BBDuk task for each file
         foreach (@$fastq1) {
             $self->add(
-                $self->bbduk($_, $reheader_fasta)
+                $self->bbduk($_, $reheader_fasta),
+                qq[$_.done] # done file dependencies are created in Extractor
             );
             push @{$self->fastq}, $self->previous_output;
         }
@@ -46,10 +47,12 @@ sub build {
     else { # paired-end
         # Create BBDuk task for each file pair
         for (my $i = 0;  $i < @$fastq1;  $i++) {
+            my ($f1, $f2) = ($fastq1->[$i], $fastq2->[$i]);
             $self->add(
-                $self->bbduk([ $fastq1->[$i], $fastq2->[$i] ], $reheader_fasta)
+                $self->bbduk([ $fastq1->[$i], $fastq2->[$i] ], $reheader_fasta),
+                [ qq{$f1.done}, qq{$f2.done} ] # done file dependencies are created in Extractor
             );
-            push @{$self->fastq}, grep { /\.fastq$/ } @{$self->previous_outputs};
+            push @{$self->fastq}, @{$self->previous_outputs};
         }
     }
 }
@@ -75,7 +78,7 @@ sub bbduk {
     my $encoding = $read_params->{encoding} // 33;
     my $read_type = $read_params->{read_type} // 'single';
 
-    my @outputs = map { catfile($self->staging_dir, to_filename($_) . '.trimmed.fastq') } @$fastq;
+    my @outputs = map { catfile($self->staging_dir, basename(remove_fastq_ext($_) . '.trimmed.fastq' . to_compressed_ext($_))) } @$fastq;
 
     unless ($self->conf->{BBMAP}) {
         CoGe::Exception::Generic->throw(message => 'Missing BBMAP in configuration file');

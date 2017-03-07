@@ -396,11 +396,12 @@ var coge = window.coge = (function(namespace) {
 		_format_status: function(status) {
             var el = $('<span></span>');
 
+            status = coge.utils.ucfirst(status);
             switch (status.toLowerCase()) {
                 case 'scheduled' : el.append(status).addClass('down bold');                 break;
                 case 'completed' : el.append(status).addClass('completed bold');            break;
                 case 'running'   : el.append(status).addClass('running bold');              break;
-                case 'skipped'   : el.append("already generated").addClass('skipped bold'); break;
+                case 'skipped'   : el.append('Already generated').addClass('skipped bold'); break;
                 case 'cancelled' :
                 case 'stopped'   :
                 case 'failed'    : el.append(status).addClass('alert bold');                break;

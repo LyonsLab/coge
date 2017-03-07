@@ -6,6 +6,7 @@ extends 'CoGe::Builder::Buildable';
 use Data::Dumper qw(Dumper);
 
 use CoGe::Accessory::Web qw(url_for);
+use CoGe::Accessory::Utils;
 use CoGe::Core::Experiment;
 use CoGe::Builder::Alignment::Aligner;
 use CoGe::Builder::Expression::Analyzer;
@@ -60,7 +61,6 @@ sub build {
     # Add analytical tasks based on file type
     if ( grep { $_ eq $file_type } (@ALIGNMENT_TYPES, @SEQUENCE_TYPES, 'sra') ) { #FIXME this is a little kludgey
         my @bam_files;
-        my @raw_bam_files; # mdb added 2/29/16 for Bismark, COGE-706
 
         # Align fastq file or take existing bam
         if ( $file_type && ( $file_type eq 'fastq' || $file_type eq 'sra' ) ) {
@@ -68,8 +68,7 @@ sub build {
             my $aligner = CoGe::Builder::Alignment::Aligner->new($self);
             $aligner->build(data_files => $input_files);
             $self->add($aligner);
-            @bam_files     = @{$aligner->bam};
-            @raw_bam_files = @{$aligner->raw_bam};
+            @bam_files = @{$aligner->bam};
             unless (@bam_files) {
                 CoGe::Exception::Generic->throw(message => 'Alignment returned no results');
             }
@@ -81,12 +80,21 @@ sub build {
                     $self->sam_to_bam($bam_file)
                 );
             }
+
+            ($bam_file) = $self->add(
+                $self->sort_bam($bam_file)
+            );
+
+            $self->add(
+                $self->index_bam($bam_file)
+            );
+
             $self->add(
                 $self->load_bam(
                     bam_file => $bam_file
                 )
             );
-            @bam_files = @raw_bam_files = @$input_files;
+            @bam_files = ($bam_file);
         }
         else {
             CoGe::Exception::Generic->throw(message => 'Invalid file type');
@@ -101,16 +109,15 @@ sub build {
         
         # Add SNP workflow (if specified)
         if ( $self->params->{snp_params} ) {
-            my $isBamSorted = ($file_type ne 'bam');
             my $snp = CoGe::Builder::SNP::Analyzer->new($self);
-            $snp->build(data_files => \@bam_files, is_sorted => $isBamSorted);
+            $snp->build(data_files => \@bam_files);
             $self->add($snp);
         }
         
         # Add methylation workflow (if specified)
         if ( $self->params->{methylation_params} ) {
             my $aligner = CoGe::Builder::Methylation::Analyzer->new($self);
-            $aligner->build(data_files => [ $bam_files[0], $raw_bam_files[0] ]);
+            $aligner->build(data_files => \@bam_files);
             $self->add($aligner);
         }
         

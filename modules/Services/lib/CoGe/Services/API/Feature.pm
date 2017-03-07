@@ -1,10 +1,12 @@
 package CoGe::Services::API::Feature;
 
 use Mojo::Base 'Mojolicious::Controller';
-use Mojo::JSON;
+use Mojo::JSON qw(decode_json);
+use Data::Dumper;
+
 use CoGe::Services::Auth qw(init);
 use CoGe::Core::Feature qw(search_features get_feature get_genome_for_feature);
-use Data::Dumper;
+use CoGe::Services::API::Job;
 
 sub search {
     my $self = shift;
@@ -79,6 +81,35 @@ sub sequence {
     
     # Generate response
     $self->render(text => $feature->genomic_sequence);
+}
+
+sub add {
+    my $self = shift;
+    my $data = $self->req->body; #$self->req->json; # mdb replaced 11/30/16 -- req->json hides JSON errors, doing conversion manually prints them to STDERR
+    unless ($data) {
+        $self->render(status => 400, json => {
+            error => { Error => "No request body specified" }
+        });
+        return;
+    }
+    $data = decode_json($data);
+    #print STDERR "CoGe::Services::Data::Genome::add\n", Dumper $data, "\n";
+
+    # Valid data items # TODO move into request validation
+    unless ($data->{source_data} && @{$data->{source_data}}) {
+        $self->render(status => 400, json => {
+            error => { Error => "No data items specified" }
+        });
+        return;
+    }
+
+    # Alias to Job Submit -- is there a better way to do this using Mojolicious routing?
+    my $request = {
+        type => 'load_annotation',
+        parameters => $data
+    };
+
+    return CoGe::Services::API::Job::add($self, $request);
 }
 
 1;

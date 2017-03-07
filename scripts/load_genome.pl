@@ -35,7 +35,7 @@ GetOptions(
     "link=s"        => \$link,           # link (JS escaped)
     "version=s"     => \$version,        # genome version (JS escaped)
     "type_id=s"     => \$type_id,        # genomic sequence type id
-    "type_name=s"   => \$type_name,      # genomic sequence type name
+    "type_name=s"   => \$type_name,      # genomic sequence type name (has precedence over type_id)
     "transcriptome=i" => \$transcriptome,# flag indicating this sequence is a transcriptome
     "restricted=i"  => \$restricted,     # genome restricted flag
     "organism_id=i" => \$organism_id,    # organism ID
