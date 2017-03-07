@@ -10,6 +10,9 @@ use CoGe::Accessory::Utils;
 use CoGe::Exception::Generic;
 use CoGe::Exception::MissingField;
 
+# Settings
+has MAX_MEM_SIZE => (is => 'ro', isa => 'Int', default => 20); # Java max memory size in GB -- value set for TERRA data
+
 sub build {
     my $self = shift;
     my %opts = @_;
@@ -88,6 +91,7 @@ sub bbduk {
     my $cmd = join(' ',
         'nice',
         catfile($self->conf->{BBMAP}, 'bbduk2.sh'),
+        '-Xmx'.$self->MAX_MEM_SIZE.'g',
         qq[in=$fastq->[0]],
         qq[out=$outputs[0]],
         qq[ref=$fasta]
