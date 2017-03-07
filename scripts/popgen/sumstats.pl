@@ -23,7 +23,7 @@ use File::Spec::Functions qw(catdir catfile);
 use File::Touch;
 use CoGe::Algos::PopGen::Diversity;
 use CoGe::Algos::PopGen::FileFormats;
-use lib '/usr/local/lib/perl/5.18.2/x86_64-linux-gnu-thread-multi'; # mdb added 5/4/16 to get Tabix.pm working on PROD
+use lib '/opt/apache2/coge/bin/Tabix'; # mdb added 5/4/16 to get Tabix.pm working on PROD
 use Tabix;
 
 my ($VCF_FILE, $GFF_FILE, $FASTA_FILE, $CHR, $GENE_NAME, $FEAT_TYPE, 
