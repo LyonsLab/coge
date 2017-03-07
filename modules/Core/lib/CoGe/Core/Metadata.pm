@@ -6,6 +6,8 @@ use warnings;
 use Data::Dumper;
 use File::Basename;
 use File::Spec::Functions qw(catfile);
+use HTTP::Headers;
+use LWP::UserAgent;
 use Mojo::JSON;
 use Switch;
 use Text::Unidecode qw(unidecode);
@@ -177,6 +179,11 @@ sub delete_annotation {
     if ($annotation->bisque_file) {
         my $path = catfile(_get_bisque_dir($object_type, $object_id, $user), $annotation->bisque_file);
         irods_irm($path);
+        my $ua = LWP::UserAgent->new();
+        my $req = HTTP::Request->new(DELETE => 'https://bisque.cyverse.org/data_service/' . $annotation->bisque_id);
+        $req->authorization_basic('coge', 'C0G3Rules!');
+        my $res = $ua->request($req);
+        warn Dumper $res;
     }
     $annotation->delete();
     return undef;
@@ -426,6 +433,12 @@ sub _create_bisque_image {
         if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
             my $bisque_id = substr($result->[2], 7);
             chomp $bisque_id;
+            my $ua = LWP::UserAgent->new();
+            my $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id . '/auth?notify=false', ['Content-Type' => 'application/xml']);
+            $req->authorization_basic('coge', 'C0G3Rules!');
+            $req->content('<auth user="' . $user->name . '" permission="edit" />');
+            my $res = $ua->request($req);
+            warn Dumper $res;
             return $bisque_id, $upload->filename;
         }
     }

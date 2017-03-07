@@ -476,9 +476,9 @@ sub is_role {
 	#my $role = $opts{role};       # mdb removed 2/28/14
 	my $role_id = $opts{role_id};  # mdb added 2/28/24
 	my $group = $opts{group};
-	my $dsg  = $opts{dsg}; #FIXME rename to 'genome'
+	my $dsg  = $opts{dsg} || $opts{genome}; #FIXME get rid of dsg
 	my $ds   = $opts{ds};
-	my $list = $opts{list} || $opts{notebook};
+	my $list = $opts{list} || $opts{notebook}; #FIXME get rid of list
 	my $experiment = $opts{experiment};
 	my $item = $opts{item};
 	return 0 unless $dsg || $ds || $list || $experiment || $group || $item;
