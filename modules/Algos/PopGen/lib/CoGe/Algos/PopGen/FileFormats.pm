@@ -11,7 +11,7 @@ use Data::Dumper;
 #use Set::IntSpan::Fast;
 use base 'Exporter';
 
-our @EXPORT = qw( loadFASTA loadGFF loadBED loadCounts loadVCF parseVCF parseGenotypes );
+our @EXPORT = qw( loadFASTA loadGFF loadBED loadCounts detectGVCF loadVCF parseVCF parseGenotypes );
 
 sub loadFASTA {
     my $filename = shift;
@@ -134,6 +134,26 @@ sub loadCounts {
     close($fh);
     
     return \%out;
+}
+
+sub detectGVCF {
+    my $filename = shift;
+    my $NUM_LINES_TO_SAMPLE = 100;
+
+    open(my $fh, $filename) or
+        die("Error: cannot open file '$filename'\n");
+
+    my ($count, $isGVCF);
+    while (my $line = <$fh>) {
+        next if ($line =~ /^#/);
+        chomp $line;
+        my @tok = split(/\t/, $line);
+        $isGVCF = 1 if (@tok > 10); # this is a GVCF file, more than one sample detected
+        goto DONE if ($isGVCF || $count++ > $NUM_LINES_TO_SAMPLE);
+    }
+    DONE:
+    close($fh);
+    return $isGVCF;
 }
 
 sub loadVCF {
