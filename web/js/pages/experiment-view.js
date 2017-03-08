@@ -234,13 +234,19 @@ var snpMenu = {
     init: function() {
     	var self = this;
     	this.dialog = $('<div class="dialog_box small" style="padding:1em;"></div>');
-    	var template = $($("#snp-template2").html());
+    	var template = $($("#snp-template").html());
+
+        // mdb added 3/8/17 -- hide unnecessary elements
+    	template.find('h4').hide();
+    	template.find('#snps').parent().hide();
+        template.find('#snp-method-container').show();
     	
         var options_templates = {
             coge:     $($("#coge-snp-template").html()),
             samtools: $($("#samtools-snp-template").html()),
             platypus: $($("#platypus-snp-template").html()),
-            gatk:     $($("#gatk-snp-template").html())
+            'gatk-haplotype-vcf':  $($("#gatk-haplotype-vcf-snp-template").html()),
+            'gatk-haplotype-gvcf': $($("#gatk-haplotype-gvcf-snp-template").html())
         };
         	
         var options_container = template.find('#snp-container');
@@ -251,6 +257,7 @@ var snpMenu = {
         
     	var render = function() {
             var selected = self.method.val();
+            console.log(selected);
             render_template(options_templates[selected], options_container);
             render_template(template, self.dialog);
         };
@@ -261,7 +268,7 @@ var snpMenu = {
         
     	this.dialog.dialog({ 
     		title: "Select SNP Analysis Options",
-    		width: '32em',
+    		width: '35em',
     		autoOpen: false,
     		buttons: [
     	        {
@@ -386,7 +393,7 @@ var expressionMenu = {
         
     	this.dialog.dialog({ 
     		title: "Select Expression Analysis Options",
-    		width: '30em',
+    		width: '32em',
     		autoOpen: false,
     		buttons: [
     	        {

@@ -54,7 +54,6 @@
     </div>
 </script>
 
-<!-- Methylation Pipeline Templates -->
 <script id="bismark-methyl-template" type="text/template">
         <div class="form-field">
             <label class="col-md-2">Bismark:</label>
@@ -168,25 +167,6 @@
     </div>
 </script>
 
-<script id="snp-template2" type="text/template">
-<div class="form-section">
-    <div class="form-field">
-        <label class="col-md-2">Method:</label>
-        <select id="snp-method" disabled>
-            <option value="coge" selected>CoGe Basic</option>
-            <option value="samtools">SAMtools</option>
-            <option value="platypus">Platypus</option>
-            <option value="gatk-haplotype-vcf">GATK HaplotypeCaller (variant-only VCF)</option>
-            <option value="gatk-haplotype-gvcf">GATK HaplotypeCaller (single-sample GVCF)</option>
-            <option value="gatk-unifiedgenotyper" disabled>GATK UnifiedGenotyper - coming soon</option>
-        </select>
-    </div>
-
-    <div id="snp-container" class="hidden"></div>
-</div>
-</script>
-
-<!-- SNP Finder Method Templates -->
 <script id="coge-snp-template" type="text/template">
     <div id="coge">
         <div class="form-field">
@@ -243,7 +223,7 @@
 </script>
 
 <script id="gatk-haplotype-vcf-snp-template" type="text/template">
-    <div id="gatk" class="form-field">
+    <div id="gatk-haplotype-vcf" class="form-field">
         <label class="col-md-2">GATK (<a href="https://software.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php" target="_blank" class="small link">docs</a>):</label>
         <div class="form-group">
             <div class="note" style="padding-bottom:1em;">
@@ -271,7 +251,7 @@
 </script>
 
 <script id="gatk-haplotype-gvcf-snp-template" type="text/template">
-    <div id="gatk" class="form-field">
+    <div id="gatk-haplotype-gvcf" class="form-field">
         <label class="col-md-2">GATK (<a href="https://software.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_gatk_tools_walkers_haplotypecaller_HaplotypeCaller.php" target="_blank" class="small link">docs</a>):</label>
         <div class="form-group">
             <div class="note" style="padding-bottom:1em;">
