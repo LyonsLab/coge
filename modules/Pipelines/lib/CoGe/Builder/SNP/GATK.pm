@@ -12,15 +12,22 @@ use CoGe::Core::Storage;
 use CoGe::Core::Metadata;
 use CoGe::Exception::Generic;
 
-my $JAVA_MAX_MEM = '8g';
-
-my $PICARD;
+my $JAVA_MAX_MEM = '20g';
+my ($PICARD, $GATK, $NUM_CPUS);
 sub BUILD { # called immediately after constructor
     my $self = shift;
+
     $PICARD = $self->conf->{PICARD};
     unless ($PICARD) {
         CoGe::Exception::Generic->throw(message => 'Missing PICARD in config file');
     }
+
+    $GATK = $self->conf->{GATK};
+    unless ($GATK) {
+        CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
+    }
+
+    $NUM_CPUS = $self->NUM_CPUS // 16;
 }
 
 sub build {
@@ -184,7 +191,7 @@ sub add_readgroups {
     };
 }
 
-sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar –T RealignerTargetCreator –R Sbicolor_313_v3.0.fa –I SAMPLEA.dedup.bam –o SAMPLEA.realignment.intervals
+sub gatk_RealignerTargetCreator {
     my $self = shift;
     my %opts = @_;
     my $input_fasta = $opts{input_fasta};
@@ -193,6 +200,10 @@ sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar �
     my $read_params = $self->params->{read_params} // {};
     my $encoding    = $read_params->{encoding} // 33;
 
+    my $snp_params = $self->params->{snp_params};
+    my $filter_reads_with_N_cigar     = $snp_params->{'--filter_reads_with_N_cigar'}     ? '--filter_reads_with_N_cigar'     : '';
+    my $fix_misencoded_quality_scores = $snp_params->{'--fix_misencoded_quality_scores'} ? '--fix_misencoded_quality_scores' : '';
+
     my $output_file = to_filename_base($input_bam) . '.realignment.intervals';
 
     my $fasta_index = qq[$input_fasta.fai];
@@ -200,11 +211,6 @@ sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar �
     # mdb added 9/20/16 -- GATK expects the filename to end in .fa or .fasta
     my $fasta_name = to_filename($input_fasta);
     my $renamed_fasta = qq[$fasta_name.fa];
-
-    my $GATK = $self->conf->{GATK};
-    unless ($GATK) {
-        CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
-    }
 
     my $args = [
         ['-U', 'ALLOW_N_CIGAR_READS', 0], # fixed "ERROR MESSAGE: Unsupported CIGAR operator N in read"
@@ -215,7 +221,10 @@ sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar �
     #push @$args, ['-fixMisencodedQuals', '', 0] if ($encoding == 64);
 
     return {
-        cmd => qq[ln -sf $input_fasta $renamed_fasta && ln -sf $input_fasta.fai $renamed_fasta.fai && ln -sf $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T RealignerTargetCreator],
+        cmd => "ln -sf $input_fasta $renamed_fasta && " . # GATK expects the filename to end in .fa or .fasta
+               "ln -sf $input_fasta.fai $renamed_fasta.fai && " .
+               "ln -sf $input_fasta.dict $fasta_name.dict && " .
+               qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T RealignerTargetCreator $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
         args =>  $args,
         inputs => [
             $input_bam,
@@ -230,7 +239,7 @@ sub gatk_RealignerTargetCreator { # java –Xmx8g –jar GenomeAnalysisTK.jar �
     };
 }
 
-sub gatk_Realign { # java –Xmx8g –jar GenomeAnalysisTK.jar –T IndelRealigner –R Sbicolor_313_v3.0.fa –I SAMPLEA.dedup.bam –targetIntervals SAMPLEA.realignment.intervals –o SAMPLEA.dedup.realigned.bam
+sub gatk_Realign {
     my $self = shift;
     my %opts = @_;
     my $input_fasta     = $opts{input_fasta};
@@ -240,6 +249,10 @@ sub gatk_Realign { # java –Xmx8g –jar GenomeAnalysisTK.jar –T IndelRealign
     my $read_params = $self->params->{read_params} // {};
     my $encoding    = $read_params->{encoding} // 33;
 
+    my $snp_params = $self->params->{snp_params};
+    my $filter_reads_with_N_cigar     = $snp_params->{'--filter_reads_with_N_cigar'}     ? '--filter_reads_with_N_cigar'     : '';
+    my $fix_misencoded_quality_scores = $snp_params->{'--fix_misencoded_quality_scores'} ? '--fix_misencoded_quality_scores' : '';
+
     my $output_file = to_filename_base($input_bam) . '.realigned.bam';
 
     my $fasta_index = qq[$input_fasta.fai];
@@ -248,21 +261,18 @@ sub gatk_Realign { # java –Xmx8g –jar GenomeAnalysisTK.jar –T IndelRealign
     my $fasta_name = to_filename($input_fasta);
     my $renamed_fasta = qq[$fasta_name.fa];
 
-    my $GATK = $self->conf->{GATK};
-    unless ($GATK) {
-        CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
-    }
-
     my $args = [
         ["-R",               $renamed_fasta,   0],
         ["-I",               $input_bam,       0],
         ["-targetIntervals", $input_intervals, 0],
         ["-o",               $output_file,     1]
     ];
-    #push @$args, ['-fixMisencodedQuals', '', 0] if ($encoding == 64);
 
     return {
-        cmd => qq[ln -sf $input_fasta $renamed_fasta && ln -sf $input_fasta.fai $renamed_fasta.fai && ln -sf $input_fasta.dict $fasta_name.dict && java -Xmx$JAVA_MAX_MEM -jar $GATK -T IndelRealigner],
+        cmd => "ln -sf $input_fasta $renamed_fasta && " . # GATK expects the filename to end in .fa or .fasta
+               "ln -sf $input_fasta.fai $renamed_fasta.fai && " .
+               "ln -sf $input_fasta.dict $fasta_name.dict && " .
+                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T IndelRealigner $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
         args =>  $args,
         inputs => [
             $input_bam,
@@ -291,13 +301,6 @@ sub gatk_HaplotypeCaller {
     my $filter_reads_with_N_cigar     = $params->{'--filter_reads_with_N_cigar'}     ? '--filter_reads_with_N_cigar'     : '';
     my $fix_misencoded_quality_scores = $params->{'--fix_misencoded_quality_scores'} ? '--fix_misencoded_quality_scores' : '';
 
-    my $CPU = $self->NUM_CPUS;
-
-    my $GATK = $self->conf->{GATK};
-    unless ($GATK) {
-        CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
-    }
-
     my $output_vcf = to_filename_base($input_bam) . ($emitRefConfidence ? '.g.vcf' : '.vcf');
 
     my $args = [
@@ -311,10 +314,10 @@ sub gatk_HaplotypeCaller {
     push @$args, ['-stand_call_conf',    $stand_call_conf,    0] if ($stand_call_conf);
 
     return {
-        cmd => "ln -sf $input_fasta $input_fasta.fa && " . # mdb added 9/20/16 -- GATK expects the filename to end in .fa or .fasta
+        cmd => "ln -sf $input_fasta $input_fasta.fa && " . # GATK expects the filename to end in .fa or .fasta
                "ln -sf $input_fasta.fai $input_fasta.fa.fai && " .
                "ln -sf $input_fasta.dict $input_fasta.fa.dict && " .
-                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller -nct $CPU $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
+                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller -nct $NUM_CPUS $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
         args => $args,
         inputs => [
             $input_bam,
