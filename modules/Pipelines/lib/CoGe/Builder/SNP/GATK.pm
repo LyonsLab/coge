@@ -291,6 +291,8 @@ sub gatk_HaplotypeCaller {
     my $filter_reads_with_N_cigar     = $params->{'--filter_reads_with_N_cigar'}     ? '--filter_reads_with_N_cigar'     : '';
     my $fix_misencoded_quality_scores = $params->{'--fix_misencoded_quality_scores'} ? '--fix_misencoded_quality_scores' : '';
 
+    my $CPU = $self->NUM_CPUS;
+
     my $GATK = $self->conf->{GATK};
     unless ($GATK) {
         CoGe::Exception::Generic->throw(message => 'Missing GATK in config file');
@@ -312,7 +314,7 @@ sub gatk_HaplotypeCaller {
         cmd => "ln -sf $input_fasta $input_fasta.fa && " . # mdb added 9/20/16 -- GATK expects the filename to end in .fa or .fasta
                "ln -sf $input_fasta.fai $input_fasta.fa.fai && " .
                "ln -sf $input_fasta.dict $input_fasta.fa.dict && " .
-                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
+                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller -nct $CPU $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
         args => $args,
         inputs => [
             $input_bam,
