@@ -195,7 +195,7 @@ sub add_items_to_notebook {
                 child_id    => $item->id,
                 child_type  => $item->item_type # numeric type ID
             });
-            return "Error adding $item_type $item_id to notebook" unless $conn;
+            return 'Error adding ' . $item->type . ' ' . $item->id . ' to notebook' unless $conn;
         }
     }
 
