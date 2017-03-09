@@ -60,7 +60,7 @@ sub build {
 
     # Add read groups -- except for BWA with -R option which sets read group values
     unless ($self->params->{alignment_params}->{tool} eq 'bwa' && $self->params->{alignment_params}->{'-R'}) {
-        $self->add(
+        $self->add_to_previous(
             $self->add_readgroups($self->previous_output)
         );
     }
@@ -73,6 +73,7 @@ sub build {
         )
     );
 
+    # Realign if selected
     if ($self->params->{snp_params}->{realign}) {
         # Find intervals to analyze for realignment
         $self->add_to_previous(
@@ -92,7 +93,7 @@ sub build {
         );
     }
 
-    # Index realigned bam
+    # Index reordered/realigned bam
     $self->add_to_previous(
         $self->index_bam($bam_file)
     );
@@ -131,12 +132,8 @@ sub fasta_dict {
     return {
         cmd => qq[ln -sf $fasta $renamed_fasta && java -jar $PICARD CreateSequenceDictionary REFERENCE=$renamed_fasta OUTPUT=$fasta_dict],
         args => [],
-        inputs => [
-            $fasta
-        ],
-        outputs => [
-            catfile($cache_dir, $fasta_dict)
-        ],
+        inputs => [ $fasta ],
+        outputs => [ catfile($cache_dir, $fasta_dict) ],
         description => "Generate FASTA dictionary"
     };
 }
@@ -213,7 +210,7 @@ sub gatk_RealignerTargetCreator {
     my $renamed_fasta = qq[$fasta_name.fa];
 
     my $args = [
-        ['-U', 'ALLOW_N_CIGAR_READS', 0], # fixed "ERROR MESSAGE: Unsupported CIGAR operator N in read"
+        #['-U', 'ALLOW_N_CIGAR_READS', 0], # fixes "ERROR MESSAGE: Unsupported CIGAR operator N in read" for test file test_rna_seq_data_0.17M_reads.fastq.gz
         ['-R', $renamed_fasta,        0],
         ['-I', $input_bam,            0],
         ['-o', $output_file,          1]
@@ -228,7 +225,6 @@ sub gatk_RealignerTargetCreator {
         args =>  $args,
         inputs => [
             $input_bam,
-            "$input_bam.reorder.done", # from create_reorder_sam_job
             $input_fasta,
             $fasta_index,
         ],
@@ -276,7 +272,6 @@ sub gatk_Realign {
         args =>  $args,
         inputs => [
             $input_bam,
-            "$input_bam.reorder.done", # from create_reorder_sam_job
             $input_fasta,
             $fasta_index,
             $input_intervals
