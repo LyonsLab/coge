@@ -435,11 +435,19 @@ sub _create_bisque_image {
             my $bisque_id = substr($result->[2], 7);
             chomp $bisque_id;
             my $ua = LWP::UserAgent->new();
-            my $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id . '/auth?notify=false', ['Content-Type' => 'application/xml']);
-            $req->authorization_basic('coge', $conf->{BISQUE_PASS});
-            $req->content('<auth user="' . $user->name . '" permission="edit" />');
+            my $req = HTTP::Request->new(GET => 'https://bisque.cyverse.org/data_service/user?resource_name=' . $user->name . '&wpublic=1');
             my $res = $ua->request($req);
+            my $content = $res->{_content};
+            my $index = index($content, 'resource_uniq="') + 15;
+            if ($index != -1) {
+                my $user_uniq = substr($content, $index, index($content, '"', $index) - $index);
+                warn $user_uniq;
+                $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id . '/auth?notify=false', ['Content-Type' => 'application/xml']);
+                $req->authorization_basic('coge', $conf->{BISQUE_PASS});
+                $req->content('<auth user="' . $user_uniq . '" permission="edit" />');
+                $res = $ua->request($req);
             warn Dumper $res;
+            }
             return $bisque_id, $upload->filename;
         }
     }

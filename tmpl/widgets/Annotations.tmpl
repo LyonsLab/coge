@@ -1,3 +1,25 @@
+<style>
+#annotation_table {
+	border-spacing:0;
+	max-width:800px;
+	overflow:hidden;
+	word-wrap:break-word;
+}
+img.bisque_thumb {
+	border:1px solid lightgray;
+	float:left;
+	margin-right:5px;
+	max-height:40px;
+	max-width:40px;
+	padding:1px;
+}
+img.thumb {
+	border:1px solid lightgray;
+	float:left;
+	margin-right:5px;
+	padding:1px;
+}
+</style>
 <script language="JavaScript">
 // use: var annotations=new Annotations(div_id, parent_type, parent_id, user_can_edit, default_type); on page load
 
@@ -188,7 +210,7 @@ class Annotations {
 	show_table() {
 		var div = $('#' + this.div_id);
 		div.empty();
-		var table = $('<table id="annotation_table" class="border-top border-bottom small" style="max-width:800px;overflow:hidden;word-wrap:break-word;border-spacing:0;"></table>');
+		var table = $('<table id="annotation_table" class="border-top border-bottom small"></table>');
 		var thead = $('<thead style="display:none"></thead>').appendTo(table);
 		var tbody = $('<tbody></tbody>').appendTo(table);
 		var user_can_edit = this.user_can_edit;
@@ -222,10 +244,11 @@ class Annotations {
 							var td = $('<td class="data4"></td>').appendTo(tr);
 							if (annotation.image_id) {
 								var image_link = 'image.pl?id=' + annotation.image_id;
-								$('<a href=' + image_link + ' target="_blank" title="click for full-size image"><img height="40" width="40" src="' + image_link + '" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray margin-right:5px;"></a>').appendTo(td);
+								$('<a href=' + image_link + ' target="_blank" title="click for full-size image"><img height="40" width="40" src="' + image_link + '" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="thumb"></a>').appendTo(td);
 							} else if (annotation.bisque_id)
-								$('<a href="bisque_viewer.pl?id=' + annotation.bisque_id + '" target="_blank" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray;max-height:40px;max-width:40px;margin-right:5px;"></a>').appendTo(td);
-//								$('<a href="https://bisque.cyverse.org/client_service/view?resource=https://bisque.cyverse.org/data_service/' + annotation.bisque_id + '" target="_blank" title="click to view in BisQue"><img src="https://bisque.cyverse.org/image_service/' + annotation.bisque_id + '?thumbnail=200,200" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" style="float:left;padding:1px;border:1px solid lightgray;max-height:40px;max-width:40px;margin-right:5px;"></a>').appendTo(td);
+								$('<a href="bisque_viewer.pl?id=' + annotation.bisque_id + '" target="_blank" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
+//								$('<a href="https://bisque.cyverse.org/client_service/view?resource=https://bisque.cyverse.org/data_service/' + annotation.bisque_id + '" target="_blank" title="click to view in BisQue"><img src="https://bisque.cyverse.org/image_service/' + annotation.bisque_id + '?thumbnail=200,200" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
+//								$('<a href="#" onclick="coge.utils.dialog(\'BisQue Image Viewer\', \'<div id=biv></div>\');$.ajax({url:\'https://bisque.cyverse.org/client_service/embedded?resource=https://bisque.cyverse.org/data_service/' + annotation.bisque_id + '\',success:function(html){$(\'biv\').html(html)}});" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
 							td.append(document.createTextNode(annotation.annotation));
 							td = $('<td style="padding-left:5px;"></td>').appendTo(tr);
 							if (annotation.link)
