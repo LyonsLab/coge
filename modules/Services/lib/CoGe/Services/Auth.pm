@@ -140,7 +140,7 @@ sub validate_agave {
     # Note: Mojolicious requires IO::Socket::SSL 1.75, do "cpan upgrade IO::Socket::SSL"
     my $ua = Mojo::UserAgent->new;
 
-    # CAS Proxy - mdb added 7/20/15 for DE -------------------------------------
+    # CAS Proxy - mdb added 7/20/15 for DE # replaced by JWT method
 #    if ($token_type eq 'cas') {
 #        # Get URL for CAS
 #        my $CAS_URL = get_defaults()->{CAS_URL};
@@ -174,7 +174,7 @@ sub validate_agave {
 
     # Validate token and get user credentials.  We lookup the 'me' profile 
     # for the given token to verify that it belongs to given username.
-    # See "Finding yourself" at http://preview.agaveapi.co/documentation/beginners-guides/user-discovery/
+    # See http://developer.agaveapi.co/?shell#client-credentials
     my $url = $USER_API_URL . '/me';
     my $res = $ua->get($url, { Authorization => "Bearer $token" })->res;
     unless ($res and $res->{message} eq 'OK') {
