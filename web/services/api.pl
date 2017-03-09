@@ -56,25 +56,15 @@ app->hook( # mdb added 1/9/17
 
         if ($template =~ /^exception/) {
             my $ex = $args->{exception};
-            warn 'Exception: ', ref($ex);
-
-#            if ($ex->isa('Mojo::Exception')) {
-#                $args->{json} = {
-#                    error => {
-#                        message => $ex->message || 'Unknown'
-#                    }
-#                };
-#            }
-#            else {
-                my $trace = ($ex->message && $ex->message->stack_trace ? $ex->message->stack_trace->as_string : '');
-                warn $trace if $trace;
-                $args->{json} = {
-                    error => {
-                        message => $ex->message || 'Unknown',
-                        trace   => $trace
-                    }
-                };
-#            }
+#            warn 'Exception: ', ref($ex);
+            my $trace = ($ex->message && $ex->message->can('stack_trace') ? $ex->message->stack_trace->as_string : '');
+            warn $trace if $trace;
+            $args->{json} = {
+                error => {
+                    message => $ex->message || 'Unknown',
+                    trace   => $trace
+                }
+            };
         }
     }
 );
