@@ -29,7 +29,7 @@ use warnings;
 use POSIX qw( ceil );
 use Data::GUID;
 use Data::Dumper;
-use File::Basename qw(fileparse);
+use File::Basename qw(fileparse basename);
 use File::Find;
 
 BEGIN {
@@ -46,6 +46,7 @@ BEGIN {
         is_fastq_file add_fastq_ext detect_paired_end to_number
         to_filename_without_extension is_gzipped is_bzipped2
         to_filename_base to_compressed_ext remove_fastq_ext
+        fastq_description
     );
 }
 
@@ -274,6 +275,15 @@ sub to_compressed_ext {
     return '.gz' if ($filename =~ /\.gz$/);
     return '.bz2' if ($filename =~ /\.bz2$/);
     return '';
+}
+
+sub fastq_description {
+    my ($fastq, $read_type) = @_;
+    return (
+        @$fastq > 2 ?
+            join(' ', scalar(@$fastq), ($read_type eq 'paired' ? 'paired-end' : 'single-ended'), 'files') :
+            join(', ', map { basename($_) } @$fastq)
+    );
 }
 
 # Separate files based on last occurrence of _R1 or _R2 in filename

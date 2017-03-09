@@ -130,7 +130,7 @@ sub bbduk {
             $fasta
         ],
         outputs     => \@outputs,
-        description => 'Trimming (BBDuk) '.join(', ', map { basename($_) } @$fastq)
+        description => 'Trimming (BBDuk) '. fastq_description($fastq, $read_type)
     };
 }
 

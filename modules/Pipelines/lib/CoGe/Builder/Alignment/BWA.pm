@@ -87,9 +87,8 @@ sub bwa_alignment {
 
     my $gid = $self->request->genome->id;
     
-    #my $read_params = $self->params->{read_params} // {};
-    #my $encoding    = $read_params->{encoding} // 33;
-    #my $read_type   = $read_params->{read_type} // 'single';
+    my $read_params = $self->params->{read_params} // {};
+    my $read_type   = $read_params->{read_type} // 'single';
 
     my $alignment_params = $self->params->{alignment_params} // {};
     my $M = $alignment_params->{'-M'} // 0;
@@ -101,8 +100,6 @@ sub bwa_alignment {
     my $output_file = to_filename_without_extension($first_fastq) . '.bam';
 
     my $index_path = catfile(get_genome_cache_path($gid), 'bwa_index', 'genome.reheader');
-
-    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
 
     my $samtools = get_command_path('SAMTOOLS');
 
@@ -136,7 +133,7 @@ sub bwa_alignment {
         outputs => [
             catfile($self->staging_dir, $output_file)
         ],
-        description => "Aligning $desc using BWA-MEM"
+        description => 'Aligning (BWA-MEM) ' . fastq_description($fastq, $read_type)
 	};
 }
 

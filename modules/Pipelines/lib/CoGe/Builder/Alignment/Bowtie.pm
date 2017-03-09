@@ -94,8 +94,6 @@ sub bowtie2_alignment {
     my $output_file = to_filename_without_extension($first_fastq) . '.bam';
     $cmd .= " | $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU > $output_file"; # convert SAM to BAM and sort on the fly for speed
 
-    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
-
     return {
         cmd => $cmd,
         args => [],
@@ -103,7 +101,7 @@ sub bowtie2_alignment {
         outputs => [
             catfile($self->staging_dir, $output_file)
         ],
-        description => "Aligning $desc with Bowtie2"
+        description => 'Aligning (Bowtie2) ' . fastq_description($fastq, $read_type)
     };
 }
 

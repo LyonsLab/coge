@@ -112,7 +112,7 @@ sub tophat_alignment {
         outputs => [
             catfile($self->staging_dir, $output_file)
         ],
-        description => "Aligning sequences with TopHat"
+        description => 'Aligning (TopHat) ' . fastq_description($fastq, $read_type)
     };
 }
 

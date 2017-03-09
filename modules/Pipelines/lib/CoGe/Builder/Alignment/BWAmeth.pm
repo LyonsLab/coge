@@ -82,6 +82,9 @@ sub bwameth_alignment {
     my $gid         = $self->request->genome->id;
     my $index_path  = catdir(get_genome_cache_path($gid), "bwameth_index");
 
+    my $read_params = $self->params->{read_params} // {};
+    my $read_type   = $read_params->{read_type} // 'single';
+
     my $cmd = $self->conf->{BWAMETH} || 'bwameth';
     $cmd = 'nice ' . $cmd; # run at lower priority
 
@@ -100,7 +103,7 @@ sub bwameth_alignment {
         outputs     => [
             catfile($self->staging_dir, 'alignment.bam')
         ],
-        description => "Aligning sequences with bwameth"
+        description => 'Aligning (bwameth) ' . fastq_description($fastq, $read_type)
     };
 }
 

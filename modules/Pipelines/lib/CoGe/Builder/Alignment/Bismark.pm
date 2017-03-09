@@ -129,7 +129,7 @@ sub bismark_alignment {
         outputs     => [
             $output_bam
         ],
-        description => "Aligning sequences with Bismark"
+        description => 'Aligning (Bismark) ' . fastq_description($fastq, $read_type)
     };
 }
 
