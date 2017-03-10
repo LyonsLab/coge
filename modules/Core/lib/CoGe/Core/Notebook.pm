@@ -100,7 +100,7 @@ sub create_notebook {
     my $type_id = $opts{type_id}; # type id (or use type)
     my $page    = $opts{page};
     return unless ($name and ($type or $type_id) and $db and $user);
-    my $items = $opts{item_list}; # optional
+    my $item_list = $opts{item_list}; # optional
     return if ( $user->is_public );
     
     # Convert type string to id #FIXME move this into function in DBIX module ...?
@@ -137,7 +137,8 @@ sub create_notebook {
     return unless $conn;
 
     # Add selected items to new notebook
-    add_items_to_notebook( user => $user, db => $db, notebook => $notebook, item_list => $items) if ($items);
+    my $rc = add_items_to_notebook( user => $user, db => $db, notebook => $notebook, item_list => $item_list) if ($item_list);
+    return if $rc;
 
     # Record in log
     if ($page) {
@@ -172,7 +173,8 @@ sub add_items_to_notebook {
         $items = [] unless $items;
         foreach (@$item_list) {
             my ( $item_id, $item_type ) = @$_;
-            return 'Item id or type not specified' unless ($item_id and $item_type);
+            next unless ($item_id and $item_type);
+            next if ($item_type eq 'notebook'); # adding notebooks to a notebook is not allowed
 
             my $item;
             if ($item_type eq 'experiment') {
