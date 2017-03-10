@@ -225,7 +225,11 @@ sub update {
     if (exists($data->{metadata}->{id})) {
 	    delete $data->{metadata}->{id};
     }
+    my $restricted = $experiment->restricted;
 	$experiment->update($data->{metadata});
+    if ($restricted != $experiment->restricted) {
+        $experiment->annotations;
+    }
 	$self->render(json => { success => Mojo::JSON->true });
 }
 
@@ -240,6 +244,7 @@ sub update_annotation {
         group_name => $self->param('group_name'),
         image => $self->param('image'),
         link => $self->param('link'),
+        target_id => $self->stash('id'),
         target_type => 'experiment',
         text => $self->param('annotation'),
         type_name => $self->param('type_name'),

@@ -24,7 +24,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotation create_annotations delete_annotation export_annotations get_annotation get_annotations get_type_groups search_annotation_types tags_to_string to_annotations update_annotation );
+    @EXPORT = qw( create_annotation create_annotations delete_annotation export_annotations get_annotation get_annotations get_type_groups search_annotation_types set_bisque_visiblity tags_to_string to_annotations update_annotation );
 }
 
 sub create_annotation {
@@ -90,8 +90,6 @@ sub create_annotation {
         });
     }
     warn 'create_annotation: unknown target type';
-
-    return;
 }
 
 sub create_annotations {
@@ -184,7 +182,6 @@ sub delete_annotation {
         my $req = HTTP::Request->new(DELETE => 'https://bisque.cyverse.org/data_service/' . $annotation->bisque_id);
         $req->authorization_basic('coge', $conf->{BISQUE_PASS});
         my $res = $ua->request($req);
-        warn Dumper $res;
     }
     $annotation->delete();
     return undef;
@@ -411,6 +408,32 @@ sub tags_to_string {
     return $tags_str;
 }
 
+sub _share_bisque_image {
+    my ($bisque_id, $user, $conf) = @_;
+    my $ua = LWP::UserAgent->new();
+    # my $req = HTTP::Request->new(GET => 'https://bisque.cyverse.org/data_service/user?resource_name=' . $user->name . '&wpublic=1');
+    # my $res = $ua->request($req);
+    # my $content = $res->{_content};
+    # my $index = index($content, 'resource_uniq="') + 15;
+    # if ($index != -1) {
+        my $coge_user_uniq = '00-h8Xeaz4KAexEt7L8kgEzwe'; #substr($content, $index, index($content, '"', $index) - $index);
+        my $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id . '/auth?notify=false', ['Content-Type' => 'application/xml']);
+        $req->authorization_basic('coge', $conf->{BISQUE_PASS});
+        $req->content('<auth user="' . $coge_user_uniq . '" permission="edit" />');
+        my $res = $ua->request($req);
+    # }
+}
+
+sub set_bisque_visiblity {
+    my ($bisque_id, $public, $conf) = @_;
+    my $ua = LWP::UserAgent->new();
+    my $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id, ['Content-Type' => 'application/xml']);
+    $req->authorization_basic('coge', $conf->{BISQUE_PASS});
+    $req->content('<image permission="' . ($public ? 'published' : 'private') . '" />');
+    my $res = $ua->request($req);
+    warn Dumper $res;
+}
+
 sub _create_bisque_image {
     my ($target_type, $target_id, $upload, $user, $conf) = @_;
 
@@ -434,20 +457,7 @@ sub _create_bisque_image {
         if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
             my $bisque_id = substr($result->[2], 7);
             chomp $bisque_id;
-            my $ua = LWP::UserAgent->new();
-            my $req = HTTP::Request->new(GET => 'https://bisque.cyverse.org/data_service/user?resource_name=' . $user->name . '&wpublic=1');
-            my $res = $ua->request($req);
-            my $content = $res->{_content};
-            my $index = index($content, 'resource_uniq="') + 15;
-            if ($index != -1) {
-                my $user_uniq = substr($content, $index, index($content, '"', $index) - $index);
-                warn $user_uniq;
-                $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id . '/auth?notify=false', ['Content-Type' => 'application/xml']);
-                $req->authorization_basic('coge', $conf->{BISQUE_PASS});
-                $req->content('<auth user="' . $user_uniq . '" permission="edit" />');
-                $res = $ua->request($req);
-            warn Dumper $res;
-            }
+            _share_bisque_image($bisque_id, $user, $conf);
             return $bisque_id, $upload->filename;
         }
     }

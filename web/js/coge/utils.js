@@ -199,38 +199,41 @@ var coge = window.coge = (function(ns) {
 
         dialog: function(title, contents, options) {
             options = options || {};
-            var div = $('<div></div>').appendTo(document.body);
+            var div = $(options.full_size ? '<div style="padding:0;"></div>' : '<div></div>').appendTo(document.body);
             if (title)
                 div.prop('title', title);
             if (contents)
                 $(contents).appendTo(div);
+            if (options.cancel) {
+                options.buttons = options.buttons || {};
+                options.buttons.Cancel = function() { div.dialog('close'); }
+            }
+            if (options.ok) {
+                options.buttons = options.buttons || {};
+                options.buttons.Ok = function() { options.ok(div); }
+            }
+            options.close = function(){ this.remove(); div.remove(); }
+            if (options.full_size)
+                options.open = function(){ div.dialog('option', 'width', document.documentElement.clientWidth - 5); div.dialog('option', 'height', document.documentElement.clientHeight); }
             options.modal = true;
             div.dialog(options);
         },
 
         alert: function(msg, title) {
-            this.dialog(title, '<p>' + msg + '</p>', {
-                buttons: {
-                    Ok: function() { this.remove(); }
-                }
-            });
+            this.dialog(title, '<p>' + msg + '</p>', { ok: function(div) { div.dialog('close'); } });
         },
 
         confirm: function(msg, title, on_ok) {
             this.dialog(title, '<p>' + msg + '</p>', {
-                buttons: {
-                    Ok: function() { this.remove(); on_ok(); },
-                    Cancel: function() { this.remove(); }
-                }
+                ok: function(div) { div.dialog('close'); on_ok(); },
+                cancel: true
             });
         },
 
         prompt: function(msg, title, value, on_ok) {
             this.dialog(title, '<p>' + msg + ' <input value=' + JSON.stringify(value) + ' /></p>', {
-                buttons: {
-                    Ok: function() { var val=this.find('input').val(); this.remove(); on_ok(val); },
-                    Cancel: function() { this.remove(); }
-                }
+                ok: function(div) { var val=this.find('input').val(); div.dialog('close'); on_ok(val); },
+                cancel: true
             });
         }
     };

@@ -294,6 +294,7 @@ sub update_annotation {
         group_name => $self->param('group_name'),
         image => $self->param('image'),
         link => $self->param('link'),
+        target_id => $self->stash('id'),
         target_type => 'genome',
         text => $self->param('annotation'),
         type_name => $self->param('type_name'),

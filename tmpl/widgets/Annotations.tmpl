@@ -86,23 +86,6 @@ class Annotations {
 	}
 
 	on_error(img) {
-		// var id = img.src.substring(img.src.lastIndexOf('/') + 1, img.src.lastIndexOf('?'));
-		// $.ajax({
-		// 	url: 'https://bisque.cyverse.org/data_service/' + id
-		// }).done(function(text){
-		// 	var start = text.indexOf('action="');
-		// 	if (start != -1) {
-		// 		start += 8;
-		// 		var action = text.substring(start, text.indexOf('"', start));
-		// 		$.ajax({
-		// 			url: action,
-		// 			method: 'post',
-		// 			data: { username: 'coge', password: ''}
-		// 		}).done(function(text){
-		// 			console.log(text);
-		// 		});
-		// 	}
-		// });
 		this.images.push(img);
 	}
 
@@ -207,6 +190,10 @@ class Annotations {
 		});
 	}
 
+	show_image(id) {
+		coge.utils.dialog('BisQue Image Viewer', '<iframe src="https://bisque.cyverse.org/client_service/embedded?resource=https://bisque.cyverse.org/data_service/' + id + '" style="width:99.8%;height:99%;"></iframe>', {full_size:true});
+	}
+
 	show_table() {
 		var div = $('#' + this.div_id);
 		div.empty();
@@ -246,15 +233,13 @@ class Annotations {
 								var image_link = 'image.pl?id=' + annotation.image_id;
 								$('<a href=' + image_link + ' target="_blank" title="click for full-size image"><img height="40" width="40" src="' + image_link + '" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="thumb"></a>').appendTo(td);
 							} else if (annotation.bisque_id)
-								$('<a href="bisque_viewer.pl?id=' + annotation.bisque_id + '" target="_blank" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
-//								$('<a href="https://bisque.cyverse.org/client_service/view?resource=https://bisque.cyverse.org/data_service/' + annotation.bisque_id + '" target="_blank" title="click to view in BisQue"><img src="https://bisque.cyverse.org/image_service/' + annotation.bisque_id + '?thumbnail=200,200" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
-//								$('<a href="#" onclick="coge.utils.dialog(\'BisQue Image Viewer\', \'<div id=biv></div>\');$.ajax({url:\'https://bisque.cyverse.org/client_service/embedded?resource=https://bisque.cyverse.org/data_service/' + annotation.bisque_id + '\',success:function(html){$(\'biv\').html(html)}});" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
+								$('<a href="#" onclick="annotations.show_image(\'' + annotation.bisque_id + '\')" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
 							td.append(document.createTextNode(annotation.annotation));
 							td = $('<td style="padding-left:5px;"></td>').appendTo(tr);
 							if (annotation.link)
 								td.append($('<span class="link" onclick="window.open(\'' + annotation.link + '\')">Link</span>'));
 							if (user_can_edit && !annotation.locked)
-								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="$(this).fadeOut(); annotations.delete(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
+								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="annotations.delete(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
 							else
 								$('<th></th>').appendTo(tr);
 						});
