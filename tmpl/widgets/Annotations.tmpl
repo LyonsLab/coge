@@ -45,7 +45,7 @@ class Annotations {
 		coge.utils.confirm('Delete this annotation?', null, function() {
 			var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations/' + aid;
 			$.ajax({
-				type: 'DELETE',
+				method: 'DELETE',
 				url: url
 			}).done(function() {
 				annotations.show_table();
@@ -59,8 +59,8 @@ class Annotations {
 		var url = this.base_url + 'annotations/type_groups';
 		$.ajax({
 				url: url,
-				dataType: "json",
-				contentType: "application/json"
+				dataType: 'json',
+				contentType: 'application/json'
 			}).done(function(items){
 				$("#annotation_type_group").autocomplete("option", "source", items);
 				$("#annotation_type_group").autocomplete("search");

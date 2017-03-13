@@ -27,6 +27,7 @@ $PAGE_TITLE = 'NotebookView';
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
 $FORM = new CGI;
+$EMBED = $FORM->param('embed') || 0;
 ( $DB, $USER, $P, $LINK ) = CoGe::Accessory::Web->init(
     cgi => $FORM,
     page_title => $PAGE_TITLE
@@ -82,7 +83,6 @@ CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 sub gen_html {
     my $template;
 
-    $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
     }

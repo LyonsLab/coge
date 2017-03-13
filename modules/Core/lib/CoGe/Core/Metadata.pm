@@ -3,20 +3,19 @@ package CoGe::Core::Metadata;
 use v5.14;
 use strict;
 use warnings;
+
 use Data::Dumper;
-use File::Basename;
-use File::Spec::Functions qw(catfile);
-use HTTP::Headers;
+use File::Basename qw(basename);
 use LWP::UserAgent;
 use Mojo::JSON;
 use Switch;
 use Text::Unidecode qw(unidecode);
 
-use CoGeX;
-use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_imkdir irods_iput irods_irm);
+use CoGe::Accessory::BisQue qw(create_bisque_image delete_bisque_image get_bisque_data_url set_bisque_visiblity);
+use CoGe::Accessory::TDS;
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_upload_path);
-use CoGe::Accessory::TDS;
+use CoGeX;
 
 BEGIN {
     our (@ISA, $VERSION, @EXPORT);
@@ -24,7 +23,7 @@ BEGIN {
 
     $VERSION = 0.0.1;
     @ISA = qw(Exporter);
-    @EXPORT = qw( create_annotation create_annotations delete_annotation export_annotations get_annotation get_annotations get_type_groups search_annotation_types set_bisque_visiblity tags_to_string to_annotations update_annotation );
+    @EXPORT = qw( create_annotation create_annotations delete_annotation export_annotations get_annotation get_annotations get_type_groups search_annotation_types tags_to_string to_annotations update_annotation );
 }
 
 sub create_annotation {
@@ -168,21 +167,16 @@ sub create_annotations {
 }
 
 sub delete_annotation {
-    my ($aid, $object_id, $object_type, $db, $user, $conf) = @_;
+    my ($aid, $object_id, $object_type, $db, $user) = @_;
     return 'delete_annotation: missing parameter' unless $aid && $object_id && $object_type && $db;
 
     my ($error, $object) = _get_object(undef, $object_id, $object_type, 1, $db, $user);
     return $error if $error;
 
     my $annotation = $db->resultset($object_type . 'Annotation')->find( { lc($object_type) . '_annotation_id' => $aid } );
-    if ($annotation->bisque_file) {
-        my $path = catfile(_get_bisque_dir($object_type, $object_id, $user), $annotation->bisque_file);
-        irods_irm($path);
-        my $ua = LWP::UserAgent->new();
-        my $req = HTTP::Request->new(DELETE => 'https://bisque.cyverse.org/data_service/' . $annotation->bisque_id);
-        $req->authorization_basic('coge', $conf->{BISQUE_PASS});
-        my $res = $ua->request($req);
-    }
+    $object_type = lc($object_type);
+    $object_type = 'notebook' if $object_type eq 'list';
+    delete_bisque_image($object_type, $object_id, $annotation->bisque_file, $annotation->bisque_id, $user) if $annotation->bisque_file;
     $annotation->delete();
     return undef;
 }
@@ -230,8 +224,8 @@ sub export_annotations {
 
                 say $fh "log: error: $@" if ($@);
             }
-            my $bisque_id = defined($a->bisque_id) ? 'http://bisque.iplantcollaborative.org/data_service/' . $a->bisque_id : '';
-            say $fh qq{$group,$info,$url,$filename,$bisque_id};
+            my $bisque_link = defined($a->bisque_id) ? get_bisque_data_url($a->bisque_id) : '';
+            say $fh qq{$group,$info,$url,$filename,$bisque_link};
         }
         close($fh);
     }
@@ -408,62 +402,6 @@ sub tags_to_string {
     return $tags_str;
 }
 
-sub _share_bisque_image {
-    my ($bisque_id, $user, $conf) = @_;
-    my $ua = LWP::UserAgent->new();
-    # my $req = HTTP::Request->new(GET => 'https://bisque.cyverse.org/data_service/user?resource_name=' . $user->name . '&wpublic=1');
-    # my $res = $ua->request($req);
-    # my $content = $res->{_content};
-    # my $index = index($content, 'resource_uniq="') + 15;
-    # if ($index != -1) {
-        my $coge_user_uniq = '00-h8Xeaz4KAexEt7L8kgEzwe'; #substr($content, $index, index($content, '"', $index) - $index);
-        my $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id . '/auth?notify=false', ['Content-Type' => 'application/xml']);
-        $req->authorization_basic('coge', $conf->{BISQUE_PASS});
-        $req->content('<auth user="' . $coge_user_uniq . '" permission="edit" />');
-        my $res = $ua->request($req);
-    # }
-}
-
-sub set_bisque_visiblity {
-    my ($bisque_id, $public, $conf) = @_;
-    my $ua = LWP::UserAgent->new();
-    my $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id, ['Content-Type' => 'application/xml']);
-    $req->authorization_basic('coge', $conf->{BISQUE_PASS});
-    $req->content('<image permission="' . ($public ? 'published' : 'private') . '" />');
-    my $res = $ua->request($req);
-    warn Dumper $res;
-}
-
-sub _create_bisque_image {
-    my ($target_type, $target_id, $upload, $user, $conf) = @_;
-
-    my $dest = _get_bisque_dir($target_type, $target_id, $user);
-    irods_imkdir($dest);
-    $dest = catfile($dest, basename($upload->filename));
-    my $source;
-    if ($upload->asset->is_file) {
-         $source = $upload->asset->path;
-    }
-    else {
-        $source = get_upload_path('coge', get_unique_id());
-        system('mkdir', '-p', $source);
-        $source = catfile($source, $upload->filename);
-        $upload->asset->move_to($source);
-    }
-    irods_iput($source, $dest);
-    for my $i (0..9) {
-        sleep 5;
-        my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
-        if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
-            my $bisque_id = substr($result->[2], 7);
-            chomp $bisque_id;
-            _share_bisque_image($bisque_id, $user, $conf);
-            return $bisque_id, $upload->filename;
-        }
-    }
-    warn 'unable to get bisque id';
-}
-
 sub _create_image {
     my %opts = @_;
     my $fh = $opts{fh};
@@ -489,11 +427,6 @@ sub _create_image {
         image    => $contents
     });
     return unless $image;
-}
-
-sub _get_bisque_dir {
-    my ($target_type, $target_id, $user) = @_;
-    return catfile(dirname(irods_get_base_path('coge')), 'bisque_data', $target_type, $target_id);
 }
 
 sub _get_object {
@@ -536,8 +469,7 @@ sub _init {
     if ($filename) {
         my $upload = $opts->{image};
         if ($upload) {
-            my $ref = ref($object);
-            ($bisque_id, $bisque_file) = _create_bisque_image(substr($ref, rindex($ref, ':') + 1), $object->id, $upload, $opts->{user}, $opts->{conf});
+            ($bisque_id, $bisque_file) = create_bisque_image($object, $upload, $opts->{user});
             return 'error creating image' unless $bisque_id;
         }
         else {

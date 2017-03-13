@@ -10,6 +10,7 @@ Accessory/lib/CoGe/Accessory/Entrez.pm
 Accessory/lib/CoGe/Accessory/Web.pm
 Accessory/lib/CoGe/Accessory/IRODS.pm
 Accessory/lib/CoGe/Accessory/Annotation.pm
+Accessory/lib/CoGe/Accessory/BisQue.pm
 Accessory/lib/CoGe/Accessory/parse_report/HSP.pm
 Accessory/lib/CoGe/Accessory/blast_report.pm
 Accessory/lib/CoGe/Accessory/bl2seq_report.pm
@@ -19,7 +20,6 @@ Accessory/lib/CoGe/Accessory/dialign_report/anchors.pm
 Accessory/lib/CoGe/Accessory/chaos_report.pm
 Accessory/lib/CoGe/Accessory/GenomeThreader_report.pm
 Accessory/lib/CoGe/Accessory/Notebook.pm
-Accessory/lib/CoGe/Accessory/Metadata.pm
 Accessory/lib/CoGe/Accessory/SynMap.pm
 Accessory/lib/CoGe/Accessory/blastz_report.pm
 Accessory/lib/CoGe/Accessory/blastz_report/seq.pm

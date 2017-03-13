@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use base 'DBIx::Class::Core';
 use CoGe::Accessory::Annotation;
+use CoGe::Accessory::BisQue qw(set_bisque_visiblity);
 
 =head1 NAME
 
@@ -62,7 +63,7 @@ __PACKAGE__->add_columns(
 #        size          => 11
 #    },
     "restricted",
-    { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
+    { accessor => '_restricted', data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
     "locked",
     { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
     "deleted",
@@ -139,6 +140,17 @@ __PACKAGE__->has_many(
     { "foreign.child_id" => "self.list_id" },
     { where => [ -and => [ child_type  => $node_types->{list} ] ] }
 );
+
+sub restricted {
+    my ($self, $value) = @_;
+    if (defined $value) {
+        $self->_restricted($value);
+        foreach ($self->annotations) {
+            set_bisque_visiblity($_->bisque_id, !$value) if $_->bisque_file;
+        }
+    }
+    return $self->_restricted();
+}
 
 sub item_type {
     return $node_types->{list};   

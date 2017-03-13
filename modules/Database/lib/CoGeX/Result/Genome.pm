@@ -96,7 +96,7 @@ __PACKAGE__->add_columns(
     "genomic_sequence_type_id",
     { data_type => "INT", default_value => 0, is_nullable => 0, size => 11 },
     "restricted",
-    { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
+    { accessor => '_restricted', data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
     "message",
     {
         data_type     => "text",
@@ -182,6 +182,17 @@ __PACKAGE__->has_many(
 );
 
 __PACKAGE__->mk_accessors('_chromosomes');
+
+sub restricted {
+    my ($self, $value) = @_;
+    if (defined $value) {
+        $self->_restricted($value);
+        foreach ($self->annotations) {
+            set_bisque_visiblity($_->bisque_id, !$value) if $_->bisque_file;
+        }
+    }
+    return $self->_restricted();
+}
 
 sub item_type {
     return $node_types->{genome};   

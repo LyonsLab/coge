@@ -13,9 +13,9 @@ lib/CoGe/Accessory/TDS.pm
 lib/CoGe/Accessory/Entrez.pm
 lib/CoGe/Accessory/Web.pm
 lib/CoGe/Accessory/Notebook.pm
-lib/CoGe/Accessory/Metadata.pm
 lib/CoGe/Accessory/IRODS.pm
 lib/CoGe/Accessory/Annotation.pm
+lib/CoGe/Accessory/BisQue.pm
 lib/Coge/Accessory/parse_report/HSP.pm
 lib/Coge/Accessory/blast_report.pm
 lib/Coge/Accessory/bl2seq_report.pm

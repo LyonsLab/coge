@@ -745,7 +745,7 @@ sub modify_item {
     } 
     elsif ($mod eq "restrict") {
     	$log_message = ( $item->restricted ? 'unrestricted' : 'restricted' );
-    	$item->restricted( !$item->restricted );    # do undelete if already deleted
+    	$item->restricted( !$item->restricted );
     }
     $item->update;
 
