@@ -27,7 +27,7 @@ sub create_bisque_image {
     my ($object, $upload, $user) = @_;
 
     my $target_type = lc(ref($object));
-    warn $target_type;
+    $target_type = substr($target_type, rindex($target_type, ':') + 1);
     $target_type = 'notebook' if $target_type eq 'list';
     my $dest = _get_bisque_dir($target_type, $object->id, $user);
     irods_imkdir($dest);
