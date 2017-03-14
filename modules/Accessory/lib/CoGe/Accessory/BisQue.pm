@@ -91,7 +91,6 @@ sub set_bisque_visiblity {
     $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
     $req->content($content);
     $res = $ua->request($req);
-    warn Dumper $res;
 }
 
 sub _share_bisque_image {

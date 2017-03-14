@@ -50,41 +50,29 @@ sub create_annotation {
 
     my $locked = $opts{locked} ? 1 : 0;
     my $text   = $opts{text};
+    my $args = {
+        annotation_type_id => $type_id,
+        annotation => $text,
+        link => $link,
+        image_id => $image_id,
+        locked => $locked
+    };
+    if ($bisque_file) {
+        $args->{bisque_file} = $bisque_file;
+        $args->{bisque_id} = $bisque_id;
+        $args->{bisque_user} = $opts{user}->id;
+    }
     if (ref($target) =~ /Experiment/) {
-        return $db->resultset('ExperimentAnnotation')->find_or_create({
-            experiment_id => $target->id,
-            annotation_type_id => $type_id,
-            annotation => $text,
-            link => $link,
-            image_id => $image_id,
-            bisque_id => $bisque_id,
-            bisque_file => $bisque_file,
-            locked => $locked
-        });
+        $args->{experiment_id} = $target->id;
+        return $db->resultset('ExperimentAnnotation')->find_or_create($args);
     }
     if (ref($target) =~ /Genome/) {
-        return $db->resultset('GenomeAnnotation')->find_or_create({
-            genome_id => $target->id,
-            annotation_type_id => $type_id,
-            annotation => $text,
-            link => $link,
-            image_id => $image_id,
-            bisque_id => $bisque_id,
-            bisque_file => $bisque_file,
-            locked => $locked
-        });
+        $args->{genome_id} = $target->id;
+        return $db->resultset('GenomeAnnotation')->find_or_create($args);
     }
     if (ref($target) =~ /List/) {
-        return $db->resultset('ListAnnotation')->find_or_create({
-            list_id => $target->id,
-            annotation_type_id => $type_id,
-            annotation => $text,
-            link => $link,
-            image_id => $image_id,
-            bisque_id => $bisque_id,
-            bisque_file => $bisque_file,
-            locked => $locked
-        });
+        $args->{list_id} = $target->id;
+        return $db->resultset('ListAnnotation')->find_or_create($args);
     }
     warn 'create_annotation: unknown target type';
 }
@@ -350,8 +338,11 @@ sub update_annotation {
     $annotation->link($link);
     $annotation->annotation_type_id($type_id);
     $annotation->image_id($image_id) if ($image_id);
-    $annotation->bisque_id($bisque_id) if ($bisque_id);
-    $annotation->bisque_file($bisque_file) if ($bisque_file);
+    if ($bisque_file) {
+        $annotation->bisque_file($bisque_file);
+        $annotation->bisque_id($bisque_id);
+        $annotation->bisque_user($opts{user}->id);
+    }
     $annotation->update;
 
     return;

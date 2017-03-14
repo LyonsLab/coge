@@ -58,6 +58,8 @@ __PACKAGE__->add_columns(
 	{ data_type => "TEXT", default_value => undef, is_nullable => 1 },
   "bisque_file",
 	{ data_type => "TEXT", default_value => undef, is_nullable => 1 },
+   "bisque_user",
+  { data_type => "INT", default_value => undef, is_nullable => 1, size => 11 },
   "locked",
   { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
 );
