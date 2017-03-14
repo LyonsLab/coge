@@ -13,8 +13,6 @@ use Text::Unidecode qw(unidecode);
 
 use CoGe::Accessory::BisQue qw(create_bisque_image delete_bisque_image get_bisque_data_url set_bisque_visiblity);
 use CoGe::Accessory::TDS;
-use CoGe::Accessory::Utils qw(get_unique_id);
-use CoGe::Core::Storage qw(get_upload_path);
 use CoGeX;
 
 BEGIN {

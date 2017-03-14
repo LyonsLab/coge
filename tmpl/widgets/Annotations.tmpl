@@ -233,7 +233,10 @@ class Annotations {
 								var image_link = 'image.pl?id=' + annotation.image_id;
 								$('<a href=' + image_link + ' target="_blank" title="click for full-size image"><img height="40" width="40" src="' + image_link + '" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="thumb"></a>').appendTo(td);
 							} else if (annotation.bisque_id)
-								$('<a href="#" onclick="annotations.show_image(\'' + annotation.bisque_id + '\')" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
+								if (even)
+									$('<a href="https://bisque.cyverse.org/client_service/view?resource=https://bisque.cyverse.org/data_service/' + annotation.bisque_id + '" title="click to view in BisQue" target="_blank"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
+								else
+									$('<a href="#" onclick="annotations.show_image(\'' + annotation.bisque_id + '\')" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
 							td.append(document.createTextNode(annotation.annotation));
 							td = $('<td style="padding-left:5px;"></td>').appendTo(tr);
 							if (annotation.link)

@@ -10,7 +10,9 @@ use File::Spec::Functions qw(catfile);
 use HTTP::Request;
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_imkdir irods_iput irods_irm);
+use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Accessory::Web qw(get_defaults);
+use CoGe::Core::Storage qw(get_upload_path);
 
 BEGIN {
     our (@ISA, $VERSION, @EXPORT);
@@ -78,11 +80,18 @@ sub _get_bisque_dir {
 sub set_bisque_visiblity {
     my ($bisque_id, $public) = @_;
     my $ua = LWP::UserAgent->new();
-    my $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id, ['Content-Type' => 'application/xml']);
+    my $req = HTTP::Request->new(GET => 'https://bisque.cyverse.org/data_service/' . $bisque_id);
     $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
-    $req->content('<image permission="' . ($public ? 'published' : 'private') . '" />');
     my $res = $ua->request($req);
-    warn Dumper $res->{_content};
+    my $content = $res->{_content};
+    my $start = index($content, 'permission="') + 12;
+    my $end = index($content, '"', $start);
+    $content = substr($content, 0, $start) . ($public ? 'published' : 'private') . substr($content, $end);
+    $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id, ['Content-Type' => 'application/xml']);
+    $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
+    $req->content($content);
+    $res = $ua->request($req);
+    warn Dumper $res;
 }
 
 sub _share_bisque_image {
