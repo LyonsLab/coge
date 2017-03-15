@@ -374,7 +374,7 @@ class Contents {
 	build() {
 		this.div.empty();
 		let table = $('<table id="contents" class="dataTable compact hover stripe border-top border-bottom" style="font-size:14px;margin:0;"></table>').appendTo(this.div);
-		let tr = $('<tr><th>Type</th><th>Name</th><th>Date</th></tr>').appendTo($('<thead></thead>').appendTo(table));
+		let tr = $('<tr><th>Type</th><th>Name</th><th style="min-width:10em">Date</th></tr>').appendTo($('<thead></thead>').appendTo(table));
 		if (this.user_can_edit)
 			$('<th>Remove</th>').appendTo(tr);
 		let tbody = $('<tbody></tbody>').appendTo(table);

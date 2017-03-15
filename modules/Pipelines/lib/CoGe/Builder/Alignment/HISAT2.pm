@@ -119,8 +119,6 @@ sub hisat2_alignment {
     my $output_file = to_filename_without_extension($first_fastq) . '.bam';
     push @$args, ["| $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU >", $output_file, 1]; # convert SAM to BAM and sort on the fly for speed
 
-    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
-
 	return {
         cmd => 'nice ' . get_command_path('HISAT2'),
         args => $args,
@@ -129,7 +127,7 @@ sub hisat2_alignment {
             @{$self->index}
         ],
         outputs => [ catfile($self->staging_dir, $output_file) ],
-        description => "Aligning $desc with HISAT2"
+        description => 'Aligning (HISAT2) ' . fastq_description($fastq, $read_type)
 	};
 }
 

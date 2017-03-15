@@ -99,7 +99,7 @@ sub trimgalore {
         args => $args,
         inputs => [ @$fastq ],
         outputs => \@outputs,
-        description => 'Trimming (trimgalore) ' . join(', ', map { basename($_) } @$fastq)
+        description => 'Trimming (Trim Galore) ' . fastq_description($fastq, $read_type)
     };
 }
 

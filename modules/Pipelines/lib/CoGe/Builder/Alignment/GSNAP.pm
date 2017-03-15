@@ -124,8 +124,6 @@ sub gsnap_alignment {
     my $output_file = basename($first_fastq) . '.bam';
     push @$args, ["| $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU >", $output_file, 1]; # convert SAM to BAM and sort on the fly for speed
 
-    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
-
     return {
         cmd => $cmd,
 # mdb removed 2/2/15 -- fails on zero-length validation input
@@ -140,7 +138,7 @@ sub gsnap_alignment {
         outputs => [
             catfile($self->staging_dir, $output_file)
         ],
-        description => "Aligning $desc with GSNAP"
+        description => 'Aligning (GSNAP) ' . fastq_description($fastq, $read_type)
     };
 }
 

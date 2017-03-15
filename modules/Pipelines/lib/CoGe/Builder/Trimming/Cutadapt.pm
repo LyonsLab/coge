@@ -78,7 +78,7 @@ sub cutadapt {
         args => $args,
         inputs => [ @$fastq ],
         outputs => \@outputs,
-        description => 'Trimming (cutadapt) ' . join(', ', map { basename($_) } @$fastq)
+        description => 'Trimming (Cutadapt) ' . fastq_description($fastq, $read_type)
     };
 }
 

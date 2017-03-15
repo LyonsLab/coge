@@ -22,6 +22,9 @@ use CoGe::Builder::SNP::Samtools;
 use CoGe::Builder::SNP::CoGeSNPs;
 use CoGe::Exception::Generic;
 
+# Settings
+has NUM_CPUS => (is => 'ro', isa => 'Int', default => 16); # number of CPUs to use for SNP analysis tasks
+
 # Outputs
 has vcf => (is => 'rw', isa => 'Str'); # VCF file
 

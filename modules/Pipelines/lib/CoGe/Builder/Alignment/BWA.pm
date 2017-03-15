@@ -87,9 +87,8 @@ sub bwa_alignment {
 
     my $gid = $self->request->genome->id;
     
-    #my $read_params = $self->params->{read_params} // {};
-    #my $encoding    = $read_params->{encoding} // 33;
-    #my $read_type   = $read_params->{read_type} // 'single';
+    my $read_params = $self->params->{read_params} // {};
+    my $read_type   = $read_params->{read_type} // 'single';
 
     my $alignment_params = $self->params->{alignment_params} // {};
     my $M = $alignment_params->{'-M'} // 0;
@@ -102,8 +101,6 @@ sub bwa_alignment {
 
     my $index_path = catfile(get_genome_cache_path($gid), 'bwa_index', 'genome.reheader');
 
-    my $desc = (@$fastq > 2 ? @$fastq . ' files' : join(', ', map { to_filename_base($_) } @$fastq));
-
     my $samtools = get_command_path('SAMTOOLS');
 
     my @args;
@@ -112,11 +109,18 @@ sub bwa_alignment {
         $R =~ s/\t/\\t/g; # escape tabs
         push @args, ['-R', shell_quote($R), 0];
     }
+
+    # Build input file list -- decompress bz2 files on-the-fly since bwa only supports decompressed/gzipped files (https://sourceforge.net/p/bio-bwa/mailman/bio-bwa-help/thread/512E3D0C.1030807@bcgsc.ca/)
+    my $input_str = join(' ',
+        map { (is_bzipped2($_) ? qq['<bunzip2 -c $_'] : $_) }
+        sort @$fastq
+    );
+
     push @args, (
-        ['-t', $CPU,                    0],
-        ['',   $index_path,             0],
-        ['',   join(' ', sort @$fastq), 0],
-        ["| $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU >", $output_file, 1] # convert SAM to BAM and sort on the fly for speed
+        ['-t', $CPU,        0],
+        ['',   $index_path, 0],
+        ['',   $input_str,  0],
+        ["| $samtools view -uSh -\@ $CPU | $samtools sort -\@ $CPU >", $output_file, 1] # convert SAM to BAM and sort on-the-fly for speed
     );
 
 	return {
@@ -129,7 +133,7 @@ sub bwa_alignment {
         outputs => [
             catfile($self->staging_dir, $output_file)
         ],
-        description => "Aligning $desc using BWA-MEM"
+        description => 'Aligning (BWA-MEM) ' . fastq_description($fastq, $read_type)
 	};
 }
 

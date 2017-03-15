@@ -587,7 +587,7 @@ sub add_result {
         ],
         inputs  => [],
         outputs => [
-#            $result_file,  # force this to run (for case of multiple results)
+#            $result_file,  # mdb removed: force this task to be execute (for case of multiple results)
         ],
         description => "Adding workflow result"
     };
@@ -622,14 +622,10 @@ sub add_items_to_notebook {
 sub create_notebook {
     my ($self, %params) = @_;
     my $metadata = $params{metadata};
-    my $annotations = $params{annotations}; # array ref
 
     my $result_file = get_workflow_results_file($self->user->name, $self->workflow->id);
 
     my $log_file = catfile($self->staging_dir, 'create_notebook', 'log.txt');
-
-    my $annotations_str = '';
-    $annotations_str = join(';', @$annotations) if (defined $annotations && @$annotations);
 
     return {
         cmd => catfile($self->conf->{SCRIPTDIR}, 'create_notebook.pl'),
@@ -640,7 +636,6 @@ sub create_notebook {
             ['-desc', shell_quote($metadata->{description}), 0],
             ['-type', 2, 0],
             ['-restricted', $metadata->{restricted}, 0],
-            ['-annotations', qq{"$annotations_str"}, 0],
             ['-config', $self->conf->{_CONFIG_PATH}, 0],
             ['-log', $log_file, 0]
         ],
@@ -663,19 +658,9 @@ sub picard_deduplicate {
 
     return {
         cmd => "$cmd MarkDuplicates REMOVE_DUPLICATES=true INPUT=$bam_file METRICS_FILE=$bam_file.metrics OUTPUT=$output_file.tmp && mv $output_file.tmp $output_file",
-        args => [
-#            ['MarkDuplicates', '', 0],
-#            ['REMOVE_DUPLICATES=true', '', 0],
-#            ["INPUT=$bam_file", '', 0],
-#            ["METRICS_FILE=$bam_file.metrics", '', 0],
-#            ["OUTPUT=$output_file", '', 0],
-        ],
-        inputs => [
-            $bam_file
-        ],
-        outputs => [
-            $output_file
-        ],
+        args => [],
+        inputs => [ $bam_file ],
+        outputs => [ $output_file ],
         description => "Deduplicating BAM file"
     };
 }

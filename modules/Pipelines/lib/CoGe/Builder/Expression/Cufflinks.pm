@@ -144,7 +144,7 @@ sub cufflinks {
         outputs => [
             catfile($self->staging_dir, "genes.fpkm_tracking")
         ],
-        description => "Measuring FPKM using cufflinks"
+        description => "Measuring FPKM using Cufflinks"
     };
 }
 

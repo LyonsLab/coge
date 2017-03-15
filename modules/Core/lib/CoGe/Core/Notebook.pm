@@ -100,7 +100,7 @@ sub create_notebook {
     my $type_id = $opts{type_id}; # type id (or use type)
     my $page    = $opts{page};
     return unless ($name and ($type or $type_id) and $db and $user);
-    my $items = $opts{item_list}; # optional
+    my $item_list = $opts{item_list}; # optional
     return if ( $user->is_public );
     
     # Convert type string to id #FIXME move this into function in DBIX module ...?
@@ -137,7 +137,8 @@ sub create_notebook {
     return unless $conn;
 
     # Add selected items to new notebook
-    add_items_to_notebook( user => $user, db => $db, notebook => $notebook, item_list => $items) if ($items);
+    my $rc = add_items_to_notebook( user => $user, db => $db, notebook => $notebook, item_list => $item_list) if ($item_list);
+    return if $rc;
 
     # Record in log
     if ($page) {
@@ -160,46 +161,43 @@ sub add_items_to_notebook {
     my $db        = $opts{db}; #FIXME use add_to_* functions to create new connectors and remove this param
     my $user      = $opts{user};      # user object
     my $notebook  = $opts{notebook};  # notebook object
-    my $item_list = $opts{item_list}; # ref to array refs of item_id, item_type
-    my $items     = $opts{items};     # ref to array of genomes and/or experiments
-    return "Missing arguments: $db and notebook and $user" unless ($db and $notebook and $user);
+    my $item_list = $opts{item_list}; # ref to array of [item_id, item_type(string)]
+    my $items     = $opts{items};     # ref to array of genome/experiment DBIX objects
+    return "Missing arguments: db, notebook, user" unless ($db and $notebook and $user);
 
     # Check permissions
-    return 'Access denied' unless $user->admin || $user->is_owner_editor(list => $notebook);
+    return 'Access denied' unless ( $user->admin || $user->is_owner_editor(list => $notebook) );
 
-    # Create connections for each item
+    # Convert item list to item array
     if ($item_list) {
+        $items = [] unless $items;
         foreach (@$item_list) {
             my ( $item_id, $item_type ) = @$_;
-            return 'Item id or type not specified' unless ($item_id and $item_type);
-            $item_type = $ITEM_TYPE{$item_type} if ($item_type eq 'genome' or $item_type eq 'experiment');
-            return 'Item type not genome or experiment' unless ($item_type eq $ITEM_TYPE{genome} or $item_type eq $ITEM_TYPE{experiment});
-    
-            #TODO check access permission on each item
+            next unless ($item_id and $item_type);
+            next if ($item_type eq 'notebook'); # adding notebooks to a notebook is not allowed
+
+            my $item;
             if ($item_type eq 'experiment') {
-                my $experiment = $db->resultset('Experiment')->find($item_id);
-                return 'Experiment id ' . $item_id . ' not found' unless $experiment;
+                $item = $db->resultset('Experiment')->find($item_id);
             }
             elsif ($item_type eq 'genome') {
-                my $genome = $db->resultset('Genome')->find($item_id);
-                return 'Genome id ' . $item_id . ' not found' unless $genome;
+                $item = $db->resultset('Genome')->find($item_id);
             }
-    
-            my $conn = $db->resultset('ListConnector')->find_or_create({
-                parent_id   => $notebook->id,
-                child_id    => $item_id,
-                child_type  => $item_type
-            });
-            return 'Error adding items to notebook' unless $conn;
+            return 'Invalid item: id=' . $item_id . ' type=' . $item_type unless $item;
+
+            push @$items, $item;
         }
     }
+
     if ($items) {
         foreach my $item (@$items) {
+            #TODO add permission check for each item
             my $conn = $db->resultset('ListConnector')->find_or_create({
                 parent_id   => $notebook->id,
                 child_id    => $item->id,
-                child_type  => $item->item_type
+                child_type  => $item->item_type # numeric type ID
             });
+            return 'Error adding ' . $item->type . ' ' . $item->id . ' to notebook' unless $conn;
         }
     }
 

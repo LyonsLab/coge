@@ -90,7 +90,7 @@ sub trimmomatic {
         args => $args,
         inputs => [ @$fastq ],
         outputs => \@outputs,
-        description => 'Trimming (trimmomatic) ' . join(', ', map { basename($_) } @$fastq)
+        description => 'Trimming (Trimmomatic) ' . fastq_description($fastq, $read_type)
     };
 }
 
