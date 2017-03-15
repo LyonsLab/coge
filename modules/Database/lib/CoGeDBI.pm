@@ -461,9 +461,11 @@ sub get_feature_counts {
 
 sub get_features {
     my $dbh = shift;         # database connection handle
-    my $genome_id = shift;   # genome id 
+    my $genome_id = shift;   # genome id (either this or dataset_id required)
     my $dataset_id = shift;  # dataset id
     return unless ($dbh and ($genome_id or $dataset_id));
+    my $type_id = shift;     # optional feature type
+    my $returnArray = shift; # optional flag to return result as raw array ref
     
     # Execute query
     my $query = qq{
@@ -474,15 +476,24 @@ sub get_features {
         JOIN feature_type AS ft ON (ft.feature_type_id=f.feature_type_id)
     };
     if ($genome_id) {
-        $query .= " WHERE (dc.genome_id=$genome_id)";
+        $query .= " WHERE dc.genome_id=$genome_id";
     }
     else {
-        $query .= " WHERE (dc.dataset_id=$dataset_id)";
+        $query .= " WHERE dc.dataset_id=$dataset_id";
+    }
+    if ($type_id) {
+        $query .= " AND f.feature_type_id=$type_id";
     }
 
     my $sth = $dbh->prepare($query);
     $sth->execute();
-    my $results = $sth->fetchall_hashref(['chromosome', 'id']);
+    my $results;
+    if ($returnArray) {
+        $results = $sth->fetchall_arrayref({});
+    }
+    else {
+        $results = $sth->fetchall_hashref([ 'chromosome', 'id' ]);
+    }
     #print STDERR Dumper $results, "\n";
     
     return $results;

@@ -102,7 +102,15 @@ $r->get("/genomes/:id/sequence" => [id => qr/\d+/])
     
 $r->get("/genomes/:id/sequence/#chr" => { id => qr/\d+/ }) # can this be merged with above using regex?
     ->name("genomes-sequence-chr")
-    ->to("genome#sequence", namespace => 'CoGe::Services::API', id => undef, chr => undef);   
+    ->to("genome#sequence", namespace => 'CoGe::Services::API', id => undef, chr => undef);
+
+$r->get("/genomes/:id/features" => [id => qr/\d+/])
+    ->name("genomes-features")
+    ->to("genome#features", namespace => 'CoGe::Services::API', id => undef);
+
+$r->get("/genomes/:id/features/:type" => [id => qr/\d+/]) # can this be merged with above using regex?
+    ->name("genomes-features")
+    ->to("genome#features", namespace => 'CoGe::Services::API', id => undef);
     
 $r->put("/genomes/:id/export" => { id => qr/\d+/ })
     ->name("genomes-export")

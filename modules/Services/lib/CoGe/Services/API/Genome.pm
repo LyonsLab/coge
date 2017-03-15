@@ -10,7 +10,7 @@ use CoGe::Core::Genome qw(genomecmp search_genomes);
 use CoGe::Core::Storage qw(get_genome_seq);
 use CoGe::Core::Favorites;
 use CoGe::Accessory::Utils qw(sanitize_name);
-use CoGeDBI qw(get_feature_counts);
+use CoGeDBI qw(get_feature_counts get_features);
 
 sub search {
     my $self = shift;
@@ -165,7 +165,7 @@ sub sequence {
     my $start  = $self->param('start');  # optional
     my $stop   = $self->param('stop') || $self->param('end'); # optional
     my $strand = $self->param('strand'); # optional
-    print STDERR "Data::Genome::fetch_sequence gid=$gid ",
+    print STDERR "API::Genome::sequence gid=$gid ",
         (defined $chr ? "chr=$chr " : ''),
         (defined $start ? "start=$start " : ''),
         (defined $stop ? "stop=$stop " : ''), "\n";
@@ -176,7 +176,7 @@ sub sequence {
     # Retrieve genome
     my $genome = $db->resultset('Genome')->find($gid);
     unless ($genome) {
-        print STDERR "Data::Sequence::get genome $gid not found in db\n";
+        print STDERR "API::Genome::squence genome $gid not found in db\n";
         return;
     }
 
@@ -184,7 +184,7 @@ sub sequence {
     if ( $genome->restricted
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
-        print STDERR "Data::Sequence::get access denied to genome $gid\n";
+        print STDERR "API::Genome::squence access denied to genome $gid\n";
         return;
     }
 
@@ -211,6 +211,62 @@ sub sequence {
         strand => $strand,
         format => $format
     ));
+}
+
+sub features {
+    my $self = shift;
+    my $gid    = $self->stash('id');
+    return unless $gid;
+    my $type    = $self->stash('type'); # optional
+    print STDERR "API::Genome::features gid=$gid ", (defined $type ? "type=$type " : '');
+
+    # Connect to the database
+    my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+
+    # Retrieve genome
+    my $genome = $db->resultset('Genome')->find($gid);
+    unless (defined $genome) {
+        $self->render(status => 404, json => {
+            error => { message => "Resource not found" }
+        });
+        return;
+    }
+
+    # Check permissions
+    unless ( !$genome->restricted || (defined $user && $user->has_access_to_genome($genome)) ) {
+        $self->render(json => {
+            error => { message => "Access denied" }
+        }, status => 401);
+        return;
+    }
+
+    my $type_id;
+    if ($type) {
+        my $feature_type = $db->resultset('FeatureType')->find({ name => $type });
+        unless ($feature_type) {
+            return $self->render(status => 400, json => {
+                error => { message => "Feature type not present" }
+            });
+        }
+        $type_id = $feature_type->id;
+    }
+
+    my $features = get_features($db->storage->dbh, $gid, undef, $type_id, 1);
+    my @features = map {
+        {   id         => int($_->{id}),
+            type       => $_->{type_name},
+            chromosome => $_->{chromosome},
+            start      => int($_->{start}),
+            stop       => int($_->{stop}),
+            strand     => int($_->{strand})
+        }
+    } @$features;
+
+    # Generate response
+    $self->render(json => {
+        id => int($genome->id),
+        features => \@features
+    });
 }
 
 sub export {
