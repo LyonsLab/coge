@@ -476,7 +476,7 @@ class NotebookContents { // based on ContentPanel, perhaps we should just use th
 			height:    self.height,
 			options: { // dataTable options
                 language: {
-                    emptyTable: 'This notebook is empty.  Click the "+" button to add genomes, experiments, or features.'
+                    emptyTable: '<i>This notebook is empty.  Click the "+" button to add genomes, experiments, or features.</i>'
                 }
 			},
 			columns: [
