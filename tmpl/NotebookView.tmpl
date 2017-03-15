@@ -47,7 +47,7 @@
 		<span id="send_button" onClick="sendTo.toggle();" class="coge-icon glyphicon glyphicon-arrow-right item-button" style="margin-right:5px;" title="Send Notebook Contents to ..."></span>
 		<input id="search_input" type="search" placeholder="Filter" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" />
 	</div>
-	<div id="list_contents" class="noselect" style="overflow:auto;border-top:1px solid lightgray;border-bottom:none !important;"></div>
+	<div id="list_contents" class="noselect invisible" style="overflow:auto;border-top:1px solid lightgray;border-bottom:none !important;"></div>
 </div>
 <ul id="send_menu" class="coge-dropdown-menu hidden">
 	<li data-type="genome" data-action="send_to_genomelist">GenomeList</li>
@@ -141,6 +141,8 @@ $(function() {
 				contents.grid.search( $(this).val() );
 				contents.renderTitle();
 			});
+
+			contents.show();
 		});
 });
 </SCRIPT>

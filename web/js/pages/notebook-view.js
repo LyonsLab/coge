@@ -547,8 +547,15 @@ class NotebookContents { // based on ContentPanel, perhaps we should just use th
             $('#'+this.elementId).removeClass('coge-disabled');
 	}
 
+	show(visible) {
+	    if (typeof visible === "undefined" || visible)
+	        $('#'+this.elementId).removeClass("invisible").show();
+        else
+            $('#'+this.elementId).hide();
+	}
+
 	set(data) {
-		this.grid.update(data);
+		this.grid.update(data).redraw();
 		this.renderButtons();
 		this.renderTitle();
 	}
