@@ -5,7 +5,8 @@ function show_dialog(id, title, html, width, height) {
 	if (width) {
 		d.dialog('option', 'width', width);
 		d.dialog('option', 'minWidth', width);
-	} else
+	}
+	else
 		width = d.dialog('option', 'width');
 	if (height) { d.dialog('option', 'height', height); }
 	else { height = d.dialog('option', 'height') };
@@ -15,7 +16,7 @@ function show_dialog(id, title, html, width, height) {
 	d.dialog('open');
 }
 
-function edit_list_info () {
+function edit_list_info() {
 	$.ajax({
 		data: {
 			fname: 'edit_list_info',
@@ -28,7 +29,7 @@ function edit_list_info () {
 	});
 }
 
-function update_list_info (){
+function update_list_info() {
 	var name = $('#edit_name').val();
 	if (!name) {
 		alert('Please specify a name.');
@@ -65,7 +66,7 @@ function get_list_info() {
 	});
 }
 
-function make_list_public () {
+function make_list_public() {
 	$.ajax({
 		data: {
 			fname: 'make_list_public',
@@ -77,7 +78,7 @@ function make_list_public () {
 	});
 }
 
-function make_list_private () {
+function make_list_private() {
 	$.ajax({
 		data: {
 			fname: 'make_list_private',
@@ -89,7 +90,7 @@ function make_list_private () {
 	});
 }
 
-function add_list_items (opts) {
+function add_list_items(opts) {
 	$.ajax({
 		data: {
 			fname: 'add_list_items',
@@ -102,7 +103,7 @@ function add_list_items (opts) {
 	});
 }
 
-function add_selected_items (select_id){
+function add_selected_items(select_id){
 	var num_items = $('#' + select_id).find('option:selected').length;
 	$('#' + select_id).find('option:selected').each(
 		function() {
@@ -128,33 +129,46 @@ function add_selected_items (select_id){
 	$("#list_contents_edit_box").dialog('close');
 }
 
-function remove_list_item (obj, opts) {
-	var item_id = opts.item_id;
-	var item_type = opts.item_type;
-
-	$(obj).closest('tr').children().animate({opacity:0});
-
-	$.ajax({
-		data: {
-			fname: 'remove_list_item',
-			lid: NOTEBOOK_ID,
-			item_id: item_id,
-			item_type: item_type,
-		},
-		success : function(val) {
-			get_list_contents();
-		},
-	});
+function remove_list_items() {
+	var selected_rows = contents.grid.getSelectedRows();
+	var item_list = contents.grid.getSelectedItemList();
+	if (item_list) {
+	    contents.busy();
+        $.ajax({
+            data: {
+                fname: 'remove_list_items',
+                lid: NOTEBOOK_ID,
+                item_list: item_list
+            },
+            success : function(val) {
+                get_list_contents().done( function() { contents.busy(false) } );
+            },
+        });
+	}
 }
 
 function get_list_contents() {
-	$.ajax({
-		data: {
-			fname: 'get_list_contents',
-			lid: NOTEBOOK_ID,
-		},
-		success : set_contents
-	});
+	return coge.services.fetch_notebook(NOTEBOOK_ID)
+		.done(function(response) { // success
+		    if (response && response.items) {
+		        // Update contents table
+		        contents.set(response.items);
+
+		        // Filter unsupported types in SendTo menu
+		        if (sendTo) {
+		            // Create a list of unique types of items
+		            var types = response.items
+                        .map(function(item) { return item.type})
+                        .filter(function(value, index, self) {
+                            return self.indexOf(value) === index;
+                        });
+		            sendTo.filter(types);
+		        }
+            }
+        })
+		.fail(function() { // error
+			//TODO
+		});
 }
 
 function get_annotations() {
@@ -169,7 +183,7 @@ function get_annotations() {
 	});
 }
 
-function remove_annotation (laid) {
+function remove_annotation(laid) {
 	$.ajax({
 		data: {
 			fname: 'remove_annotation',
@@ -199,9 +213,7 @@ function wait_to_search (search_func, search_term) {  //TODO use version in util
 	}
 }
 
-// FIXME: the search functions below are all the same, consolidate?
-
-function search_mystuff () { //TODO migrate to web services
+function search_mystuff() { //TODO migrate to web services
 	var search_term = $('#edit_mystuff_search').attr('value');
 
 	$("#wait_mystuff").animate({opacity:1});
@@ -225,7 +237,7 @@ function search_mystuff () { //TODO migrate to web services
 	});
 }
 
-function search_genomes () { //TODO migrate to web services
+function search_genomes() { //TODO migrate to web services
 	var search_term = $('#edit_genome_search').val();
 
 	$("#wait_genome").animate({opacity:1});
@@ -249,7 +261,7 @@ function search_genomes () { //TODO migrate to web services
 	});
 }
 
-function search_experiments (search_term) { //TODO migrate to web services
+function search_experiments(search_term) { //TODO migrate to web services
 	var search_term = $('#edit_experiment_search').val();
 
 	$("#wait_experiment").animate({opacity:1});
@@ -273,7 +285,7 @@ function search_experiments (search_term) { //TODO migrate to web services
 	});
 }
 
-function search_features () { //TODO migrate to web services
+function search_features() { //TODO migrate to web services
 	var search_term = $('#edit_feature_search').attr('value');
 
 	$("#wait_feature").animate({opacity:1});
@@ -297,7 +309,7 @@ function search_features () { //TODO migrate to web services
 	});
 }
 
-function search_users (search_term) {
+function search_users(search_term) {
     $.ajax({
         data: {
             jquery_ajax: 1,
@@ -315,7 +327,7 @@ function search_users (search_term) {
     });
 }
 
-function search_lists () { //TODO migrate to web services
+function search_lists() { //TODO migrate to web services
 	var search_term = $('#edit_list_search').attr('value');
 
 	$("#wait_list").animate({opacity:1});
@@ -339,7 +351,7 @@ function search_lists () { //TODO migrate to web services
 	});
 }
 
-function delete_list () {
+function delete_list() {
 	$.ajax({
 		data: {
 			fname: 'delete_list',
@@ -348,26 +360,6 @@ function delete_list () {
 		success : function(val) {
 			location.reload();
 		},
-	});
-}
-
-function send_list_to() {
-	var action = $('#checked_action').val();
-
-	$.ajax({
-		data: {
-			fname: action,
-			lid: NOTEBOOK_ID
-		},
-		success : function(val) {
-			var items = JSON.parse(val);
-			if (items.alert) {
-				alert(items.alert);
-			}
-			if (items.url) {
-				window.open(items.url, '_blank');
-			}
-		}
 	});
 }
 
@@ -383,96 +375,181 @@ function toggle_favorite(img) {
 	});
 }
 
-class Contents {
-	constructor() {
-		this.div = $('#list_contents');
-	}
-	add_row(row, name, page, id_name, node_type, tbody) {
-		let tr = $('<tr><td>' + name + '</td></tr>').appendTo(tbody);
-		tr.append($('<td><span class="link" onclick="window.open(\'' + page + '.pl?' + id_name + '=' + row[0] + '\')">' + row[1] + '</span></td>'));
-		let td = $('<td></td>').appendTo(tr);
-		if (row.length > 2 && row[2])
-			td.text(row[2]);
-		if (this.user_can_edit)
-			tr.append($('<td style="padding-left:20px;"><span onClick="remove_list_item(this, {lid: ' + NOTEBOOK_ID + ', item_type: \'' + node_type + '\', item_id: ' + row[0] + '});" class="link ui-icon ui-icon-closethick"></span></td>'));
-	}
-	build() {
-		this.div.empty();
-		let table = $('<table id="contents" class="dataTable compact hover stripe border-top border-bottom" style="font-size:14px;margin:0;"></table>').appendTo(this.div);
-		let tr = $('<tr><th>Type</th><th>Name</th><th style="min-width:10em">Date</th></tr>').appendTo($('<thead></thead>').appendTo(table));
-		if (this.user_can_edit)
-			$('<th>Remove</th>').appendTo(tr);
-		let tbody = $('<tbody></tbody>').appendTo(table);
-		this.genomes.forEach(function(row) {
-			this.add_row(row, 'Genome', 'GenomeInfo', 'gid', 2, tbody);
-		}.bind(this));
-		this.experiments.forEach(function(row) {
-			this.add_row(row, 'Experiment', 'ExperimentView', 'eid', 3, tbody);
-		}.bind(this));
-		this.features.forEach(function(row) {
-			this.add_row(row, 'Feature', 'FeatView', 'fid', 4, tbody);
-		}.bind(this));
-		let options = {
-			columnDefs: [{
-				targets: 0,
-				render: function(data, type, full, meta) {
-					if (type != 'display')
-						return data;
-//					if (meta.row == 0 || this.type != data) {
-//						this.type = data;
-						return '<span class="title5" style="font-size:inherit">' + data + '</span>'; //s (' + (data == 'Genome' ? this.genomes.length : data == 'Experiment' ? this.experiments.length : this.features.length) + ')</span>';
-//					}
-//					return '';
-				}.bind(this)
-			},{
-				targets: 1,
-				render: function(data, type, full, meta) {
-					if (type == 'sort')
-						return data.replace('\uD83D\uDD12 ', ''); // remove lock char
-					return data;
-				}
-			}],
-			pageLength: 20
-		};
-		let num_entries = this.genomes.length + this.experiments.length + this.features.length;
-		if (num_entries == 0) {
-			options.language.infoEmpty = '';
-		}
-		if (num_entries <= 20) {
-			options.paging = false;
-			options.searching = false;
-		}
-		if (this.user_can_edit)
-			options.columnDefs.push({
-				targets: 3,
-				orderable: false
-			})
-		table.DataTable(options);
-		if (this.user_can_edit)
-			this.div.append($('<div class="padded"><span class="coge-button" onClick="add_list_items();"><span class="ui-icon ui-icon-plus"></span>Add</span></div>'));
-	}
-	set(json) {
-		this.experiments = json.experiments;
-		this.features = json.features;
-		this.genomes = json.genomes;
-		this.user_can_edit = json.user_can_edit;
-		this.build();
-	}
+class SendToMenu {
+    constructor(params) {
+        if (!params.elementId) {
+	        console.error('SendToMenu: please specify target element');
+	        return;
+        }
+        this.elementId  = params.elementId;
+        this.element = $("#" + this.elementId);
+        this.width = params.width || '10em';
+
+        this.render();
+    }
+
+    render() {
+        var self = this;
+
+        var menu = this.element.menu().css({ position: 'absolute', width: self.width });
+        menu
+            .position({
+                my: "left top",
+                at: "left bottom",
+                of: "#send_button"
+            });
+        menu.on("mouseleave", function() { menu.hide(); } );
+
+        // Setup click events on menu options
+        menu.children('li')
+            .addClass("link")
+            .unbind()
+            .click(function() {
+                var action = $(this).data("action");
+                self.submit(action);
+                self.hide();
+            });
+    }
+
+    toggle() {
+        if (this.element.is(":visible"))
+            this.hide();
+        else
+            this.show();
+    }
+
+    show() {
+        this.element.show();
+    }
+
+    hide() {
+        this.element.hide();
+    }
+
+    filter(types) { // array of string types, e.g. ['genome', 'experiment']
+        var self = this;
+
+        if (!(types instanceof Array)) {
+            console.error('SendTo.filter requires an array argument');
+            return;
+        }
+
+        if (types && types.length) {
+            self.element.children('li').hide();
+            types.forEach(function(type) {
+                self.element.children('li[data-type=' + type + ']').show();
+            });
+        }
+    }
+
+    submit(fname) {
+        $.ajax({
+            dataType: 'json',
+            data: {
+                fname: fname,
+                lid: NOTEBOOK_ID
+            },
+            success : function(response) {
+                if (response && response.url)
+                    window.open(response.url);
+            }
+        });
+    }
 }
 
-var contents = new Contents();
-function set_contents(json) {
-	if (typeof json == 'string')
-		json = JSON.parse(json);
-	contents.set(json);
-}
+class NotebookContents { // based on ContentPanel, perhaps we should just use that object instead
+	constructor(params) {
+	    var self = this;
 
-function case_insensitive_sort(a, b) {
-	let _a = a.toLowerCase();
-	if (_a.startsWith('&#x1f512; '))
-		_a = _a.substr(6);
-	let _b = b.toLowerCase();
-	if (_b.startsWith('&#x1f512; '))
-		_b = _b.substr(6);
-	return _a < _b ? -1 : _a > _b ? 1 : 0;
+	    if (!params.elementId) {
+	        console.error('NotebookContents: please specify target element');
+	        return;
+        }
+        this.elementId = params.elementId;
+        this.title     = params.title || "Contents";
+        this.height    = params.height || 400;
+        this.titleElementId = params.titleElementId;
+        this.buttonPanelElementId = params.buttonPanelElementId;
+
+        this.grid = new DataGrid({
+			elementId: self.elementId,
+			height:    self.height,
+			options: { // dataTable options
+                language: {
+                    emptyTable: 'This notebook is empty.  Click the "+" button to add genomes, experiments, or features.'
+                }
+			},
+			columns: [
+	            { 	title: "Type",
+	            	targets: 0,
+	            	//orderable: false,
+	            	type: "string",
+	            	data: null, // use full data object
+	            	width: "5em",
+	            	render: function(data, type, row, meta) {
+	            		return data.type;
+	            	}
+	            },
+	            { 	title: "Name",
+	            	targets: 1,
+	            	type: "html",
+	            	data: null, // use full data object
+	            	render: function(data, type, row, meta) {
+	            		return data.info;
+	            	}
+	            },
+	            { 	title: "Date added",
+	            	targets: 2,
+	            	type: "date",
+	            	data: null, // use full data object
+					orderSequence: [ 'desc', 'asc' ],
+	            	width: "10em",
+	            	render: function(data, type, row, meta) {
+	            		return data.date;
+	            	}
+	            },
+			],
+			selectionCallback: function(selectedItems) {
+                self.renderButtons(selectedItems);
+			}
+		});
+    }
+
+	renderButtons(selectedItems) {
+	    if (this.buttonPanelElementId) {
+	        var buttonPanel = $('#'+this.buttonPanelElementId);
+
+            var deleteBtn = buttonPanel.find('#delete_button');
+            if (selectedItems && selectedItems.length > 0)
+                deleteBtn.removeClass('coge-disabled');
+            else
+                deleteBtn.addClass('coge-disabled');
+
+            var sendBtn = buttonPanel.find('#send_button');
+            if (this.grid.getNumRows() > 0)
+                sendBtn.removeClass('coge-disabled');
+            else
+                sendBtn.addClass('coge-disabled');
+        }
+	}
+
+    renderTitle() {
+        if (this.titleElementId) {
+            var title = this.title + '&nbsp;&nbsp;<span class="small info">[' + this.grid.getNumRowsDisplayed() + ']</span>';
+            $('#'+this.titleElementId).html(title);
+        }
+    }
+
+	busy(on) {
+	    if (typeof on === 'undefined' || on)
+            $('#'+this.elementId).addClass('coge-disabled');
+        else
+            $('#'+this.elementId).removeClass('coge-disabled');
+	}
+
+	set(data) {
+		this.grid.update(data);
+		this.renderButtons();
+		this.renderTitle();
+	}
 }
