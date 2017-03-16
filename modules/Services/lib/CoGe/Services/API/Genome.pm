@@ -10,7 +10,7 @@ use CoGe::Core::Genome qw(genomecmp search_genomes);
 use CoGe::Core::Storage qw(get_genome_seq);
 use CoGe::Core::Favorites;
 use CoGe::Accessory::Utils qw(sanitize_name);
-use CoGeDBI qw(get_feature_counts get_features);
+use CoGeDBI qw(get_feature_counts get_feature_count_summary get_features);
 
 sub search {
     my $self = shift;
@@ -130,7 +130,14 @@ sub fetch {
         $_->{gene_count} = int($feature_counts->{$name}{1}{count} // 0);
         $_->{CDS_count} = int($feature_counts->{$name}{3}{count} // 0);
     }
-    
+
+    # Build feature types
+    my $ftypes = get_feature_count_summary($db->storage->dbh, $genome->id);
+    foreach (@$ftypes) {
+        $_->{count}   = int($_->{count});
+        $_->{type_id} = int($_->{type_id});
+    }
+
     # Generate response
     $self->render(json => {
         id => int($genome->id),
@@ -152,6 +159,7 @@ sub fetch {
         },
         chromosome_count => int($genome->chromosome_count),
         chromosomes => $chromosomes,
+        feature_types => $ftypes,
         experiments => [ map { int($_->id) } $genome->experiments ],
         additional_metadata => \@metadata
     });
