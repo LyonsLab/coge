@@ -498,16 +498,19 @@ sub get_features {
     # Execute query
     my $query = qq{
         SELECT f.feature_id AS id, f.feature_type_id AS type_id, ft.name AS type_name,
-            f.start AS start, f.stop AS stop, f.strand AS strand, f.chromosome AS chromosome
+            f.start AS start, f.stop AS stop, f.strand AS strand, f.chromosome AS chromosome,
+            fn.name as name
         FROM dataset_connector AS dc 
         JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
         JOIN feature_type AS ft ON (ft.feature_type_id=f.feature_type_id)
+        JOIN feature_name AS fn ON (fn.feature_id=f.feature_id)
+        WHERE fn.primary_name=1
     };
     if ($genome_id) {
-        $query .= " WHERE dc.genome_id=$genome_id";
+        $query .= " AND dc.genome_id=$genome_id";
     }
     else {
-        $query .= " WHERE dc.dataset_id=$dataset_id";
+        $query .= " AND dc.dataset_id=$dataset_id";
     }
     if ($type_id) {
         $query .= " AND f.feature_type_id=$type_id";
