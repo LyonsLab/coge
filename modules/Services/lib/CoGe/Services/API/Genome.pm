@@ -266,7 +266,8 @@ sub features {
             chromosome => $_->{chromosome},
             start      => int($_->{start}),
             stop       => int($_->{stop}),
-            strand     => int($_->{strand})
+            strand     => int($_->{strand}),
+            name       => $_->{name}
         }
     } @$features;
 
