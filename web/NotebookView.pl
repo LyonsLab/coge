@@ -715,7 +715,7 @@ sub search_mystuff {
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
 
-    #print STDERR "$lid $search_term\n";
+    #print STDERR "search_mystuff: $lid $search_term\n";
     return 0 unless $lid;
 
     # Get items already in list
@@ -857,7 +857,7 @@ sub search_genomes {
             ]
         );
 
-# Combine matching genomes with matching organism genomes, preventing duplicates
+        # Combine matching genomes with matching organism genomes, preventing duplicates
         map {
             $unique{ $_->id } = $_
               if ( !$_->deleted and $USER->has_access_to_genome($_) )
@@ -979,8 +979,7 @@ sub search_features {
     my $lid         = $opts{lid};
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
-
-    #	print STDERR "$lid $search_term\n";
+    #print STDERR "search_features: $lid $search_term\n";
     return 0 unless $lid;
 
     # Get lists already in list
@@ -993,23 +992,19 @@ sub search_features {
 
     # Try to display all items if blank search term
     if ( !$search_term ) {
-
         # Get all features
         $num_results = get_table_count($DB->storage->dbh, 'feature_name');
         if ( $num_results < $MAX_SEARCH_RESULTS ) {
             @fnames = $DB->resultset("FeatureName")->all;
         }
     }
-
     # Perform search
     else {
-
         # Fulltext search copied from FeatView.pl
         push @fnames, $DB->resultset('FeatureName')->search( { name => $search_term } );
         unless (@fnames) {
             push @fnames,
-              $DB->resultset('FeatureName')
-              ->search_literal( 'MATCH(me.name) AGAINST (?)', $search_term );
+              $DB->resultset('FeatureName')->search_literal( 'MATCH(me.name) AGAINST (?)', $search_term );
         }
         $num_results = @fnames;
     }
@@ -1029,6 +1024,7 @@ sub search_features {
     my %seen;
     foreach my $f ( sort featurecmp @fnames ) {
         next if ( $seen{ $f->feature_id }++ );
+        next unless ( defined $f->feature ); # mdb added 3/16/17 for "Can't call method "info" on an undefined value" on $f->feature->info reference below
         my $disable = $exists{ $f->feature_id } ? "disabled='disabled'" : '';
         my $item_spec = $node_types->{feature} . ':' . $f->feature_id;
         $html .=
@@ -1048,7 +1044,6 @@ sub search_lists
     return if ( $USER->user_name eq 'public' );
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
-
     #	print STDERR "$search_term $timestamp\n";
 
     my @notebooks;
