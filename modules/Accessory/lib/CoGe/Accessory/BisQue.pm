@@ -29,7 +29,7 @@ sub create_bisque_image {
     my $target_type = lc(ref($object));
     $target_type = substr($target_type, rindex($target_type, ':') + 1);
     $target_type = 'notebook' if $target_type eq 'list';
-    my $dest = _get_bisque_dir($target_type, $object->id, $user);
+    my $dest = _get_dir($target_type, $object->id, $user);
     irods_imkdir($dest);
     $dest = catfile($dest, basename($upload->filename));
     my $source;
@@ -49,7 +49,7 @@ sub create_bisque_image {
         if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
             my $bisque_id = substr($result->[2], 7);
             chomp $bisque_id;
-            _share_bisque_image($bisque_id, $user);
+            _init_image($bisque_id);
             return $bisque_id, $upload->filename;
         }
     }
@@ -59,7 +59,7 @@ sub create_bisque_image {
 # object_type must be experiment, genome, or notebook
 sub delete_bisque_image {
     my ($object_type, $object_id, $bisque_file, $bisque_id, $user) = @_;
-    my $path = catfile(_get_bisque_dir($object_type, $object_id, $user), $bisque_file);
+    my $path = catfile(_get_dir($object_type, $object_id, $user), $bisque_file);
     my $res = irods_irm($path);
     my $ua = LWP::UserAgent->new();
     my $req = HTTP::Request->new(DELETE => 'https://bisque.cyverse.org/data_service/' . $bisque_id);
@@ -72,9 +72,25 @@ sub get_bisque_data_url {
     return 'https://bisque.cyverse.org/data_service/' . $id;
 }
 
-sub _get_bisque_dir {
+sub _get_dir {
     my ($target_type, $target_id, $user) = @_;
     return catfile(dirname(irods_get_base_path('coge')), 'bisque_data', $target_type, $target_id);
+}
+
+sub _init_image {
+    my $bisque_id = shift;
+    my $ua = LWP::UserAgent->new();
+    my $req = HTTP::Request->new(GET => 'https://bisque.cyverse.org/data_service/' . $bisque_id);
+    $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
+    my $res = $ua->request($req);
+    my $content = $res->{_content};
+    my $start = index($content, 'permission="') + 12;
+    my $end = index($content, '"', $start);
+    $content = substr($content, 0, $start) . 'published" hidden="true' . substr($content, $end);
+    $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id, ['Content-Type' => 'application/xml']);
+    $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
+    $req->content($content);
+    $res = $ua->request($req);
 }
 
 sub set_bisque_visiblity {
@@ -93,20 +109,20 @@ sub set_bisque_visiblity {
     $res = $ua->request($req);
 }
 
-sub _share_bisque_image {
-    my ($bisque_id, $user) = @_;
-    my $ua = LWP::UserAgent->new();
-    my $req = HTTP::Request->new(GET => 'https://bisque.cyverse.org/data_service/user?resource_name=' . $user->name . '&wpublic=1');
-    my $res = $ua->request($req);
-    my $content = $res->{_content};
-    my $index = index($content, 'resource_uniq="') + 15;
-    if ($index != -1) {
-        my $coge_user_uniq = substr($content, $index, index($content, '"', $index) - $index);
-        $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id . '/auth?notify=false', ['Content-Type' => 'application/xml']);
-        $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
-        $req->content('<auth user="' . $coge_user_uniq . '" permission="edit" />');
-        $res = $ua->request($req);
-    }
-}
+# sub _share_bisque_image {
+#     my ($bisque_id, $user) = @_;
+#     my $ua = LWP::UserAgent->new();
+#     my $req = HTTP::Request->new(GET => 'https://bisque.cyverse.org/data_service/user?resource_name=' . $user->name . '&wpublic=1');
+#     my $res = $ua->request($req);
+#     my $content = $res->{_content};
+#     my $index = index($content, 'resource_uniq="') + 15;
+#     if ($index != -1) {
+#         my $coge_user_uniq = substr($content, $index, index($content, '"', $index) - $index);
+#         $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id . '/auth?notify=false', ['Content-Type' => 'application/xml']);
+#         $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
+#         $req->content('<auth user="' . $coge_user_uniq . '" permission="edit" />');
+#         $res = $ua->request($req);
+#     }
+# }
 
 1;
