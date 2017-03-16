@@ -65,12 +65,14 @@ sub fetch {
 
     # Format items
     my @items = map {
-        { type => 'genome', id => $_->id }
+        { type => 'genome', id => $_->id, info => $_->info, date => ($_->date eq '0000-00-00 00:00:00' ? undef : $_->date) }
     } $notebook->genomes;
-
     push @items, map {
-        { type => 'experiment', id => $_->id }
+        { type => 'experiment', id => $_->id, info => $_->info, date => ($_->date eq '0000-00-00 00:00:00' ? undef : $_->date) }
     } $notebook->experiments;
+    push @items, map {
+        { type => 'feature', id => $_->id, info => $_->info }
+    } $notebook->features;
 
     # Format response
     $self->render(json => {

@@ -1,26 +1,11 @@
 <TMPL_IF NAME="MAIN">
 <script src="./js/coge/utils.js"></script>
-<link rel="stylesheet" type="text/css" href="js/vendor/datatables/media/css/jquery.dataTables.min.css"/>
+<link rel="stylesheet" type="text/css" href="css/dataTables.css"/>
 <script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.js"></script>
+<script type="text/javascript" src="js/coge/datagrid.js"></script>
 <style>
-.dataTables_wrapper .dataTables_paginate .paginate_button {
-	color:#0000EE !important;
-}
-.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-    color:#009900!important;
-    border:1px solid transparent !important;
-    background:none !important;
-}
 .dataTables_info {
     font-size: small;
-}
-.dataTable th {
-    color: dimgray !important;
-    font-size: small;
-    text-align: left;
-}
-#contents_paginate, #contents_filter, #contents_length {
-    font-size: 13px !important;
 }
 </style>
 
@@ -51,33 +36,30 @@
 	</tr>
 </table>
 
-<TMPL_IF NAME="LIST_CONTENTS">
-	<div style="padding-left:5px;">
-		<span class="bold text">Contents</span><br>
-		<div id="list_contents" style="display:inline-block;"></div>
+<div style="padding-left:5px;padding-top:1em;">
+	<div id="button_panel" class="noselect" style="height:24px;padding-bottom:5px;">
+		<span id="contents_title" class="l bold text"style="min-width:130px;margin-right:100px;">Contents</span>
+		<span id="add_button" onClick="add_list_items();" class="coge-icon glyphicon glyphicon-plus item-button" style="margin-right:5px;" title="Add Item to Notebook"></span>
+		<span id="delete_button" onClick="remove_list_items();" class="coge-icon coge-disabled glyphicon glyphicon-trash item-button" style="margin-right:5px;" title="Remove Selected Item(s) from Notebook"></span>
+		<span id="send_button" onClick="sendTo.toggle();" class="coge-icon glyphicon glyphicon-arrow-right item-button" style="margin-right:5px;" title="Send Notebook Contents to ..."></span>
+		<input id="search_input" type="search" placeholder="Filter" size="25" style="float:right;margin-right:15px;vertical-align:top;border:1px solid lightgray;" />
 	</div>
-	<div class='small padded'>
-		Send contents to:
-		<select name="checked_action" id="checked_action">
-			<option value="send_to_genomelist">GenomeList (genomes only)</option>
-			<option value="send_to_experimentlist">ExperimentList (experiments only)</option>
-			<option value="send_to_featlist">FeatList (features only)</option>
-			<option value="send_to_blast">CoGeBlast (genomes only)</option>
-			<option value="send_to_msa">CoGeAlign (features only)</option>
-			<option value="send_to_gevo">GEvo (features only)</option>
-			<option value="send_to_synfind">SynFind (genomes & first feature)</option>
-			<option value="send_to_featmap">Genome Map (features only)</option>
-			<option value="send_to_codeon">Coding Evolution (features only)</option>
-			<option value="send_to_fasta">FASTA Sequences (genomes only)</option>
-			<option value="send_to_tsv">Export TSV</option>
-			<option value="send_to_xls">Export XLS (genomes only)</option>
-		</select>
-		<span class='coge-button coge-button-sm' onclick="send_list_to();">Go</span>
-	</div>
-	<script>
-	$(function(){set_contents(<TMPL_VAR NAME="LIST_CONTENTS">);});
-	</script>
-</TMPL_IF>
+	<div id="list_contents" class="noselect invisible" style="overflow:auto;border-top:1px solid lightgray;border-bottom:none !important;"></div>
+</div>
+<ul id="send_menu" class="coge-dropdown-menu hidden">
+	<li data-type="genome" data-action="send_to_genomelist">GenomeList</li>
+	<li data-type="experiment" data-action="send_to_experimentlist">ExperimentList</li>
+	<li data-type="feature" data-action="send_to_featlist">FeatList</li>
+	<li data-type="genome" data-action="send_to_blast">CoGeBlast</li>
+	<li data-type="feature" data-action="send_to_msa">CoGeAlign</li>
+	<li data-type="feature" data-action="send_to_gevo">GEvo</li>
+	<li data-type="genome" data-action="send_to_synfind">SynFind</li>
+	<li data-type="feature" data-action="send_to_featmap">Genome Map</li>
+	<li data-type="feature" data-action="send_to_codeon">Coding Evolution</li>
+	<li data-type="genome" data-action="send_to_fasta">FASTA Sequences</li>
+	<li data-type="all" data-action="send_to_tsv">Export as TSV</li>
+	<li data-type="genome" data-action="send_to_xls">Export as XLS</li>
+</ul>
 
 <div id="list_info_edit_box" class="dialog_box hidden" title="Edit Notebook Info"></div>
 
@@ -101,8 +83,11 @@ const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
 const HELP_URL      = '<TMPL_VAR NAME="HELP_URL">';
 const USER_NAME     = '<TMPL_VAR NAME="USER">';
+const USER_CAN_EDIT = Boolean('<TMPL_VAR NAME="USER_CAN_EDIT">');
 const IS_ADMIN      = Boolean('<TMPL_VAR NAME="ADMIN_AREA">');
 var annotations;
+
+var contents, sendTo;
 
 $(function() {
 	pageObj = new Object();
@@ -111,19 +96,50 @@ $(function() {
 
 	$.ajaxSetup({
 		type: "GET",
-		url: "<TMPL_VAR NAME='PAGE_NAME'>",
+		url: PAGE_NAME,
 		dataType: "html",
 		cache: false,
 	});
 
 	$(".dialog_box").dialog({autoOpen: false, width: 450});
-	
 	// Initialize web services
     coge.services.init({
     	baseUrl: API_BASE_URL,
     	userName: USER_NAME
     });
     annotations = new Annotations('notebook_annotations', 'notebook', NOTEBOOK_ID, '<TMPL_VAR NAME="USER_CAN_EDIT">', '<TMPL_VAR NAME="DEFAULT_TYPE">');
+	
+    // Initialize newsfeed - not ready to deploy yet
+//	coge.newsfeed.init({ 
+//		element_id: 'newsfeed',
+//		id: NOTEBOOK_ID,
+//		type: "notebook"
+//	});
+
+	// Initialize send-to menu
+	sendTo = new SendToMenu({
+		elementId: "send_menu",
+		width: "9em"
+	});
+
+	// Initialize contents table
+	contents = new NotebookContents({
+		elementId: "list_contents",
+		titleElementId: "contents_title", //TODO consolidate title and button panel into parent element so these params are no longer needed
+		buttonPanelElementId: "button_panel",
+		title: "Contents",
+		isEditable: USER_CAN_EDIT,
+		height: $(window).height() - (IS_ADMIN ? 555 : 445),
+	});
+	get_list_contents()
+		.then(function() {
+			$('#search_input').on('keyup search', function() { //FIXME move into NotebookContents
+				contents.grid.search( $(this).val() );
+				contents.renderTitle();
+			});
+
+			contents.show();
+		});
 });
 </SCRIPT>
 
