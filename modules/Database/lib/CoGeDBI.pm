@@ -539,7 +539,6 @@ sub get_features {
         $query .= " AND fn.primary_name=1";
     }
 
-    warn $query;
     $sth = $dbh->prepare($query);
     $sth->execute();
     my $results;
