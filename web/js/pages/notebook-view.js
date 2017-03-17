@@ -436,6 +436,7 @@ class SendToMenu {
 
         if (types && types.length) {
             self.element.children('li').hide();
+            self.element.children('li[data-type=all]').show();
             types.forEach(function(type) {
                 self.element.children('li[data-type=' + type + ']').show();
             });
