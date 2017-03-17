@@ -11,7 +11,7 @@ use CoGe::Core::Metadata qw( create_annotation delete_annotation get_annotation 
 use CoGe::Core::Storage qw(get_genome_seq);
 use CoGe::Services::API::Job;
 use CoGe::Services::Auth qw(init);
-use CoGeDBI qw(get_feature_counts get_features);
+use CoGeDBI qw(get_feature_counts get_feature_count_summary get_features);
 
 sub search {
     my $self = shift;
@@ -115,7 +115,14 @@ sub fetch {
         $_->{gene_count} = int($feature_counts->{$name}{1}{count} // 0);
         $_->{CDS_count} = int($feature_counts->{$name}{3}{count} // 0);
     }
-    
+
+    # Build feature types
+    my $ftypes = get_feature_count_summary($db->storage->dbh, $genome->id);
+    foreach (@$ftypes) {
+        $_->{count}   = int($_->{count});
+        $_->{type_id} = int($_->{type_id});
+    }
+
     # Generate response
     $self->render(json => {
         id => int($genome->id),
@@ -137,6 +144,7 @@ sub fetch {
         },
         chromosome_count => int($genome->chromosome_count),
         chromosomes => $chromosomes,
+        feature_types => $ftypes,
         experiments => [ map { int($_->id) } $genome->experiments ],
         additional_metadata => \@metadata
     });
@@ -250,7 +258,8 @@ sub features {
             chromosome => $_->{chromosome},
             start      => int($_->{start}),
             stop       => int($_->{stop}),
-            strand     => int($_->{strand})
+            strand     => int($_->{strand}),
+            name       => $_->{name}
         }
     } @$features;
 

@@ -63,16 +63,21 @@ sub fetch {
         }
     } $notebook->annotations;
 
-    # Format items
+    # Check permissions and format results
     my @items = map {
         { type => 'genome', id => $_->id, info => $_->info, date => ($_->date eq '0000-00-00 00:00:00' ? undef : $_->date) }
-    } $notebook->genomes;
+    } grep { !$_->restricted || (defined $user && $user->has_access_to_genome($_)) } $notebook->genomes;
     push @items, map {
-        { type => 'experiment', id => $_->id, info => $_->info, date => ($_->date eq '0000-00-00 00:00:00' ? undef : $_->date) }
-    } $notebook->experiments;
-    push @items, map {
-        { type => 'feature', id => $_->id, info => $_->info }
-    } $notebook->features;
+        { type => 'experiment', id => $_->id, info => $_->info, date => ($_->date eq '0000-00-00 00:00:00' ? undef : $_->date), data_type => $_->data_type_desc }
+    } grep { !$_->restricted || (defined $user && $user->has_access_to_experiment($_)) } $notebook->experiments;
+    foreach my $f ($notebook->features) {
+        foreach my $g ($f->genomes) {
+            if  (!$g->restricted || (defined $user && $user->has_access_to_genome($g))) {
+                push @items, { type => 'feature', id => $f->id, info => $f->info };
+                last;
+            }
+        }
+    }
 
     # Format response
     $self->render(json => {

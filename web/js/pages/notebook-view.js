@@ -189,7 +189,7 @@ function wait_to_search (search_func, search_term) {  //TODO use version in util
 }
 
 function search_mystuff() { //TODO migrate to web services
-	var search_term = $('#edit_mystuff_search').attr('value');
+	var search_term = $('#edit_mystuff_search').val();
 
 	$("#wait_mystuff").animate({opacity:1});
 	$("#select_mystuff_items").html("<option disabled='disabled'>Searching...</option>");
@@ -261,7 +261,7 @@ function search_experiments(search_term) { //TODO migrate to web services
 }
 
 function search_features() { //TODO migrate to web services
-	var search_term = $('#edit_feature_search').attr('value');
+	var search_term = $('#edit_feature_search').val();
 
 	$("#wait_feature").animate({opacity:1});
 	$("#select_feature_items").html("<option disabled='disabled'>Searching...</option>");
@@ -303,7 +303,7 @@ function search_users(search_term) {
 }
 
 function search_lists() { //TODO migrate to web services
-	var search_term = $('#edit_list_search').attr('value');
+	var search_term = $('#edit_list_search').val();
 
 	$("#wait_list").animate({opacity:1});
 	$("#select_list_items").html("<option disabled='disabled'>Searching...</option>");
@@ -411,6 +411,7 @@ class SendToMenu {
 
         if (types && types.length) {
             self.element.children('li').hide();
+            self.element.children('li[data-type=all]').show();
             types.forEach(function(type) {
                 self.element.children('li[data-type=' + type + ']').show();
             });
@@ -432,7 +433,7 @@ class SendToMenu {
     }
 }
 
-class NotebookContents { // based on ContentPanel, perhaps we should just use that object instead
+class NotebookContents { // based on ContentPanel, perhaps we should just use that class instead
 	constructor(params) {
 	    var self = this;
 
@@ -470,7 +471,11 @@ class NotebookContents { // based on ContentPanel, perhaps we should just use th
 	            	type: "html",
 	            	data: null, // use full data object
 	            	render: function(data, type, row, meta) {
-	            		return data.info;
+	            	    var url;
+	            	    if (data.type == 'genome') url = "GenomeInfo.pl?gid=" + data.id;
+	            	    else if (data.type == 'experiment') url = "ExperimentView.pl?eid=" + data.id;
+	            	    else if (data.type == 'feature') url = "FeatView.pl?fid=" + data.id;
+	            		return "<a href='" + url + "' target='_blank'>" + data.info + "</a>";
 	            	}
 	            },
 	            { 	title: "Date added",
@@ -480,7 +485,7 @@ class NotebookContents { // based on ContentPanel, perhaps we should just use th
 					orderSequence: [ 'desc', 'asc' ],
 	            	width: "10em",
 	            	render: function(data, type, row, meta) {
-	            		return data.date;
+	            		return ("date" in data ? data.date : '');
 	            	}
 	            },
 			],
