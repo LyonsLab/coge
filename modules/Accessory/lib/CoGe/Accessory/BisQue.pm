@@ -43,17 +43,8 @@ sub create_bisque_image {
         $upload->asset->move_to($source);
     }
     irods_iput($source, $dest);
-    for my $i (0..9) {
-        sleep 5;
-        my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
-        if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
-            my $bisque_id = substr($result->[2], 7);
-            chomp $bisque_id;
-            _init_image($bisque_id);
-            return $bisque_id, $upload->filename;
-        }
-    }
-    warn 'unable to get bisque id';
+    my $bisque_id = _get_bisque_id($dest);
+    return $bisque_id, $upload->filename;
 }
 
 # object_type must be experiment, genome, or notebook
@@ -70,6 +61,21 @@ sub delete_bisque_image {
 sub get_bisque_data_url {
     my $id = shift;
     return 'https://bisque.cyverse.org/data_service/' . $id;
+}
+
+sub _get_bisque_id {
+    my $dest = shift;
+    for my $i (0..9) {
+        sleep 5;
+        my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
+        if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
+            my $bisque_id = substr($result->[2], 7);
+            chomp $bisque_id;
+            _init_image($bisque_id);
+            return $bisque_id;
+        }
+    }
+    warn 'unable to get bisque id';
 }
 
 sub _get_dir {
