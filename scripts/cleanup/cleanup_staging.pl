@@ -1,14 +1,16 @@
 #!/usr/bin/perl
 #-------------------------------------------------------------------------------
-# Workflow staging path cleanup script.
-# Intended to be run as cron process to monitor staging disk usage and
-# remove old files as needed.
+# Workflow staging path cleanup script
+#
+# Intended to be run as cron process to monitor staging area disk usage and
+# remove old files/directories as needed.  Files/directories in use by currently
+# running jobs will not be removed.
 #
 # Usage:
 #    perl cleanup_staging.pl <conf_file> <max_size> <older_than>
 #
 #    Delete staging subdirectories older than 3 days:
-#    perl ./scripts/cleanup/cleanup_staging.pl ./coge.conf 0 3
+#    perl ./scripts/cleanup/cleanup_staging.pl -conf ./coge.conf -older_than 14 -max_size 3298535977703
 #-------------------------------------------------------------------------------
 
 use strict;
@@ -26,11 +28,11 @@ $| = 1;
 
 our ($conf_file, $max_size, $older_than, $job_id, $debug);
 GetOptions(
-    "conf=s"     => \$conf_file,  # CoGe configuration file
+    "conf=s"       => \$conf_file,  # CoGe configuration file #TODO autofind this based on script path
     "max_size=i"   => \$max_size,   # max size of staging directory (in bytes)
     "older_than=i" => \$older_than, # maximum age of subdirectories (in days)
-    "job_id=i"     => \$job_id,     # only delete directory for job ID
-    "debug"      => \$debug       # set to 1 to only show output without deleting
+    "job_id=i"     => \$job_id,     # only delete directory for given job ID
+    "debug"        => \$debug       # set to 1 to only show output without actually deleting anything
 );
 die "Missing 'conf' argument\n" unless $conf_file;
 
