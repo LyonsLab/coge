@@ -41,8 +41,9 @@ class Annotations {
 		$("#annotation_type_group").autocomplete({source: this.get_type_groups.bind(this)});
 	}
 
-	delete(aid) {
+	delete(td, aid) {
 		coge.utils.confirm('Delete this annotation?', null, function() {
+			td.innerHTML = '<img src="picts/ajax-loader.gif"/>';
 			var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations/' + aid;
 			$.ajax({
 				method: 'DELETE',
@@ -236,13 +237,14 @@ class Annotations {
 								// if (even)
 								// 	$('<a href="https://bisque.cyverse.org/client_service/view?resource=https://bisque.cyverse.org/data_service/' + annotation.bisque_id + '" title="click to view in BisQue" target="_blank"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
 								// else
-									$('<a href="#" onclick="annotations.show_image(\'' + annotation.bisque_id + '\')" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
+//									$('<a href="#" onclick="annotations.show_image(\'' + annotation.bisque_id + '\')" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
+									$('<a href="#" onclick="annotations.show_image(\'' + annotation.bisque_id + '\')" title="click to view in BisQue"><img src="https://bisque.cyverse.org/image_service/' + annotation.bisque_id + '?thumbnail=200,200" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
 							td.append(document.createTextNode(annotation.annotation));
 							td = $('<td style="padding-left:5px;"></td>').appendTo(tr);
 							if (annotation.link)
 								td.append($('<span class="link" onclick="window.open(\'' + annotation.link + '\')">Link</span>'));
 							if (user_can_edit && !annotation.locked)
-								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="annotations.delete(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
+								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="annotations.delete(this.parentNode,' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
 							else
 								$('<th></th>').appendTo(tr);
 						});
