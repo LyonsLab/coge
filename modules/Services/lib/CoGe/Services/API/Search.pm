@@ -6,6 +6,7 @@ use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Services::API::Job;
 use CoGe::Core::Search;
+use CoGe::Services::Error;
 
 sub search {
     my $self = shift;
@@ -13,7 +14,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(API_STATUS_SEARCHTERM);
         return;
     }
 

@@ -7,6 +7,7 @@ use Mojo::JSON qw(decode_json);
 use Data::Dumper;
 use File::Spec::Functions qw( catfile );
 use CoGe::Services::Auth qw( init );
+use CoGe::Services::Error;
 use CoGe::Core::Storage qw( get_workflow_paths get_workflow_results );
 use CoGe::Factory::RequestFactory;
 use CoGe::Factory::PipelineFactory;
@@ -17,9 +18,7 @@ sub add {
     my $json = $self->req->body; #$self->req->json; # mdb replaced 11/30/16 -- req->json hides JSON errors, doing conversion manually prints them to STDERR
     warn "CoGe::Services::API::Job::add\n", Dumper $payload, Dumper $json;
     unless ($payload || $json) {
-        $self->render(status => 400, json => {
-            error => { Error => "No request body specified" }
-        });
+        $self->render(API_STATUS_MISSING_BODY);
         return;
     }
     $payload = decode_json($json) if !$payload;
@@ -32,39 +31,29 @@ sub add {
 
     # Validate the request's parameters
     unless ($request and $request->is_valid) {
-        return $self->render(status => 400, json => {
-            error => { Invalid => "Invalid request" }
-        });
+        return $self->render(API_STATUS_BAD_REQUEST("Invalid request"));
     }
 
     # Check if authentication is required
     if ($request->authRequired && !$user) {
-        return $self->render(status => 401, json => {
-            error => { Auth => "Authentication required" }
-        });
+        return $self->render(API_STATUS_UNAUTHORIZED);
     }
 
     # Check user's permission to execute the request
     unless ($request->has_access) {
-        return $self->render(status => 401, json => {
-            error => { Auth => "Access denied" }
-        });
+        return $self->render(API_STATUS_UNAUTHORIZED);
     }
 
     # Create pipeline to execute job
     my $pipeline = CoGe::Factory::PipelineFactory->new()->get($request);
     unless ($pipeline && $pipeline->workflow) {
-        return $self->render(json => {
-            error => { Error => "Failed to generate pipeline" }
-        });
+        return $self->render(API_STATUS_CUSTOM(200, "Failed to generate pipeline")); # this will probably never happen, will be preempted by an exception
     }
 
     # Submit pipeline
     my $response = $pipeline->submit();
     unless ($response->{success} && $response->{id}) {
-        return $self->render(json => {
-            error => $response->{error} || { Error => "Failed to start workflow" }
-        });
+        return $self->render(API_STATUS_CUSTOM(200, "Failed to start workflow"));
     }
     
     # Log submission
@@ -91,9 +80,7 @@ sub fetch {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -112,9 +99,7 @@ sub fetch {
     my $jex = CoGe::JEX::Jex->new( host => $conf->{JOBSERVER}, port => $conf->{JOBPORT} );
     my $job_status = $jex->get_job($id);
     unless ($job_status) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
 
@@ -174,9 +159,7 @@ sub results { # legacy for Genome Export via HTTP
 
     # User authentication is required
     unless (defined $user) {
-        $self->render(status => 401, json => {
-            error => { Auth => "Access denied" }
-        });
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
@@ -185,9 +168,7 @@ sub results { # legacy for Genome Export via HTTP
     warn $result_file;
 
     unless (-r $result_file) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
 

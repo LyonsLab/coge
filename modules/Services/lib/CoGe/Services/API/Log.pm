@@ -5,6 +5,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Data::Dumper;
 use CoGeX;
 use CoGe::Services::Auth;
+use CoGe::Services::Error;
 
 sub fetch {
     my $self = shift;
@@ -16,9 +17,7 @@ sub fetch {
 
     # User authentication is required
     unless (defined $user) {
-        $self->render(status => 401, json => {
-            error => { Auth => "Access denied" }
-        });
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 

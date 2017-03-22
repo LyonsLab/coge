@@ -7,6 +7,7 @@ use CoGe::Accessory::Web qw(log_history);
 use CoGe::Core::Metadata qw( create_annotation delete_annotation get_annotation get_annotations );
 use CoGe::Core::Notebook;
 use CoGe::Services::Auth;
+use CoGe::Services::Error;
 
 sub search {
     my $self = shift;
@@ -14,7 +15,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(API_STATUS_SEARCHTERM);
         return;
     }
 
@@ -43,9 +44,7 @@ sub fetch {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input" }
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -95,6 +94,7 @@ sub fetch_annotations {
     my $self = shift;
     my $id = int($self->stash('id'));
     my ($db) = CoGe::Services::Auth::init($self);
+    #TODO add error checking on ID param
 
     $self->render(json => get_annotations($id, 'List', $db, 1));
 }
@@ -103,13 +103,21 @@ sub fetch_annotation {
     my $self = shift;
     my $id = int($self->stash('id'));
     my $aid = int($self->stash('aid'));
+    #TODO add error checking on ID params
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $notebook = $self->_get_notebook($id, 0, $db, $user);
-    return unless $notebook;
+    unless ($notebook) {
+        $self->render(API_STATUS_NOTFOUND);
+        return;
+    }
 
     my $annotation = get_annotation($aid, 'List', $db);
-    $self->render(json => $annotation) if $annotation;
+    unless ($annotation) {
+        $self->render(API_STATUS_NOTFOUND);
+        return;
+    }
+    $self->render(json => $annotation);
 }
 
 sub add {
@@ -122,18 +130,14 @@ sub add {
 
     # User authentication is required to add notebook
     unless (defined $user) {
-        $self->render(status => 401, json => {
-            error => { Auth => "Access denied" }
-        });
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
     
     # Validate parameters
     my $metadata = $data->{metadata};
     unless ($metadata->{name}) {
-        $self->render(status => 400, json => {
-            error => { Invalid => "Notebook name not specified" }
-        });
+        $self->render(API_STATUS_BAD_REQUEST("Notebook name not specified"));
         return;
     }
     
@@ -147,9 +151,7 @@ sub add {
         page => 'API'
     );
     unless ($notebook) {
-        $self->render(json => {
-            error => { Error => "Could not create notebook" }
-        });
+        $self->render(API_STATUS_CUSTOM(200, "Could not create notebook"));
         return;
     }    
 
@@ -165,16 +167,17 @@ sub add_items {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Notebook ID missing"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
     
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $notebook = $self->_get_notebook($id, 1, $db, $user);
-    return unless $notebook;
+    unless ($notebook) {
+        $self->render(API_STATUS_NOTFOUND);
+        return;
+    }
 
     my $data = $self->req->json;
     my @items;
@@ -189,9 +192,7 @@ sub add_items {
 		item_list => \@items
 	);
 	if ($error) {
-        $self->render(status => 401, json => {
-            error => { Error => $error}
-        });
+        $self->render(API_STATUS_CUSTOM(401, $error));
         return;
 	}
 
@@ -213,6 +214,7 @@ sub add_items {
 sub add_annotation {
     my $self = shift;
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+    #TODO add error checking on params
     create_annotation(
         conf => $conf,
         db => $db,
@@ -235,16 +237,17 @@ sub remove {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
     
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $notebook = $self->_get_notebook($id, 1, $db, $user);
-    return unless $notebook;
+    unless ($notebook) {
+        $self->render(API_STATUS_NOTFOUND);
+        return;
+    }
 
     # Attempt to delete/undelete the notebook
     my $success;
@@ -263,9 +266,7 @@ sub remove {
         );
     }
     unless ($success) {
-        $self->render(status => 401, json => {
-            error => { Error => "Access denied"}
-        });
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
     
@@ -281,9 +282,7 @@ sub remove_items {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -304,9 +303,7 @@ sub remove_items {
     	item_list => \@items
     );
 	if ($error) {
-        $self->render(status => 401, json => {
-            error => { Error => $error}
-        });
+        $self->render(API_STATUS_CUSTOM(401, $error));
         return;
 	}
     
@@ -319,11 +316,12 @@ sub delete_annotation {
     my $self = shift;
     my $id = int($self->stash('id'));
     my $aid = int($self->stash('aid'));
+    #TODO add error checking on params
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $error = CoGe::Core::Metadata::delete_annotation($aid, $id, 'List', $db, $user);
     if ($error) {
-        $self->render(status => 400, json => { error => { Error => $error} });
+        $self->render(API_STATUS_BAD_REQUEST($error));
         return;
     }
     $self->render(json => { success => Mojo::JSON->true });
@@ -335,9 +333,7 @@ sub update {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -359,6 +355,7 @@ sub update {
 sub update_annotation {
     my $self = shift;
     my ($db, $user) = CoGe::Services::Auth::init($self);
+    #TODO add error checking on params
     CoGe::Core::Metadata::update_annotation(
         annotation_id => int($self->stash('aid')),
         db => $db,
@@ -379,21 +376,21 @@ sub _get_notebook {
     my ($self, $id, $own_or_edit, $db, $user) = @_;
     my $notebook = $db->resultset("List")->find($id);
     unless (defined $notebook) {
-        $self->render(status => 404, json => { error => { Error => "Resource not found" } });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
     if ($own_or_edit) {
         unless ($user) {
-            $self->render(status => 404, json => { error => { Error => "User not logged in"} });
+            $self->render(API_STATUS_CUSTOM(404, "User not logged in"));
             return;
         }
         unless ($user->is_owner_editor(list => $id)) {
-            $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+            $self->render(API_STATUS_UNAUTHORIZED);
             return;
         }
     }
     unless ( !$notebook->restricted || (defined $user && $user->has_access_to_list($notebook)) ) {
-        $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
     return $notebook;

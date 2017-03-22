@@ -6,6 +6,7 @@ use CoGe::Accessory::IRODS;
 use CoGe::Accessory::Utils qw(get_unique_id);
 use CoGe::Core::Storage qw(get_irods_path get_irods_file irods_mkdir irods_rm);
 use CoGe::Services::Auth;
+use CoGe::Services::Error;
 use Data::Dumper;
 
 sub list {
@@ -16,20 +17,20 @@ sub list {
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     unless ($user) {
-        $self->render(json => { error => { Error => 'Access denied' } });
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
     # Fetch directory listing
     my $result = get_irods_path($path, $user->name);
     unless ($result) {
-        $self->render(json => { error => { IRODS => 'Access denied' } });
+        $self->render(API_STATUS_CUSTOM(401, "IRODS access error"));
         return;
     }
     
     my $error  = $result->{error};
     if ($error) {
-        $self->render(json => { error => { IRODS => $error } });
+        $self->render(API_STATUS_CUSTOM(200, $error));
         return;
     }
 
@@ -43,13 +44,13 @@ sub mkdir {
     # Authenticate user and connect to the database
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
     unless ($user) {
-        $self->render(json => { error => { Error => 'Access denied' } });
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
     my $error = irods_mkdir($path);
     if ($error) {
-        $self->render(json => { error => { Error => $error } });
+        $self->render(API_STATUS_CUSTOM(200, $error));
         return;
     }
     $self->render(json => { success => Mojo::JSON->true });

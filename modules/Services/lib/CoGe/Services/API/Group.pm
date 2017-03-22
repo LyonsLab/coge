@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 #use IO::Compress::Gzip 'gzip';
 use CoGeX;
 use CoGe::Services::Auth;
+use CoGe::Services::Error;
 
 sub search {
     my $self = shift;
@@ -14,15 +15,13 @@ sub search {
 
     # Deny a public user access to groups
     unless ($user && !$user->is_public) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(API_STATUS_SEARCHTERM);
         return;
     }
 
@@ -59,9 +58,7 @@ sub fetch {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -70,18 +67,14 @@ sub fetch {
 
     # Deny a public user access to any group
     unless ($user && !$user->is_public) {
-        $self->render(json => {
-            error => { Auth => "Access denied"}
-        }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
     # Get group
     my $group = $db->resultset("UserGroup")->find($id);
     unless (defined $group) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
 
@@ -103,9 +96,7 @@ sub items {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -114,26 +105,20 @@ sub items {
 
     # Deny a public user access to any group
     unless ($user && !$user->is_public) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
     # Get group
     my $group = $db->resultset("UserGroup")->find($id);
     unless (defined $group) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
 
     # Restrict access to users in the group
     unless ($group->has_member($user)) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 

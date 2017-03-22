@@ -31,7 +31,7 @@ sub get {
     my $genome = $db->resultset('Genome')->find($gid);
     unless ($genome) {
     	print STDERR "Data::Sequence::get genome $gid not found in db\n";
-    	return;
+    	return; # empty response (no data)
     }
 
     # Check permissions
@@ -39,7 +39,7 @@ sub get {
         and ( not defined $user or not $user->has_access_to_genome($genome) ) )
     {
         print STDERR "Data::Sequence::get access denied to genome $gid\n";
-        return;
+        return; # empty response (no data)
     }
 
     # Force browser to download as attachment

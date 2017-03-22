@@ -61,9 +61,7 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
     # Get experiment
     my $experiment = $db->resultset("Experiment")->find($id);
     unless (defined $experiment) {
-        $self->render(json => {
-            error => { Error => "Experiment not found" }
-        });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
 	return unless $self->_can_view($experiment, $user);

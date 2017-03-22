@@ -5,6 +5,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Data::Dumper;
 use CoGeX;
 use CoGe::Services::Auth;
+use CoGe::Services::Error;
 
 sub search {
     my $self = shift;
@@ -16,9 +17,7 @@ sub search {
 
     # Deny a public user access to users
     unless ($user && !$user->is_public) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
@@ -54,9 +53,7 @@ sub fetch {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -66,26 +63,20 @@ sub fetch {
 
     # Deny a public user access to any user
     unless ($user && !$user->is_public) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
     # Get requested user
     my $fetched_user = $db->resultset("User")->find($id);
     unless (defined $fetched_user) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
 
     # Restrict a user's access to themselves
     if ($user->id ne $fetched_user->id) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
@@ -105,9 +96,7 @@ sub items {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -117,25 +106,19 @@ sub items {
 
     # Deny a public user access to any user
     unless ($user && !$user->is_public) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 
     my $fetched_user = $db->resultset("User")->find($id);
     unless (defined $fetched_user) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found" }
-        });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
 
     # Restrict a user's access to themselves
     if ($user->id ne $fetched_user->id) {
-        $self->render(json => {
-            error => { Auth => "Access denied" }
-        }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
 

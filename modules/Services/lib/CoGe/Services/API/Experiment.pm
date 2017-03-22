@@ -10,6 +10,7 @@ use CoGe::Core::Favorites;
 use CoGe::Core::Metadata qw( create_annotation delete_annotation get_annotation get_annotations );
 use CoGe::Services::Auth;
 use CoGe::Services::API::Job;
+use CoGe::Services::Error;
 
 sub search {
     my $self = shift;
@@ -17,7 +18,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(API_STATUS_SEARCHTERM);
         return;
     }
 
@@ -63,9 +64,7 @@ sub fetch {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -111,6 +110,7 @@ sub fetch_annotations {
     my $self = shift;
     my $id = int($self->stash('id'));
     my ($db) = CoGe::Services::Auth::init($self);
+    #TODO add error checking on ID parameter
 
     $self->render(json => get_annotations($id, 'Experiment', $db, 1));
 }
@@ -119,6 +119,7 @@ sub fetch_annotation {
     my $self = shift;
     my $id = int($self->stash('id'));
     my $aid = int($self->stash('aid'));
+    #TODO add error checking on ID parameters
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $experiment = $self->_get_experiment($id, 0, $db, $user);
@@ -132,18 +133,14 @@ sub add {
     my $self = shift;
     my $data = $self->req->body; #$self->req->json; # mdb replaced 11/22/16 -- req->json hides JSON errors, doing conversion manually prints them to STDERR
     unless ($data) {
-        $self->render(status => 400, json => {
-            error => { Error => "No request body specified" }
-        });
+        $self->render(API_STATUS_MISSING_BODY);
         return;
     }
     $data = decode_json($data);
 
     # Valid data items
     unless ($data->{source_data} && @{$data->{source_data}}) {
-        $self->render(status => 400, json => {
-            error => { Error => "No data items specified" }
-        });
+        $self->render(API_STATUS_MISSING_DATA);
         warn Dumper $data->{source_data};
         return;
     }
@@ -162,6 +159,7 @@ sub add {
 sub add_annotation {
     my $self = shift;
     my ($db, $user, $conf) = CoGe::Services::Auth::init($self);
+    #TODO add error checking on parameters
     create_annotation(
         conf => $conf,
         db => $db,
@@ -185,7 +183,7 @@ sub delete_annotation {
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $error = CoGe::Core::Metadata::delete_annotation($aid, $id, 'Experiment', $db, $user);
     if ($error) {
-        $self->render(status => 400, json => { error => { Error => $error} });
+        $self->render(status => 400, json => { error => { message => $error} });
         return;
     }
     $self->render(json => { success => Mojo::JSON->true });
@@ -199,7 +197,7 @@ sub remove {
 
     my $error = delete_experiment($id, $db, $user);
     if ($error) {
-        $self->render(status => 400, json => { error => { Error => $error} });
+        $self->render(status => 400, json => { error => { message => $error} });
         return;
     }
     $self->render(json => { success => Mojo::JSON->true });
@@ -211,9 +209,7 @@ sub update {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -256,21 +252,21 @@ sub _get_experiment {
     my ($self, $id, $own_or_edit, $db, $user) = @_;
     my $experiment = $db->resultset("Experiment")->find($id);
     unless (defined $experiment) {
-        $self->render(status => 404, json => { error => { Error => "Resource not found" } });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
     if ($own_or_edit) {
         unless ($user) {
-            $self->render(status => 404, json => { error => { Error => "User not logged in"} });
+            $self->render(status => 401, json => { error => { message => "User not logged in"} });
             return;
         }
         unless ($user->is_owner_editor(experiment => $id)) {
-            $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+            $self->render(API_STATUS_UNAUTHORIZED);
             return;
         }
     }
     unless ( !$experiment->restricted || (defined $user && $user->has_access_to_experiment($experiment)) ) {
-        $self->render(json => { error => { Auth => "Access denied" } }, status => 401);
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
     return $experiment;

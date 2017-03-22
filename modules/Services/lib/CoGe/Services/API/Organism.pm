@@ -5,6 +5,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Services::Auth;
+use CoGe::Services::Error;
 
 sub search {
     my $self = shift;
@@ -12,7 +13,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(API_STATUS_SEARCHTERM);
         return;
     }
 
@@ -50,9 +51,7 @@ sub fetch {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -64,9 +63,7 @@ sub fetch {
     # Get organism from DB
     my $organism = $db->resultset("Organism")->find($id);
     unless (defined $organism) {
-        $self->render(status => 404, json => {
-            error => { Error => "Resource not found"}
-        });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
     
@@ -93,26 +90,20 @@ sub add {
 
     # User authentication is required
     unless (defined $user) {
-        return $self->render(status => 401, json => {
-            error => { Auth => "Access denied" }
-        });
+        return $self->render(API_STATUS_UNAUTHORIZED);
     }
     
     # Validate params
     my $name = $payload->{name};
     my $desc = $payload->{description};
     unless ($name && $desc) {
-        return $self->render(status => 400, json => {
-            error => { Invalid => "Invalid parameters" }
-        });
+        return $self->render(API_STATUS_BAD_REQUEST("Missing name and/or desc params"));
     }
     
     # Add organism to DB
     my $organism = $db->resultset('Organism')->find_or_create( { name => $name, description => $desc } );
     unless (defined $organism) {
-        $self->render(json => {
-            error => { Error => "Unable to add organism"}
-        });
+        $self->render(API_STATUS_CUSTOM(200, "Unable to add organism"));
         return;
     }
 

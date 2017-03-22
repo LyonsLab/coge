@@ -7,6 +7,7 @@ use Data::Dumper;
 use CoGe::Services::Auth qw(init);
 use CoGe::Core::Feature qw(search_features get_feature get_genome_for_feature);
 use CoGe::Services::API::Job;
+use CoGe::Services::Error;
 
 sub search {
     my $self = shift;
@@ -15,7 +16,7 @@ sub search {
 
     # Validate input
     if (!$search_term or length($search_term) < 3) {
-        $self->render(status => 400, json => { error => { Error => 'Search term is shorter than 3 characters' } });
+        $self->render(API_STATUS_SEARCHTERM);
         return;
     }
 
@@ -34,9 +35,7 @@ sub fetch {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -53,9 +52,7 @@ sub sequence {
     
     # Validate input
     unless ($id) {
-        $self->render(status => 400, json => {
-            error => { Error => "Invalid input"}
-        });
+        $self->render(API_STATUS_MISSING_ID);
         return;
     }
 
@@ -65,17 +62,13 @@ sub sequence {
     # Get feature from DB
     my $feature = $db->resultset('Feature')->find($id);
     unless (defined $feature) {
-        $self->render(status => 404, json => {
-            error => { Error => 'Resource not found' }
-        });
+        $self->render(API_STATUS_NOTFOUND);
         return;
     }
 
     # Verify that user has access to a genome associated with this feature
     unless (get_genome_for_feature(feature => $feature, user => $user)) {
-        $self->render(status => 401, json => {
-            error => { Error => 'Access denied' }
-        });
+        $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
     
@@ -87,9 +80,7 @@ sub add {
     my $self = shift;
     my $data = $self->req->body; #$self->req->json; # mdb replaced 11/30/16 -- req->json hides JSON errors, doing conversion manually prints them to STDERR
     unless ($data) {
-        $self->render(status => 400, json => {
-            error => { Error => "No request body specified" }
-        });
+        $self->render(API_STATUS_MISSING_BODY);
         return;
     }
     $data = decode_json($data);
@@ -97,9 +88,7 @@ sub add {
 
     # Valid data items # TODO move into request validation
     unless ($data->{source_data} && @{$data->{source_data}}) {
-        $self->render(status => 400, json => {
-            error => { Error => "No data items specified" }
-        });
+        $self->render(API_STATUS_MISSING_DATA);
         return;
     }
 

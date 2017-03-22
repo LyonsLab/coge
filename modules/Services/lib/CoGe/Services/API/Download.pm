@@ -22,12 +22,9 @@ sub get {
     print STDERR "CoGe::Services::Download ", Dumper { gid => $gid, eid => $eid, wid => $wid, filename => $filename }, "\n";
     
     # Validate inputs
-    #unless ($gid || $eid || ($wid && $username)) {
     unless ($gid || $eid || $wid) {
         print STDERR "CoGe::Services::Download invalid request\n";
-        return $self->render(status => 400, json => {
-            error => { Error => "gid, eid, or wid required" }
-        });
+        return $self->render(API_STATUS_MISSING_ID);
     }
     
     # Authenticate user and connect to the database
