@@ -124,13 +124,20 @@ class Annotations {
 		}
 		var form_data = new FormData();
 		form_data.append('type_name', type);
-		var annotation_image_file = $('#annotation_image')[0].files[0];
-		if (annotation_image_file) {
-			if (!this.verify_image_file(annotation_image_file))
-				return;
-			$("#wait_annotation").animate({opacity:1});
-			form_data.append('image', annotation_image_file, annotation_image_file.name);
-			form_data.append('filename', annotation_image_file.name); // for backwards compatability, may be able to remove
+		if ($('#annotation_image').html() == 'to be deleted')
+			form_data.append('delete_bisque_image', 'true');
+		else {
+			var file_input = $('#annotation_image_file');
+			if (file_input.length > 0) {
+				var annotation_image_file = file_input[0].files[0];
+				if (annotation_image_file) {
+					if (!this.verify_image_file(annotation_image_file))
+						return;
+					$("#wait_annotation").animate({opacity:1});
+					form_data.append('image', annotation_image_file, annotation_image_file.name);
+					form_data.append('filename', annotation_image_file.name); // for backwards compatability, may be able to remove
+				}
+			}
 		}
 		form_data.append('annotation', annotation);
 		var group_name = $('#annotation_type_group').val();
@@ -158,13 +165,17 @@ class Annotations {
 		});
 	}
 
+	set_file() {
+		$('#annotation_image').html('<input id="annotation_image_file" type="file" />');
+	}
+
 	show_add_dialog() {
 		this.aid = null;
 		$('#annotation').val('');
 		$('#annotation_link').val('');
 		$('#annotation_type').val(this.default_type);
 		$('#annotation_type_group').val('');
-		$('#annotation_image').val('');
+		this.set_file();
 		$('#annotation_send_button').text('Add');
 		$("#wait_annotation").css('opacity', 0);
 		$("#annotation_dialog").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
@@ -182,7 +193,14 @@ class Annotations {
 			$('#annotation_link').val(obj.link);
 			$('#annotation_type').val(obj.type);
 			$('#annotation_type_group').val(obj.type_group);
-			$('#annotation_image').val('');
+			if (obj.bisque_file) {
+				var image = '<img src="https://bisque.cyverse.org/image_service/' + obj.bisque_id + '?thumbnail=200,200" style="width:40px;height:40px;vertical-align:middle;" /> ';
+				var replace = '<span class="coge-button" style="vertical-align:middle" onclick="annotations.set_file()">Replace</span> ';
+				var del = '<span class="coge-button" style="vertical-align:middle" onclick="this.parentNode.innerHTML=\'to be deleted\'">Delete</span>';
+				$('#annotation_image').html(image + replace + del);
+			} else
+				annotations.set_file();				
+			$('#annotation_image_file').val('');
 			$('#annotation_send_button').text('Update');
 			$("#wait_annotation").css('opacity', 0);
 			$("#annotation_dialog").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
@@ -305,8 +323,7 @@ var annotation_type_sort = function(a,b) {
     </tr>
     <tr>
       <td valign='top'>Image:</td>
-      <td>
-        <input id="annotation_image" name="annotation_image" type="file" />
+      <td id="annotation_image">
       </td>
     </tr>
   </table>

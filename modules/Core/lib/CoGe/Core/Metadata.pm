@@ -233,10 +233,12 @@ sub get_annotation {
         $type_group = $annotation->type->group->name if ( $annotation->type->group );
     }
     return {
-        annotation => $annotation->annotation,
-        link       => $annotation->link,
-        type       => $type,
-        type_group => $type_group
+        annotation  => $annotation->annotation,
+        link        => $annotation->link,
+        type        => $type,
+        type_group  => $type_group,
+        bisque_file => $annotation->bisque_file,
+        bisque_id   => $annotation->bisque_id
     };
 }
 
@@ -321,7 +323,7 @@ sub update_annotation {
         return;
     }
  
-    my ($error, $type_id, $link, $image_id, $bisque_id, $bisque_file) = _init(\%opts);
+    my ($error, $type_id, $link, $image_id, $bisque_id, $bisque_file, $object) = _init(\%opts);
     if ($error) {
         warn 'update_annotation: ' . $error;
         return;
@@ -342,6 +344,12 @@ sub update_annotation {
         $annotation->bisque_file($bisque_file);
         $annotation->bisque_id($bisque_id);
         $annotation->bisque_user($opts{user}->id);
+    }
+    elsif ($opts{'delete_bisque_image'}) {
+        $annotation->bisque_file(undef);
+        $annotation->bisque_id(undef);
+        $annotation->bisque_user(undef);
+        delete_bisque_image(lc($opts{target_type}), $object->id, $annotation->bisque_file, $annotation->bisque_id, $opts{user});
     }
     $annotation->update;
 
@@ -468,7 +476,7 @@ sub _init {
         }
     }
 
-    return (undef, $type_id, $link, $image_id, $bisque_id, $bisque_file);
+    return (undef, $type_id, $link, $image_id, $bisque_id, $bisque_file, $object);
 }
 
 1;

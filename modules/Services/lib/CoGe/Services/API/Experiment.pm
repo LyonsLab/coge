@@ -240,6 +240,7 @@ sub update_annotation {
     CoGe::Core::Metadata::update_annotation(
         annotation_id => int($self->stash('aid')),
         db => $db,
+        delete_bisque_image => $self->param('delete_bisque_image'),
         filename => $self->param('filename'),
         group_name => $self->param('group_name'),
         image => $self->param('image'),
