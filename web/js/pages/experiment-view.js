@@ -323,9 +323,13 @@ var snpMenu = {
 	            method: method
 	        };
 	    } 
-	    else if (method === "gatk") {
+	    else if (method === "gatk" || method === "gatk-haplotype-vcf" || method === "gatk-haplotype-gvcf") {
 	    	return {
-	            method: method
+	            method: method,
+                '--emitRefConfidence':             this.dialog.find("[id='--emitRefConfidence']").val(),
+                '--pcr_indel_model':               this.dialog.find("[id='--pcr_indel_model']").val(),
+                '--filter_reads_with_N_cigar':     this.dialog.find("[id='--filter_reads_with_N_cigar']").is(":checked"),
+                '--fix_misencoded_quality_scores': this.dialog.find("[id='--fix_misencoded_quality_scores']").is(":checked")
 	        };
 	    }
 	    return;
