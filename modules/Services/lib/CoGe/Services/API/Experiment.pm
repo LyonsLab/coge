@@ -165,6 +165,7 @@ sub add_annotation {
         db => $db,
         filename => $self->param('filename'),
         group_name => $self->param('group_name'),
+        image => $self->param('image'),
         link => $self->param('link'),
         target_id => int($self->stash('id')),
         target_type => 'experiment',
@@ -235,6 +236,7 @@ sub update_annotation {
     CoGe::Core::Metadata::update_annotation(
         annotation_id => int($self->stash('aid')),
         db => $db,
+        delete_bisque_image => $self->param('delete_bisque_image'),
         filename => $self->param('filename'),
         group_name => $self->param('group_name'),
         image => $self->param('image'),

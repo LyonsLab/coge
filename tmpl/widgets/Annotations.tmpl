@@ -41,8 +41,9 @@ class Annotations {
 		$("#annotation_type_group").autocomplete({source: this.get_type_groups.bind(this)});
 	}
 
-	delete(aid) {
+	delete(td, aid) {
 		coge.utils.confirm('Delete this annotation?', null, function() {
+			td.innerHTML = '<img src="picts/ajax-loader.gif"/>';
 			var url = this.base_url + this.api_path + '/' + this.parent_id + '/annotations/' + aid;
 			$.ajax({
 				method: 'DELETE',
@@ -123,13 +124,20 @@ class Annotations {
 		}
 		var form_data = new FormData();
 		form_data.append('type_name', type);
-		var annotation_image_file = $('#annotation_image')[0].files[0];
-		if (annotation_image_file) {
-			if (!this.verify_image_file(annotation_image_file))
-				return;
-			$("#wait_annotation").animate({opacity:1});
-			form_data.append('image', annotation_image_file, annotation_image_file.name);
-			form_data.append('filename', annotation_image_file.name); // for backwards compatability, may be able to remove
+		if ($('#annotation_image').html() == 'to be deleted')
+			form_data.append('delete_bisque_image', 'true');
+		else {
+			var file_input = $('#annotation_image_file');
+			if (file_input.length > 0) {
+				var annotation_image_file = file_input[0].files[0];
+				if (annotation_image_file) {
+					if (!this.verify_image_file(annotation_image_file))
+						return;
+					$("#wait_annotation").animate({opacity:1});
+					form_data.append('image', annotation_image_file, annotation_image_file.name);
+					form_data.append('filename', annotation_image_file.name); // for backwards compatability, may be able to remove
+				}
+			}
 		}
 		form_data.append('annotation', annotation);
 		var group_name = $('#annotation_type_group').val();
@@ -157,13 +165,17 @@ class Annotations {
 		});
 	}
 
+	set_file() {
+		$('#annotation_image').html('<input id="annotation_image_file" type="file" />');
+	}
+
 	show_add_dialog() {
 		this.aid = null;
 		$('#annotation').val('');
 		$('#annotation_link').val('');
 		$('#annotation_type').val(this.default_type);
 		$('#annotation_type_group').val('');
-		$('#annotation_image').val('');
+		this.set_file();
 		$('#annotation_send_button').text('Add');
 		$("#wait_annotation").css('opacity', 0);
 		$("#annotation_dialog").dialog({title: "Add Annotation", width: '32em'}).dialog('open');
@@ -181,7 +193,14 @@ class Annotations {
 			$('#annotation_link').val(obj.link);
 			$('#annotation_type').val(obj.type);
 			$('#annotation_type_group').val(obj.type_group);
-			$('#annotation_image').val('');
+			if (obj.bisque_file) {
+				var image = '<img src="https://bisque.cyverse.org/image_service/' + obj.bisque_id + '?thumbnail=200,200" style="width:40px;height:40px;vertical-align:middle;" /> ';
+				var replace = '<span class="coge-button" style="vertical-align:middle" onclick="annotations.set_file()">Replace</span> ';
+				var del = '<span class="coge-button" style="vertical-align:middle" onclick="this.parentNode.innerHTML=\'to be deleted\'">Delete</span>';
+				$('#annotation_image').html(image + replace + del);
+			} else
+				annotations.set_file();				
+			$('#annotation_image_file').val('');
 			$('#annotation_send_button').text('Update');
 			$("#wait_annotation").css('opacity', 0);
 			$("#annotation_dialog").dialog({title: "Edit Annotation", width: '32em'}).dialog('open');
@@ -236,13 +255,14 @@ class Annotations {
 								// if (even)
 								// 	$('<a href="https://bisque.cyverse.org/client_service/view?resource=https://bisque.cyverse.org/data_service/' + annotation.bisque_id + '" title="click to view in BisQue" target="_blank"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
 								// else
-									$('<a href="#" onclick="annotations.show_image(\'' + annotation.bisque_id + '\')" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
+//									$('<a href="#" onclick="annotations.show_image(\'' + annotation.bisque_id + '\')" title="click to view in BisQue"><img src="bisque_image.pl?id=' + annotation.bisque_id + '" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
+									$('<a href="#" onclick="annotations.show_image(\'' + annotation.bisque_id + '\')" title="click to view in BisQue"><img src="https://bisque.cyverse.org/image_service/' + annotation.bisque_id + '?thumbnail=200,200" onerror="annotations.on_error(this)" onmouseover="annotations.image_preview(this, 1);" onmouseout="annotations.image_preview(this, 0);" class="bisque_thumb"></a>').appendTo(td);
 							td.append(document.createTextNode(annotation.annotation));
 							td = $('<td style="padding-left:5px;"></td>').appendTo(tr);
 							if (annotation.link)
 								td.append($('<span class="link" onclick="window.open(\'' + annotation.link + '\')">Link</span>'));
 							if (user_can_edit && !annotation.locked)
-								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="annotations.delete(' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
+								tr.append($('<td style="padding-left:20px;white-space:nowrap;"><span onClick="annotations.show_edit_dialog(' + annotation.id + ');" class="link ui-icon ui-icon-gear"></span><span onClick="annotations.delete(this.parentNode,' + annotation.id + ');" class="link ui-icon ui-icon-trash"></span>'));
 							else
 								$('<th></th>').appendTo(tr);
 						});
@@ -303,8 +323,7 @@ var annotation_type_sort = function(a,b) {
     </tr>
     <tr>
       <td valign='top'>Image:</td>
-      <td>
-        <input id="annotation_image" name="annotation_image" type="file" />
+      <td id="annotation_image">
       </td>
     </tr>
   </table>

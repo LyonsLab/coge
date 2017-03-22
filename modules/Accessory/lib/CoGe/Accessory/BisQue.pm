@@ -8,6 +8,7 @@ use Data::Dumper;
 use File::Basename qw(basename dirname);
 use File::Spec::Functions qw(catfile);
 use HTTP::Request;
+use HTTP::Request::Common;
 
 use CoGe::Accessory::IRODS qw(irods_get_base_path irods_imeta_ls irods_imkdir irods_iput irods_irm);
 use CoGe::Accessory::Utils qw(get_unique_id);
@@ -43,7 +44,7 @@ sub create_bisque_image {
         $upload->asset->move_to($source);
     }
     irods_iput($source, $dest);
-    my $bisque_id = _get_bisque_id($dest);
+    my $bisque_id = _register_image($dest, basename($upload->filename));
     return $bisque_id, $upload->filename;
 }
 
@@ -63,24 +64,24 @@ sub get_bisque_data_url {
     return 'https://bisque.cyverse.org/data_service/' . $id;
 }
 
-sub _get_bisque_id {
-    my $dest = shift;
-    for my $i (0..9) {
-        sleep 5;
-        my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
-        if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
-            my $bisque_id = substr($result->[2], 7);
-            chomp $bisque_id;
-            _init_image($bisque_id);
-            return $bisque_id;
-        }
-    }
-    warn 'unable to get bisque id';
-}
+# sub _get_bisque_id {
+#     my $dest = shift;
+#     for my $i (0..9) {
+#         sleep 5;
+#         my $result = irods_imeta_ls($dest, 'ipc-bisque-id');
+#         if (@$result == 4 && substr($result->[2], 0, 6) eq 'value:') {
+#             my $bisque_id = substr($result->[2], 7);
+#             chomp $bisque_id;
+#             _init_image($bisque_id);
+#             return $bisque_id;
+#         }
+#     }
+#     warn 'unable to get bisque id';
+# }
 
 sub _get_dir {
     my ($target_type, $target_id, $user) = @_;
-    return catfile(dirname(irods_get_base_path('coge')), 'bisque_data', $target_type, $target_id);
+    return catfile(dirname(irods_get_base_path('coge')), 'bisque', $target_type, $target_id);
 }
 
 sub _init_image {
@@ -97,6 +98,20 @@ sub _init_image {
     $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
     $req->content($content);
     $res = $ua->request($req);
+}
+
+sub _register_image {
+    my ($path, $name) = @_;
+    my $ua = LWP::UserAgent->new();
+    my $req = POST 'https://bisque.cyverse.org/import/transfer/', 'Content-Type' => 'form-data', 'Content' => [ file1_resource => '<image name="' . $name . '" value="irods://data.iplantcollaborative.org' . $path . '" owner="https://bisque.cyverse.org/data_service/00-h8Xeaz4KAexEt7L8kgEzwe"/>'];
+    $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
+    my $res = $ua->request($req);
+    my $content = $res->{_content};
+    my $start = index($content, 'resource_uniq="') + 15;
+    my $end = index($content, '"', $start);
+    my $bisque_id = substr($content, $start, $end - $start);
+    _init_image($bisque_id);
+    return $bisque_id;
 }
 
 sub set_bisque_visiblity {
