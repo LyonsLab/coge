@@ -2,13 +2,13 @@
 #-------------------------------------------------------------------------------
 # Workflow staging path cleanup script.
 # Intended to be run as cron process to monitor staging disk usage and
-# remove old files as needed.
+# remove old workflow directories as needed.
 #
 # Usage:
 #    perl cleanup_staging.pl <conf_file> <max_size> <older_than>
 #
-#    Delete staging subdirectories older than 3 days:
-#    perl ./scripts/cleanup/cleanup_staging.pl ./coge.conf 0 3
+#    Delete staging subdirectories older than 7 days:
+#    perl ./scripts/cleanup/cleanup_staging.pl -conf ./coge.conf -older_than 7
 #-------------------------------------------------------------------------------
 
 use strict;
@@ -26,11 +26,11 @@ $| = 1;
 
 our ($conf_file, $max_size, $older_than, $job_id, $debug);
 GetOptions(
-    "conf=s"     => \$conf_file,  # CoGe configuration file
+    "conf=s"       => \$conf_file,  # CoGe configuration file
     "max_size=i"   => \$max_size,   # max size of staging directory (in bytes)
     "older_than=i" => \$older_than, # maximum age of subdirectories (in days)
     "job_id=i"     => \$job_id,     # only delete directory for job ID
-    "debug"      => \$debug       # set to 1 to only show output without deleting
+    "debug"        => \$debug       # set to 1 to only show output without deleting
 );
 die "Missing 'conf' argument\n" unless $conf_file;
 
@@ -69,7 +69,7 @@ unless ($jex) {
     exit(-1);
 }
 
-# Delete directories that do not meet constraints
+# Delete directories that exceed time and space constraints
 my $staging_size = get_dir_size($staging_root_path);
 print "Staging: $staging_root_path, size=$staging_size bytes\n";
 
@@ -120,7 +120,7 @@ exit;
 
 #-------------------------------------------------------------------------------
 
-# Return director size in bytes
+# Return directory size in bytes
 sub get_dir_size {
     my $dir = shift;
     my $size = `du -bs $dir | awk '{print \$1}'`;
