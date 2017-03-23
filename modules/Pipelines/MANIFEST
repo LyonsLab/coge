@@ -41,6 +41,7 @@ lib/CoGe/Request/Request.pm
 lib/CoGe/Request/CoGeBlast.pm
 lib/CoGe/Request/Empty.pm
 lib/CoGe/Request/Experiment.pm
+lib/CoGe/Request/NExperiments.pm
 lib/CoGe/Request/ExperimentAnalysis.pm
 lib/CoGe/Request/Genome.pm
 lib/CoGe/Request/NGenomes.pm

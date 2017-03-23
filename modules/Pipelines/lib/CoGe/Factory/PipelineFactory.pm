@@ -19,6 +19,7 @@ use CoGe::Builder::Tools::SynMap;
 use CoGe::Builder::Tools::SynMap3D;
 use CoGe::Builder::Tools::Pseudoassembly;
 use CoGe::Builder::SNP::Analyzer;
+use CoGe::Builder::SNP::Merge;
 use CoGe::Builder::Expression::Analyzer;
 use CoGe::Builder::Methylation::Analyzer;
 use CoGe::Builder::Methylation::Metaplot;
@@ -44,6 +45,7 @@ my %typeToClass = (
     'analyze_methylation'   => 'CoGe::Builder::Methylation::Analyzer',
     'analyze_metaplot'      => 'CoGe::Builder::Methylation::Metaplot',
     'analyze_diversity'     => 'CoGe::Builder::PopGen::SummaryStats',
+    'merge_snps'            => 'CoGe::Builder::SNP::Merge',
     'percent_gc_at'         => 'CoGe::Builder::Tools::PercentGCAT'
 );
 

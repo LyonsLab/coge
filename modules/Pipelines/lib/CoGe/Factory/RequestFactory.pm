@@ -6,6 +6,7 @@ use Data::Dumper;
 use CoGe::Request::CoGeBlast;
 use CoGe::Request::Empty;
 use CoGe::Request::Experiment;
+use CoGe::Request::NExperiments;
 use CoGe::Request::ExperimentAnalysis;
 use CoGe::Request::Genome;
 use CoGe::Request::TwoGenomes;
@@ -46,6 +47,7 @@ my %typeToClass = (
     'analyze_expression'    => { class => 'CoGe::Request::ExperimentAnalysis', authRequired => 1 },
     'analyze_metaplot'      => { class => 'CoGe::Request::ExperimentAnalysis', authRequired => 0 },
     'analyze_diversity'     => { class => 'CoGe::Request::ExperimentAnalysis', authRequired => 0 },
+    'merge_snps'            => { class => 'CoGe::Request::NExperiments',       authRequired => 1 },
     'percent_gc_at'         => { class => 'CoGe::Request::Genome',             authRequired => 0 },
 );
 

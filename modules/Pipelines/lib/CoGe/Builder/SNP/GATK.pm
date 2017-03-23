@@ -119,25 +119,6 @@ sub build {
     );
 }
 
-sub fasta_dict {
-    my $self  = shift;
-    my $fasta = shift;
-    my $gid   = shift;
-    my $cache_dir = get_genome_cache_path($gid);
-
-    my $fasta_name = to_filename($fasta);
-    my $renamed_fasta = qq[$fasta_name.fa]; # mdb added 9/20/16 -- Picard expects the filename to end in .fa or .fasta
-    my $fasta_dict = qq[$fasta_name.dict];
-    
-    return {
-        cmd => qq[ln -sf $fasta $renamed_fasta && java -jar $PICARD CreateSequenceDictionary REFERENCE=$renamed_fasta OUTPUT=$fasta_dict],
-        args => [],
-        inputs => [ $fasta ],
-        outputs => [ catfile($cache_dir, $fasta_dict) ],
-        description => "Generate FASTA dictionary"
-    };
-}
-
 sub reorder_sam {
     my $self = shift;
     my %opts = @_;
@@ -324,7 +305,7 @@ sub gatk_HaplotypeCaller {
         outputs => [
             catfile($self->staging_dir, $output_vcf)
         ],
-        description => "Identifying SNPs using GATK"
+        description => "Identifying SNPs using GATK HaplotypeCaller"
     };
 }
 

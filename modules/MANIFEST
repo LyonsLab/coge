@@ -192,6 +192,7 @@ Pipelines/lib/CoGe/Request/Request.pm
 Pipelines/lib/CoGe/Request/CoGeBlast.pm
 Pipelines/lib/CoGe/Request/Empty.pm
 Pipelines/lib/CoGe/Request/Experiment.pm
+Pipelines/lib/CoGe/Request/NExperiments.pm
 Pipelines/lib/CoGe/Request/ExperimentAnalysis.pm
 Pipelines/lib/CoGe/Request/Genome.pm
 Pipelines/lib/CoGe/Request/NGenomes.pm

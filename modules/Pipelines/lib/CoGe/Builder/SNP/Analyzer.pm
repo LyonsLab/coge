@@ -81,68 +81,6 @@ sub build {
     $self->vcf($snp->vcf);
 }
 
-sub load_vcf { #TODO combine with Buildable::load_experiment
-    my $self = shift;
-    my %opts = @_;
-    my $annotations = $opts{annotations};
-    my $gid = $opts{gid};
-    my $vcf = $opts{vcf};
-
-    my $metadata = $self->params->{metadata};
-    my $additional_metadata = $self->params->{additional_metadata};
-    my $method = $self->params->{snp_params}->{method};
-
-    my $desc = 'Single nucleotide polymorphisms' . ($method ? " (determined by $method method)" : '');
-
-    my $output_name = 'load_vcf_' . to_filename_base($vcf);
-    my $output_path = catdir($self->staging_dir, $output_name);
-
-    # Add tags
-    my @tags = ( 'VCF' ); # add VCF tag
-    push @tags, @{$metadata->{tags}} if $metadata->{tags};
-    my $tags_str = tags_to_string(\@tags);
-
-    my $args = [
-        ['-user_name',   shell_quote($self->user->name), 0],
-        ['-name',        ($metadata->{name} ? shell_quote($metadata->{name}." (SNPs)") : '""'), 0],
-        ['-desc',        shell_quote($desc), 0],
-        ['-version',     shell_quote($metadata->{version}), 0],
-        ['-link',        shell_quote($metadata->{link}), 0],
-        ['-restricted',  shell_quote($metadata->{restricted}), 0],
-        ['-exit_without_error_for_empty_input', 1, 0],
-        ['-gid',         $gid, 0],
-        ['-wid',         $self->workflow->id, 0],
-        ['-source_name', shell_quote($metadata->{source_name}), 0],
-        ['-tags',        shell_quote($tags_str), 0],
-        ['-staging_dir', $output_name, 0],
-        ['-file_type',   'vcf', 0],
-        ['-data_file',   $vcf, 0],
-        ['-config',      $self->conf->{_CONFIG_PATH}, 0]
-    ];
-
-    # Add additional metadata
-    if ($additional_metadata && @$additional_metadata) { # new method using metadata file
-        my $metadata_file = catfile($output_path, 'metadata.dump');
-        CoGe::Accessory::TDS::write($metadata_file, $additional_metadata);
-        push @$args, ['-metadata_file', $metadata_file, 0];
-    }
-    if ($annotations && @$annotations) { # legacy method
-        my $annotations_str = join(';', @$annotations);
-        push @$args, ['-annotations', shell_quote($annotations_str), 0] if ($annotations_str);
-    }
-
-    return {
-        cmd => catfile($self->conf->{SCRIPTDIR}, 'load_experiment.pl'),
-        args => $args,
-        inputs => [ $vcf ],
-        outputs => [
-            [$output_path, '1'],
-            catfile($output_path, "log.done"),
-        ],
-        description => 'Loading SNPs'
-    };
-}
-
 __PACKAGE__->meta->make_immutable;
 
 1;
