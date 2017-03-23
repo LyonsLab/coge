@@ -49,6 +49,7 @@ sub search_features {
         my $fid = $fn->feature_id;
         my $f = get_feature( user => $user, feature => $feature, fast => 1 );
         $features{$fid} = $f unless $f->{error};
+        #TODO add proper error handling and response
     }
 
     return wantarray ? values %features : [ values %features ];
@@ -69,7 +70,7 @@ sub get_feature {
     
     my $genome = get_genome_for_feature(feature => $feature, user => $user);
     unless ($genome) {
-        return { error => { Error => "Access Denied" } };
+        return { error => { message => "Access Denied" } };
     }
     
     my %data = (
