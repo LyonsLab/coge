@@ -67,11 +67,11 @@ function get_notebook_info() {
 }
 
 function make_notebook_public () {
-	coge.services.update('notebook', NOTEBOOK_ID, {metadata: {restricted: 0}}).done(function() {get_notebook_info();});
+	coge.services.update('notebook', NOTEBOOK_ID, {metadata: {restricted: 0}}).done(get_notebook_info);
 }
 
 function make_notebook_private () {
-	coge.services.update('notebook', NOTEBOOK_ID, {metadata: {restricted: 1}}).done(function() {get_notebook_info();});
+	coge.services.update('notebook', NOTEBOOK_ID, {metadata: {restricted: 1}}).done(get_notebook_info);
 }
 
 function add_list_items(opts) {
