@@ -81,7 +81,7 @@ __PACKAGE__->add_columns(
 #	"storage_path",
 #	{ data_type => "VARCHAR", default_value => undef, is_nullable => 0, size => 255 },
     "restricted",
-    { accessor => '_restricted', data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
+    { data_type => "INT", default_value => "0", is_nullable => 0, size => 1 },
     "row_count",
     { data_type => "INT", default_value => "0", is_nullable => 1, size => 10 },
     "date",
@@ -146,17 +146,6 @@ __PACKAGE__->has_many(
     { "foreign.child_id" => "self.experiment_id" },
     { where => [ -and => [ child_type  => $node_types->{experiment} ] ] }
 );
-
-sub restricted {
-    my ($self, $value) = @_;
-    if (defined $value) {
-        $self->_restricted($value);
-        foreach ($self->annotations) {
-            set_bisque_visiblity($_->bisque_id, !$value) if $_->bisque_file;
-        }
-    }
-    return $self->_restricted();
-}
 
 sub item_type {
     return $node_types->{experiment};   

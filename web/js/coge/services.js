@@ -70,10 +70,6 @@ var coge = window.coge = (function(namespace) {
 			return this._ajax("GET", this.baseUrl + "notebooks/search/" + search_term + "/");
 		},
 
-		fetch_notebook: function(id) {
-		    return this._ajax("GET", this.baseUrl + "notebooks/" + id + "/");
-		},
-		
 		search_users: function(search_term) {
 			// TODO add param validation
 			return this._ajax("GET", this.baseUrl + "users/search/" + search_term + "/");
@@ -101,6 +97,14 @@ var coge = window.coge = (function(namespace) {
 			return this._ajax("GET", this.baseUrl + "logs/" + type + '/' + id);
 		},
 		
+		fetch_notebook: function(id) {
+		    return this._ajax("GET", this.baseUrl + "notebooks/" + id + "/");
+		},
+
+		ftp_list: function(url, dirs) {
+			return this._ajax("GET", this.baseUrl + "ftp/list/", null, { url: url, dirs: dirs });
+		},
+		
 		irods_list: function(path) {
 			return this._ajax("GET", this.baseUrl + "irods/list/" + path);
 		},
@@ -112,9 +116,9 @@ var coge = window.coge = (function(namespace) {
 		// irods_rm: function(path) {
 		// 	return this._ajax("DELETE", this.baseUrl + "irods/rm", null, { path: path });
 		// },
-		
-		ftp_list: function(url, dirs) {
-			return this._ajax("GET", this.baseUrl + "ftp/list/", null, { url: url, dirs: dirs });
+
+		update: function(type, id, data) {
+			return this._ajax("POST", this.baseUrl + type + 's/' + id, data);
 		},
 		
 		_ajax: function(type, url, data, opts) { //, success, error) {

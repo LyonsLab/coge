@@ -42,6 +42,7 @@ $FORM = new CGI;
 $WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 $LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
 $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID . '/';
+$EMBED = $FORM->param('embed') || 0;
 
 %FUNCTION = (
     get_experiment_info        => \&get_experiment_info,
@@ -50,8 +51,6 @@ $TEMPDIR = $P->{SECTEMPDIR} . $PAGE_TITLE . '/' . $USER->name . '/' . $LOAD_ID .
     delete_experiment          => \&delete_experiment,
     get_sources                => \&get_sources,
     toggle_favorite            => \&toggle_favorite,
-    make_experiment_public     => \&make_experiment_public,
-    make_experiment_private    => \&make_experiment_private,
     add_tag_to_experiment      => \&add_tag_to_experiment,
     get_experiment_tags        => \&get_experiment_tags,
     remove_experiment_tag      => \&remove_experiment_tag,
@@ -146,32 +145,6 @@ sub get_sources {
     }
 
     return encode_json( \@sources );
-}
-
-sub make_experiment_public {
-    my %opts = @_;
-    my $eid  = $opts{eid};
-    return "No EID specified" unless $eid;
-    #return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-
-    my $exp = $DB->resultset('Experiment')->find($eid);
-    $exp->restricted(0);
-    $exp->update;
-
-    return 1;
-}
-
-sub make_experiment_private {
-    my %opts = @_;
-    my $eid  = $opts{eid};
-    return "No EID specified" unless $eid;
-    #return "Permission denied." unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-
-    my $exp = $DB->resultset('Experiment')->find($eid);
-    $exp->restricted(1);
-    $exp->update;
-
-    return 1;
 }
 
 sub add_tag_to_experiment {
@@ -329,7 +302,6 @@ sub get_file_urls {
 sub gen_html {
     my $template;
 
-    $EMBED = $FORM->param('embed') || 0;
     if ($EMBED) {
         $template = HTML::Template->new( filename => $P->{TMPLDIR} . 'embedded_page.tmpl' );
     }

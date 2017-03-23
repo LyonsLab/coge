@@ -347,9 +347,7 @@ sub update {
 	    delete $data->{metadata}->{id};
     }
 	$notebook->update($data->{metadata});
-	$self->render(json => {
-		success => Mojo::JSON->true
-	});
+	$self->render(json => { success => Mojo::JSON->true });
 }
 
 sub update_annotation {

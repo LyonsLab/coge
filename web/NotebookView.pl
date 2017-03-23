@@ -45,11 +45,9 @@ use constant MAX_TITLE_LENGTH => 150;
 $node_types = $DB->node_types();
 
 %FUNCTION = (
-    get_list_info              => \&get_list_info,
-    edit_list_info             => \&edit_list_info,
-    update_list_info           => \&update_list_info,
-    make_list_public           => \&make_list_public,
-    make_list_private          => \&make_list_private,
+    get_notebook_info          => \&get_notebook_info,
+    edit_notebook_info         => \&edit_notebook_info,
+    update_notebook_info       => \&update_notebook_info,
     add_list_items             => \&add_list_items,
     add_item_to_list           => \&add_item_to_list,
     remove_list_items          => \&remove_list_items,
@@ -138,18 +136,18 @@ sub gen_body {
         USER_CAN_EDIT  => $list->is_editable($USER)
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
-    $template->param( LIST_INFO => get_list_info( lid => $lid ) );
-     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+    $template->param( NOTEBOOK_INFO => get_notebook_info( nid => $lid ) );
+    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
 }
 
-sub get_list_info {
+sub get_notebook_info {
     my %opts = @_;
-    my $lid  = $opts{lid};
-    return unless $lid;
+    my $nid  = $opts{nid};
+    return unless $nid;
 
-    my ($list) = $DB->resultset('List')->find($lid);
+    my ($list) = $DB->resultset('List')->find($nid);
     return unless $USER->has_access_to_list($list);
 
     my $html            = $list->annotation_pretty_print_html();
@@ -158,13 +156,13 @@ sub get_list_info {
 
     $html .= qq{<div class="panel">};
     if ($user_can_edit) {
-        $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="edit_list_info();">Edit Info</span>};
+        $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="edit_notebook_info();">Edit Info</span>};
 
         if ( $list->restricted ) {
-            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_list_public();">Make Public</span>};
+            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_notebook_public();">Make Public</span>};
         }
         else {
-            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_list_private();">Make Private</span>};
+            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_notebook_private();">Make Private</span>};
         }
     }
 
@@ -180,7 +178,7 @@ sub get_list_info {
             map  { $_->genome_id } $list->experiments
           )
         {    # Pick a genome, any genome # TODO show user a list of genomes to choose from
-            my $link = qq{window.open('GenomeView.pl?embed=$EMBED&gid=$gid&tracks=notebook$lid', '_self');};
+            my $link = qq{window.open('GenomeView.pl?embed=$EMBED&gid=$gid&tracks=notebook$nid', '_self');};
             $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="$link">Browse</span>};
             last;
         }
@@ -207,7 +205,7 @@ sub get_list_info {
 #    return \@types;
 #}
 
-sub edit_list_info {
+sub edit_notebook_info {
     my %opts = @_;
     my $lid  = $opts{lid};
     return 0 unless $lid;
@@ -219,10 +217,10 @@ sub edit_list_info {
 
     my $template = HTML::Template->new( filename => $P->{TMPLDIR} . "$PAGE_TITLE.tmpl" );
     $template->param(
-        EDIT_LIST_INFO => 1,
-        NAME           => $list->name,
-        DESC           => $desc,
-        #TYPE_LOOP      => get_list_types( $list->type->id ) # mdb removed 12/14/16 COGE-800
+        EDIT_NOTEBOOK_INFO => 1,
+        NAME               => $list->name,
+        DESC               => $desc,
+        #TYPE_LOOP          => get_list_types( $list->type->id ) # mdb removed 12/14/16 COGE-800
     );
 
     my %data;
@@ -233,7 +231,7 @@ sub edit_list_info {
     return encode_json( \%data );
 }
 
-sub update_list_info {
+sub update_notebook_info {
     my %opts = @_;
     my $lid  = $opts{lid};
     return 0 unless $lid;
@@ -248,38 +246,6 @@ sub update_list_info {
     $list->name($name);
     $list->description($desc) if $desc;
     #$list->list_type_id($type); # mdb removed 12/14/16 COGE-800
-    $list->update;
-
-    return 1;
-}
-
-sub make_list_public {
-    my %opts = @_;
-    my $lid  = $opts{lid};
-    return unless $lid;
-
-    #return unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-
-    my $list = $DB->resultset('List')->find($lid);
-    return 0 unless $list;
-
-    $list->restricted(0);
-    $list->update;
-
-    return 1;
-}
-
-sub make_list_private {
-    my %opts = @_;
-    my $lid  = $opts{lid};
-    return unless $lid;
-
-    #return unless $USER->is_admin || $USER->is_owner( dsg => $dsgid );
-
-    my $list = $DB->resultset('List')->find($lid);
-    return 0 unless $list;
-
-    $list->restricted(1);
     $list->update;
 
     return 1;

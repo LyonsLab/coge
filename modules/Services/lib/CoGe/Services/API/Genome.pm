@@ -347,6 +347,28 @@ sub delete_annotation {
     $self->render(json => { success => Mojo::JSON->true });
 }
 
+sub update {
+	my $self = shift;
+    my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(API_STATUS_MISSING_ID);
+        return;
+    }
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $genome = $self->_get_genome($id, 1, $db, $user);
+    return unless $genome;
+
+    my $data = $self->req->json;
+    if (exists($data->{metadata}->{id})) {
+	    delete $data->{metadata}->{id};
+    }
+	$genome->update($data->{metadata});
+	$self->render(json => { success => Mojo::JSON->true });
+}
+
 sub update_annotation {
     my $self = shift;
     my ($db, $user) = CoGe::Services::Auth::init($self);

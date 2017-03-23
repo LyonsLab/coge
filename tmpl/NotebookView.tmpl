@@ -25,8 +25,8 @@
 	<tr class="top">
 		<td>
 			<div class="bold text">Info</div>
-			<div id="list_info">
-				<TMPL_VAR NAME="LIST_INFO">
+			<div id="notebook_info">
+				<TMPL_VAR NAME="NOTEBOOK_INFO">
 			</div>
 		</td>
 		<td style="padding-left:20px;">
@@ -63,7 +63,7 @@
 	<li data-type="genome" data-action="send_to_xls">Export as XLS</li>
 </ul>
 
-<div id="list_info_edit_box" class="dialog_box hidden" title="Edit Notebook Info"></div>
+<div id="notebook_info_edit_box" class="dialog_box hidden" title="Edit Notebook Info"></div>
 
 <TMPL_INCLUDE NAME='widgets/Annotations.tmpl'>
 
@@ -150,7 +150,7 @@ $(function() {
 <script type="text/javascript" src="./js/jquery.fileupload.js"></script>
 </TMPL_IF> <!-- MAIN -->
 
-<TMPL_IF NAME='EDIT_LIST_INFO'>
+<TMPL_IF NAME='EDIT_NOTEBOOK_INFO'>
 <table class="small">
  <tr>
   <td>Name:</td>
@@ -173,8 +173,8 @@ $(function() {
 -->
 </table>
 <br>
-<span onClick="update_list_info();" class='coge-button r'>Update</span>
-</TMPL_IF> <!-- EDIT_LIST_INFO -->
+<span onClick="update_notebook_info();" class='coge-button r'>Update</span>
+</TMPL_IF> <!-- EDIT_NOTEBOOK_INFO -->
 
 <TMPL_IF NAME='ADD_LIST_ITEMS'>
 <SCRIPT language="JavaScript">

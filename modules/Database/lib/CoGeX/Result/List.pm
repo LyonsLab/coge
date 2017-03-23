@@ -63,7 +63,7 @@ __PACKAGE__->add_columns(
 #        size          => 11
 #    },
     "restricted",
-    { accessor => '_restricted', data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
+    { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
     "locked",
     { data_type => "BOOLEAN", default_value => 0, is_nullable => 0, size => 1 },
     "deleted",
@@ -140,17 +140,6 @@ __PACKAGE__->has_many(
     { "foreign.child_id" => "self.list_id" },
     { where => [ -and => [ child_type  => $node_types->{list} ] ] }
 );
-
-sub restricted {
-    my ($self, $value) = @_;
-    if (defined $value) {
-        $self->_restricted($value);
-        foreach ($self->annotations) {
-            set_bisque_visiblity($_->bisque_id, !$value) if $_->bisque_file;
-        }
-    }
-    return $self->_restricted();
-}
 
 sub item_type {
     return $node_types->{list};   

@@ -16,20 +16,20 @@ function show_dialog(id, title, html, width, height) {
 	d.dialog('open');
 }
 
-function edit_list_info() {
+function edit_notebook_info() {
 	$.ajax({
 		data: {
-			fname: 'edit_list_info',
+			fname: 'edit_notebook_info',
 			lid: NOTEBOOK_ID,
 		},
 		success : function(data) {
 			var obj = JSON.parse(data);
-			show_dialog('list_info_edit_box', '', obj.output, '31em');
+			show_dialog('notebook_info_edit_box', '', obj.output, '31em');
 		},
 	});
 }
 
-function update_list_info() {
+function update_notebook_info() {
 	var name = $('#edit_name').val();
 	if (!name) {
 		alert('Please specify a name.');
@@ -41,53 +41,37 @@ function update_list_info() {
 
 	$.ajax({
 		data: {
-			fname: 'update_list_info',
+			fname: 'update_notebook_info',
 			lid: NOTEBOOK_ID,
 			name: name,
 			desc: desc,
 			//type: type // mdb removed 12/14/16 COGE-800
 		},
 		success : function(val) {
-			get_list_info();
-			$("#list_info_edit_box").dialog('close');
+			get_notebook_info();
+			$("#notebook_info_edit_box").dialog('close');
 		},
 	});
 }
 
-function get_list_info() {
+function get_notebook_info() {
 	$.ajax({
 		data: {
-			fname: 'get_list_info',
-			lid: NOTEBOOK_ID
+			fname: 'get_notebook_info',
+			nid: NOTEBOOK_ID
 		},
 		success : function (data) {
-			$('#list_info').html(data);
+			$('#notebook_info').html(data);
 		}
 	});
 }
 
-function make_list_public() {
-	$.ajax({
-		data: {
-			fname: 'make_list_public',
-			lid: NOTEBOOK_ID,
-		},
-		success : function(val) {
-			get_list_info();
-		}
-	});
+function make_notebook_public () {
+	coge.services.update('notebook', NOTEBOOK_ID, {metadata: {restricted: 0}}).done(function() {get_notebook_info();});
 }
 
-function make_list_private() {
-	$.ajax({
-		data: {
-			fname: 'make_list_private',
-			lid: NOTEBOOK_ID,
-		},
-		success : function(val) {
-			get_list_info();
-		},
-	});
+function make_notebook_private () {
+	coge.services.update('notebook', NOTEBOOK_ID, {metadata: {restricted: 1}}).done(function() {get_notebook_info();});
 }
 
 function add_list_items(opts) {

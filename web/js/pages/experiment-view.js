@@ -89,27 +89,11 @@ function get_sources () {
 }
 
 function make_experiment_public () {
-    $.ajax({
-        data: {
-            fname: 'make_experiment_public',
-            eid: EXPERIMENT_ID
-        },
-        success : function(val) {
-            get_experiment_info();
-        }
-    });
+	coge.services.update('experiment', EXPERIMENT_ID, {metadata: {restricted: 0}}).done(function() {get_experiment_info();});
 }
 
 function make_experiment_private () {
-    $.ajax({
-        data: {
-            fname: 'make_experiment_private',
-            eid: EXPERIMENT_ID
-        },
-        success : function(val) {
-            get_experiment_info();
-        }
-    });
+	coge.services.update('experiment', EXPERIMENT_ID, {metadata: {restricted: 1}}).done(function() {get_experiment_info();});
 }
 
 function add_tag_to_experiment () {

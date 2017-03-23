@@ -120,6 +120,10 @@ $r->put("/genomes")
     ->name("genomes-add")
     ->to("genome#add", namespace => 'CoGe::Services::API');
 
+$r->post("/genomes/:id" => [id => qr/\d+/])
+    ->name("genomes-update")
+    ->to("genome#update", namespace => 'CoGe::Services::API', id => undef);
+
 $r->get("/genomes/:id/annotations" => [id => qr/\d+/])
     ->name("genomes-fetch-annotations")
     ->to("genome#fetch_annotations", namespace => 'CoGe::Services::API', id => undef);

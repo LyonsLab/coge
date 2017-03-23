@@ -219,14 +219,11 @@ sub update {
     return unless $experiment;
 
     my $data = $self->req->json;
+    warn Dumper $data;
     if (exists($data->{metadata}->{id})) {
 	    delete $data->{metadata}->{id};
     }
-    my $restricted = $experiment->restricted;
 	$experiment->update($data->{metadata});
-    if ($restricted != $experiment->restricted) {
-        $experiment->annotations;
-    }
 	$self->render(json => { success => Mojo::JSON->true });
 }
 
