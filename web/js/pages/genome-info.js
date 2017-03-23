@@ -648,6 +648,14 @@ function update_genome_info (){
     });
 }
 
+function make_genome_public () {
+	coge.services.update('genome', GENOME_ID, {metadata: {restricted: 0}}).done(function() {get_genome_info();});
+}
+
+function make_genome_private () {
+	coge.services.update('genome', GENOME_ID, {metadata: {restricted: 1}}).done(function() {get_genome_info();});
+}
+
 function delete_genome () {
     $.ajax({
         data: {

@@ -939,7 +939,9 @@ sub get_genome_info {
         TYPE           => ($genome->type ? $genome->type->info : ''),
         SOURCE         => get_genome_sources($genome) // '',
         LINK           => $genome->link,
-        RESTRICTED     => ( $genome->restricted ? 'Yes' : 'No' ),
+        USER_CAN_EDIT   => $genome->is_editable($USER),
+        USER_CAN_DELETE => $genome->is_deletable($USER),
+        RESTRICTED     => $genome->restricted,
         USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', sort map { $_->display_name } $USER->users_with_access($genome)) : 'Everyone' ),
         NAME           => $genome->name,
         DESCRIPTION    => $genome->description,
@@ -1876,9 +1878,6 @@ sub generate_body {
     return "There was an error while loading this genome" if $genome->status && $genome->status == ERROR;
     return "This genome is still being loaded" if $genome->status && $genome->status == LOADING;
 
-    my $user_can_edit = $genome->is_editable($USER);
-    my $user_can_delete = $genome->is_deletable($USER);
-
     $template->param( OID => $genome->organism->id );
 
     my $title = $genome->info;
@@ -1896,10 +1895,11 @@ sub generate_body {
         GENOME_DATA     => get_genome_info_details( dsgid => $genome->id) || undef,
         LOGON           => ( $USER->user_name ne "public" ),
         DEFAULT_TYPE    => 'note', # default annotation type
-        USER_CAN_EDIT   => $user_can_edit,
-        USER_CAN_ADD    => ( (!$genome->restricted and !$USER->is_public) or $user_can_edit ),
-        USER_CAN_DELETE => $user_can_delete,
+        USER_CAN_EDIT   => $genome->is_editable($USER),
+        USER_CAN_ADD    => ( (!$genome->restricted and !$USER->is_public) or $genome->is_editable($USER) ),
+        USER_CAN_DELETE => $genome->is_deletable($USER),
         DELETED         => $genome->deleted,
+        RESTRICTED      => $genome->restricted,
         CERTIFIED       => int($genome->certified),
         FAVORITED       => int($favorites->is_favorite($genome)),
         TRANSCRIPTOME   => ($genome->type->name =~ /transcriptome/i) ? 1 : 0,

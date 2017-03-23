@@ -150,14 +150,10 @@ sub get_notebook_info {
     my ($list) = $DB->resultset('List')->find($nid);
     return unless $USER->has_access_to_list($list);
 
-    my $html            = $list->annotation_pretty_print_html();
-    my $user_can_edit   = $list->is_editable($USER);
-    my $user_can_delete = $list->is_deletable($USER);
-
+    my $html = $list->annotation_pretty_print_html();
     $html .= qq{<div class="panel">};
-    if ($user_can_edit) {
+    if ($list->is_editable($USER)) {
         $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="edit_notebook_info();">Edit Info</span>};
-
         if ( $list->restricted ) {
             $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_notebook_public();">Make Public</span>};
         }
@@ -166,18 +162,15 @@ sub get_notebook_info {
         }
     }
 
-    if ( $user_can_delete ) {
+    if ($list->is_deletable($USER)) {
         $html .=
 			qq{<span class='coge-button coge-button-danger' style="margin-right:5px;" onClick="delete_list();">} .
 			($list->deleted ? 'Undelete' : 'Delete') . qq{</span>};
     }
 
     if ( $list->experiments( count => 1 ) ) {
-        foreach my $gid (
-            sort { $a <=> $b }
-            map  { $_->genome_id } $list->experiments
-          )
-        {    # Pick a genome, any genome # TODO show user a list of genomes to choose from
+        foreach my $gid ( sort { $a <=> $b } map { $_->genome_id } $list->experiments ) {
+            # Pick a genome, any genome # TODO show user a list of genomes to choose from
             my $link = qq{window.open('GenomeView.pl?embed=$EMBED&gid=$gid&tracks=notebook$nid', '_self');};
             $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="$link">Browse</span>};
             last;

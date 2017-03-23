@@ -21,13 +21,9 @@
             Add Tag
         </span>
         <TMPL_IF name="restricted">
-        <span class="coge-button" onclick="make_experiment_public();">
-            Make Public
-        </span>
+            <span class="coge-button" onclick="make_experiment_public();">Make Public</span>
         <TMPL_ELSE>
-        <span class="coge-button" onclick="make_experiment_private();">
-            Make Private
-        </span>
+            <span class="coge-button" onclick="make_experiment_private();">Make Private</span>
         </TMPL_IF>
     </TMPL_IF>
     <TMPL_IF name="deletable">
