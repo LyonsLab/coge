@@ -344,7 +344,7 @@ function snp_merge(method) {
         }
 
 		coge.progress.begin({
-			title: "Merging " + method + " SNP experiments ...",
+			title: "Merging (" + method + " method) SNP experiments ...",
 			width: '60%',
 	    	height: '50%'
 		});
