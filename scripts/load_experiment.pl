@@ -754,8 +754,7 @@ sub validate_vcf_data_file {
     my $genome_chr = $opts{genome_chr};
 
     my %chromosomes;
-    my $isGVCF = 0;
-    my $checkedGVCF = 0;
+    my $isGVCF;
     my $line_num = 1;
     my $count;
 
@@ -779,10 +778,9 @@ sub validate_vcf_data_file {
         }
         
         # Check for extra genotype columns in GVCF
-        if ( !$isGVCF && !$checkedGVCF && @tok > 10 ) {
-            print STDOUT "Detected multisample GVCF file based on ", scalar(@tok), " columns\n";
-            $isGVCF = 1;
-            $checkedGVCF = 1; # only do this check for first line of data
+        if (!defined($isGVCF)) { # only do this check once
+            $isGVCF = (@tok > 10);
+            print STDOUT "Multisample GVCF: ", ($isGVCF ? 'yes' : 'no'), "\n";
         }
 
         # Validate values and set defaults
