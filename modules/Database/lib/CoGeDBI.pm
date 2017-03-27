@@ -511,6 +511,9 @@ sub get_features {
     else {
         $query .= " AND dc.dataset_id=$dataset_id";
     }
+    if ($type_id) {
+        $query .= " AND f.feature_type_id=$type_id";
+    }
     my $sth = $dbh->prepare($query);
     $sth->execute();
     ($hasPrimaryName) = $sth->fetchrow_array();
