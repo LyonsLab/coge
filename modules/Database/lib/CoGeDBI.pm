@@ -44,7 +44,7 @@ BEGIN {
         get_table get_user_access_table get_experiments get_distinct_feat_types
         get_genomes_for_user get_experiments_for_user get_lists_for_user
         get_groups_for_user get_group_access_table get_datasets
-        get_feature_counts get_features get_feature_types 
+        get_feature_counts get_feature_count_summary get_features get_feature_types
         get_feature_names get_feature_annotations get_locations 
         get_total_queries get_dataset_ids feature_type_names_to_id
         get_features_by_range get_table_count get_uptime
@@ -436,8 +436,8 @@ sub get_feature_counts {
     my $genome_id = shift;
     my $dataset_id = shift;
     return unless ($dbh and ($genome_id or $dataset_id));
-    #print STDERR "CoGeDBI::get_feature_counts $genome_id\n";
-    
+    my $returnArray = shift; # optional flag to return result as raw array ref
+
     # Execute query
     my $query = qq{
         SELECT f.chromosome AS chromosome, f.feature_type_id AS type_id, count(*) AS count
@@ -453,7 +453,35 @@ sub get_feature_counts {
     $query .= " GROUP BY f.chromosome, f.feature_type_id";
     my $sth = $dbh->prepare($query);
     $sth->execute();
-    my $results = $sth->fetchall_hashref(['chromosome', 'type_id']);
+    my $results;
+    if ($returnArray) {
+        $results = $sth->fetchall_arrayref({});
+    }
+    else {
+        $results = $sth->fetchall_hashref([ 'chromosome', 'type_id' ]);
+    }
+    #print STDERR Dumper $results, "\n";
+
+    return $results;
+}
+
+sub get_feature_count_summary {
+    my $dbh = shift;         # database connection handle
+    my $genome_id = shift;
+    return unless ($dbh and $genome_id);
+
+    # Execute query
+    my $query = qq{
+        SELECT f.feature_type_id AS type_id, ft.name as type_name, count(*) AS count
+        FROM dataset_connector AS dc
+        JOIN feature AS f ON (dc.dataset_id=f.dataset_id)
+        JOIN feature_type AS ft ON (f.feature_type_id=ft.feature_type_id)
+        WHERE (dc.genome_id=$genome_id)
+        GROUP BY f.feature_type_id
+    };
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    my $results = $sth->fetchall_arrayref({});
     #print STDERR Dumper $results, "\n";
 
     return $results;
@@ -461,28 +489,69 @@ sub get_feature_counts {
 
 sub get_features {
     my $dbh = shift;         # database connection handle
-    my $genome_id = shift;   # genome id 
+    my $genome_id = shift;   # genome id (either this or dataset_id required)
     my $dataset_id = shift;  # dataset id
     return unless ($dbh and ($genome_id or $dataset_id));
-    
-    # Execute query
+    my $type_id = shift;     # optional feature type
+    my $returnArray = shift; # optional flag to return result as raw array ref
+
+    # Test for presence of primary_name
+    my $hasPrimaryName = 0;
     my $query = qq{
+        SELECT count(*)
+        FROM dataset_connector AS dc
+        JOIN feature AS f ON (f.dataset_id=dc.dataset_id)
+        JOIN feature_type AS ft ON (ft.feature_type_id=f.feature_type_id)
+        JOIN feature_name AS fn ON (fn.feature_id=f.feature_id)
+        WHERE fn.primary_name=1
+    };
+    if ($genome_id) {
+        $query .= " AND dc.genome_id=$genome_id";
+    }
+    else {
+        $query .= " AND dc.dataset_id=$dataset_id";
+    }
+    if ($type_id) {
+        $query .= " AND f.feature_type_id=$type_id";
+    }
+    my $sth = $dbh->prepare($query);
+    $sth->execute();
+    ($hasPrimaryName) = $sth->fetchrow_array();
+
+    # Execute query
+    $query = qq{
         SELECT f.feature_id AS id, f.feature_type_id AS type_id, ft.name AS type_name,
-            f.start AS start, f.stop AS stop, f.strand AS strand, f.chromosome AS chromosome
+            f.start AS start, f.stop AS stop, f.strand AS strand, f.chromosome AS chromosome,
+            fn.name as name
         FROM dataset_connector AS dc 
         JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
         JOIN feature_type AS ft ON (ft.feature_type_id=f.feature_type_id)
+        JOIN feature_name AS fn ON (fn.feature_id=f.feature_id)
+        WHERE 1=1
     };
     if ($genome_id) {
-        $query .= " WHERE (dc.genome_id=$genome_id)";
+        $query .= " AND dc.genome_id=$genome_id";
     }
     else {
-        $query .= " WHERE (dc.dataset_id=$dataset_id)";
+        $query .= " AND dc.dataset_id=$dataset_id";
+    }
+    if ($type_id) {
+        $query .= " AND f.feature_type_id=$type_id";
+    }
+    if ($hasPrimaryName) {
+        $query .= " AND fn.primary_name=1";
     }
 
-    my $sth = $dbh->prepare($query);
+    warn $query;
+    $sth = $dbh->prepare($query);
     $sth->execute();
-    my $results = $sth->fetchall_hashref(['chromosome', 'id']);
+    my $results;
+    if ($returnArray) {
+        $results = $sth->fetchall_arrayref({});
+    }
+    else {
+        $results = $sth->fetchall_hashref([ 'chromosome', 'id' ]);
+    }
     #print STDERR Dumper $results, "\n";
     
     return $results;

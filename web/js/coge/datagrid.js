@@ -16,14 +16,17 @@ class DataGrid {
         else
             console.warn('DataGrid: please specify target element');
 
-        this.filter    = params.filter;
+        this.filter       = params.filter;
+        this.selectable   = (typeof params.selectable !== 'undefined' ? params.selectable : true);
         this.selectionCallback = params.selectionCallback;
-        this.mouseOver = params.mouseOver;
-        this.mouseOut  = params.mouseOut;
+        this.mouseOver    = params.mouseOver;
+        this.mouseOut     = params.mouseOut;
         this.dateSortAsc  = params.dateSortAsc;
         this.dateSortDesc = params.dateSortDesc;
-        this.height    = params.height;
-        this.columns   = params.columns;
+        this.height       = params.height;
+        this.class        = (typeof params.class !== 'undefined' ? params.class : "dt-cell hover compact row-border");
+        this.columns      = params.columns;
+        this.options      = params.options || {};
         if (!this.columns) {
             console.error('Missing required "columns" parameter');
             return;
@@ -34,90 +37,92 @@ class DataGrid {
 
 	initialize() {
 		var self = this;
-		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="dt-cell hover compact row-border" style="cursor:pointer;"></table>');
+		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="' + self.class + '" style="cursor:pointer;"></table>');
 
 		// Instantiate grid
-		var dataTable = this.dataTable = this.element.children('table').dataTable({
+		var dataTable = this.dataTable = this.element.children('table').dataTable($.extend(true, {}, {
 			paging:    false,
 			info:      false,
 			searching: true,
 			dom:       'lrt', // remove unused elements (like search box)
 			scrollY:   self.height,
-			oLanguage: { "sZeroRecords": "", "sEmptyTable": "" },
+			language: { zeroRecords: "", emptyTable: "" },
 			columns:   self.columns
-		});
+		}, self.options));
 
 		var dataTableBody = dataTable.children('tbody');
 
 		// Handle row selection event
-		dataTableBody.on('click', 'tr', function(event) {
-			var tr = this;
-			var row = dataTable.api().row(tr).data();
-			if (!row)
-				return;
+		if (self.selectable) {
+            dataTableBody.on('click', 'tr', function(event) {
+                var tr = this;
+                var row = dataTable.api().row(tr).data();
+                if (!row)
+                    return;
 
-	        if ( $(tr).hasClass('selected') ) { // unselect
-	            $(tr).removeClass('selected');
-	        }
-	        else { // select
-	        	if (event.ctrlKey || event.metaKey) // multi select
-	        		; // no action required
-	        	else if (event.shiftKey) { // block select
-		            var oSettings = dataTable.fnSettings(),
-			            fromPos = dataTable.fnGetPosition(self.lastRowSelected),
-		            	toPos = dataTable.fnGetPosition(tr),
-		            	fromIndex = $.inArray(fromPos, oSettings.aiDisplay),
-		            	toIndex = $.inArray(toPos, oSettings.aiDisplay),
-			            start = (fromIndex < toIndex ? fromIndex : toIndex),
-			            end = (fromIndex < toIndex ? toIndex : fromIndex);
+                if ( $(tr).hasClass('selected') ) { // unselect
+                    $(tr).removeClass('selected');
+                }
+                else { // select
+                    if (event.ctrlKey || event.metaKey) // multi select
+                        ; // no action required
+                    else if (event.shiftKey) { // block select
+                        var oSettings = dataTable.fnSettings(),
+                            fromPos = dataTable.fnGetPosition(self.lastRowSelected),
+                            toPos = dataTable.fnGetPosition(tr),
+                            fromIndex = $.inArray(fromPos, oSettings.aiDisplay),
+                            toIndex = $.inArray(toPos, oSettings.aiDisplay),
+                            start = (fromIndex < toIndex ? fromIndex : toIndex),
+                            end = (fromIndex < toIndex ? toIndex : fromIndex);
 
-		            for (var i = start; i <= end; i++) {
-		            	var tr2 = dataTable.api().row(oSettings.aiDisplay[i]).node();
-		            	$(tr2).addClass('selected'); // select item
-		            }
-	        	}
-	        	else
-	        		dataTable.$('tr.selected').removeClass('selected'); // unselect all
+                        for (var i = start; i <= end; i++) {
+                            var tr2 = dataTable.api().row(oSettings.aiDisplay[i]).node();
+                            $(tr2).addClass('selected'); // select item
+                        }
+                    }
+                    else
+                        dataTable.$('tr.selected').removeClass('selected'); // unselect all
 
-	            $(tr).addClass('selected'); // select item
-	            self.lastRowSelected = tr;
-	        }
+                    $(tr).addClass('selected'); // select item
+                    self.lastRowSelected = tr;
+                }
 
-	        self.selectItem(row);
-		});
+                self.selectItem(row);
+            });
 
-		// Handle row double-click event
-		dataTableBody.on('dblclick', 'tr', function() {
-			var tr = this;
-			var row = dataTable.api().row(tr).data();
+            // Handle row double-click event
+            dataTableBody.on('dblclick', 'tr', function() {
+                var tr = this;
+                var row = dataTable.api().row(tr).data();
 
-			if (row) {
-				self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
-		        $(tr).addClass('selected'); // select item
-		        self.lastRowSelected = tr;
-		        self.selectItem(row);
-		        self.openItem(row);
-			}
-		});
+                if (row) {
+                    self.dataTable.$('tr.selected').removeClass('selected'); // unselect all
+                    $(tr).addClass('selected'); // select item
+                    self.lastRowSelected = tr;
+                    self.selectItem(row);
+                    self.openItem(row);
+                }
+            });
 
-		// Handle row hover events
-		dataTableBody.on('mouseover', 'tr', function () {
-	        if (self.getSelectedItems()) // Do nothing if row(s) currently selected
-	    		return;
+            // Handle row hover events
+            dataTableBody.on('mouseover', 'tr', function () {
+                if (self.getSelectedItems()) // Do nothing if row(s) currently selected
+                    return;
 
-	        var tr = $(this).closest('tr');
-	        var row = dataTable.api().row(tr).data();
-	        if (row && self.mouseOver)
-	            self.mouseOver.call(self, row);
-	    });
+                var tr = $(this).closest('tr');
+                var row = dataTable.api().row(tr).data();
+                if (row && self.mouseOver)
+                    self.mouseOver.call(self, row);
+            });
 
-		dataTableBody.on('mouseout', 'tr', function () {
-	    	if (self.getSelectedItems()) // Do nothing if row(s) currently selected
-	    		return;
+            dataTableBody.on('mouseout', 'tr', function () {
+                if (self.getSelectedItems()) // Do nothing if row(s) currently selected
+                    return;
 
-	    	if (self.mouseOut)
-	    	    self.mouseOut.call(self);
-	    });
+                if (self.mouseOut)
+                    self.mouseOut.call(self);
+            });
+        }
 
 		// Add custom filter
 		if (self.filter) {

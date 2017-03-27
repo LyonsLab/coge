@@ -6,8 +6,11 @@ use JSON::XS;
 use HTML::Template;
 use Sort::Versions;
 use List::Util qw(first);
+use Spreadsheet::WriteExcel;
+
 use CoGeX;
 use CoGe::Accessory::Web;
+use CoGe::Accessory::Utils;
 use CoGe::Core::Metadata;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
@@ -20,7 +23,7 @@ use CoGeX::ResultSet::Feature;
 no warnings 'redefine';
 
 use vars
-  qw($P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $BASEFILE $DB %FUNCTION $EMBED
+  qw($P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $DB %FUNCTION $EMBED
   $FORM $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS $LINK $node_types);
 
 $PAGE_TITLE = 'NotebookView';
@@ -42,14 +45,13 @@ $node_types = $DB->node_types();
 
 %FUNCTION = (
     get_list_info              => \&get_list_info,
-    get_list_contents          => \&get_list_contents,
     edit_list_info             => \&edit_list_info,
     update_list_info           => \&update_list_info,
     make_list_public           => \&make_list_public,
     make_list_private          => \&make_list_private,
     add_list_items             => \&add_list_items,
     add_item_to_list           => \&add_item_to_list,
-    remove_list_item           => \&remove_list_item,
+    remove_list_items          => \&remove_list_items,
     toggle_favorite            => \&toggle_favorite,
     get_annotations            => \&get_annotations,
     add_annotation             => \&add_annotation,
@@ -137,13 +139,13 @@ sub gen_body {
         DEFAULT_TYPE => 'note',
         API_BASE_URL => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
         USER         => $USER->user_name,
+        USER_CAN_EDIT  => $list->is_editable($USER) ? JSON::true : JSON::false,
         NOTEBOOK_TITLE => $title,
         FAVORITED      => int($favorites->is_favorite($list)),
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( LIST_INFO => get_list_info( lid => $lid ) );
     $template->param( LIST_ANNOTATIONS => get_annotations( lid => $lid ) );
-    $template->param( LIST_CONTENTS => get_list_contents( lid => $lid ) );
     $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
 
     return $template->output;
@@ -569,51 +571,42 @@ sub remove_annotation {
     return 1;
 }
 
-sub get_list_contents {
-    my %opts = @_;
-    my $lid  = $opts{lid};
-
-    return "Must have valid notebook id\n" unless ($lid);
-
-    my $list = $DB->resultset('List')->find($lid);
-
-    return "Notebook id$lid does not exist.<br>" unless $list;
-
-    return "Access denied\n" unless $USER->has_access_to_list($list);
-
-    my @genomes = grep { $USER->has_access_to_genome($_); } $list->genomes;
-    my @experiments = grep { $USER->has_access_to_experiment($_); } $list->experiments;
-    my @features = $list->features;
-
-    my @g;
-    foreach my $genome ( sort genomecmp @genomes ) {
-        my $info = $genome->info;
-        $info =~ s/'/\\'/g;
-        $info =~ s/\n/<br>/g;
-        push @g, [ $genome->id, $info, $genome->date eq '0000-00-00 00:00:00' ? undef : $genome->date ];
-    }
-    my @e;
-    foreach my $experiment ( sort experimentcmp @experiments ) {
-        my $info = $experiment->info;
-        $info =~ s/'/\\'/g;
-        $info =~ s/\n/<br>/g;
-        push @e, [ $experiment->id, $info, $experiment->date eq '0000-00-00 00:00:00' ? undef : $experiment->date ];
-    }
-    my @f;
-    foreach my $feature ( sort featurecmp @features ) {
-        my $info = $feature->info;
-        $info =~ s/'/\\'/g;
-        $info =~ s/\n/<br>/g;
-        push @f, [ $feature->id, $info ];
-    }
-
-    return encode_json({
-        experiments => \@e,
-        features => \@f,
-        genomes => \@g,
-        user_can_edit => $list->is_editable($USER) ? JSON::true : JSON::false
-    });
-}
+# mdb removed 3/15/17 -- replaced with call to API Notebook Fetch
+#sub get_list_contents {
+#    my %opts = @_;
+#    my $lid  = $opts{lid};
+#    return encode_json({ error => "Must have valid notebook id" }) unless $lid;
+#
+#    my $list = $DB->resultset('List')->find($lid);
+#    return encode_json({ error => "Notebook id$lid does not exist" }) unless $list;
+#    return encode_json({ error => "Access denied" }) unless (!$list->restricted || ($USER && $USER->has_access_to_list($list)));
+#
+#    my @genomes     = grep { $USER->has_access_to_genome($_);     } $list->genomes;
+#    my @experiments = grep { $USER->has_access_to_experiment($_); } $list->experiments;
+#    my @features    = $list->features; #TODO add check for access to parent genomes
+#
+#    my @items;
+#    foreach my $item ( sort genomecmp @genomes ) {
+#        my $info = $item->info;
+#        $info =~ s/'/\\'/g;
+#        $info =~ s/\n/<br>/g;
+#        push @items, { type => 'genome', item_type => 2, id => $item->id, info => $info, date => ($item->date eq '0000-00-00 00:00:00' ? undef : $item->date) };
+#    }
+#    foreach my $item ( sort experimentcmp @experiments ) {
+#        my $info = $item->info;
+#        $info =~ s/'/\\'/g;
+#        $info =~ s/\n/<br>/g;
+#        push @items, { type => 'experiment', item_type => 3, id => $item->id, info => $info, date => ($item->date eq '0000-00-00 00:00:00' ? undef : $item->date) };
+#    }
+#    foreach my $item ( sort featurecmp @features ) {
+#        my $info = $item->info;
+#        $info =~ s/'/\\'/g;
+#        $info =~ s/\n/<br>/g;
+#        push @items, { type => 'feature', item_type => 4, 'id' => $item->id, 'info' => $info };
+#    }
+#
+#    return encode_json({ items => \@items });
+#}
 
 sub add_list_items {
     my %opts = @_;
@@ -675,38 +668,42 @@ sub add_item_to_list {
     return 1;
 }
 
-sub remove_list_item {
+sub remove_list_items {
     my %opts = @_;
     my $lid  = $opts{lid};
     return 0 unless $lid;
+    my $item_list = $opts{item_list};
+    my @items     = split(',', $item_list);
+    return unless @items;
 
     my $list = $DB->resultset('List')->find($lid);
     return 0 unless $list;
     return 0 unless $list->is_editable($USER);
 
-    my $item_type = $opts{item_type};
-    my $item_id   = $opts{item_id};
-    #print STDERR "remove_list_item: lid=$lid item_type=$item_type item_id=$item_id\n";
+    foreach (@items) {
+        my ( $item_id, $type ) = $_ =~ /(\d+)_(\w+)/;
+        next unless ( $item_id and $type );
+        my $item_type = $node_types->{$type};
 
-    my $lc =
-      $DB->resultset('ListConnector')->find(
-        {   parent_id => $lid,
-            child_id => $item_id,
+        my $lc = $DB->resultset('ListConnector')->find({
+            parent_id  => $lid,
+            child_id   => $item_id,
             child_type => $item_type
         });
-    if ($lc) {
-        $lc->delete();
+        if ($lc) {
+            $lc->delete();
 
-        my $type_name = $DB->node_type_name($item_type);
-        CoGe::Accessory::Web::log_history(
-            db          => $DB,
-            user_id     => $USER->id,
-            page        => "NotebookView",
-            description => "removed $type_name id$item_id from notebook " . $list->info_html,
-            link        => "NotebookView.pl?nid=$lid",
-            parent_id   => $lid,
-            parent_type => 1 #FIXME magic number
-        );
+            my $type_name = $DB->node_type_name($item_type);
+            CoGe::Accessory::Web::log_history(
+                db          => $DB,
+                user_id     => $USER->id,
+                page        => "NotebookView",
+                description => "removed $type_name id$item_id from notebook ".$list->info_html,
+                link        => "NotebookView.pl?nid=$lid",
+                parent_id   => $lid,
+                parent_type => 1 #FIXME magic number
+            );
+        }
     }
 
     return 1;
@@ -718,7 +715,7 @@ sub search_mystuff {
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
 
-    #print STDERR "$lid $search_term\n";
+    #print STDERR "search_mystuff: $lid $search_term\n";
     return 0 unless $lid;
 
     # Get items already in list
@@ -860,7 +857,7 @@ sub search_genomes {
             ]
         );
 
-# Combine matching genomes with matching organism genomes, preventing duplicates
+        # Combine matching genomes with matching organism genomes, preventing duplicates
         map {
             $unique{ $_->id } = $_
               if ( !$_->deleted and $USER->has_access_to_genome($_) )
@@ -880,8 +877,7 @@ sub search_genomes {
         return encode_json(
             {
                 timestamp => $timestamp,
-                html =>
-"<option disabled='disabled'>$num_results results, please refine your search.</option>"
+                html =>  "<option disabled='disabled'>$num_results results, please refine your search.</option>"
             }
         );
     }
@@ -941,8 +937,7 @@ sub search_experiments {
         # Get all public experiments
         $search_term = '%' . $search_term . '%';
         map { $unique{ $_->id } = $_ } $DB->resultset("Experiment")->search(
-            \[
-'restricted=? AND deleted=? AND (name LIKE ? OR description LIKE ?)',
+            \[ 'restricted=? AND deleted=? AND (name LIKE ? OR description LIKE ?)',
                 [ 'restricted',  0 ],
                 [ 'deleted',     0 ],
                 [ 'name',        $search_term ],
@@ -958,8 +953,7 @@ sub search_experiments {
         return encode_json(
             {
                 timestamp => $timestamp,
-                html =>
-"<option disabled='disabled'>$num_results results, please refine your search.</option>"
+                html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
             }
         );
     }
@@ -985,8 +979,7 @@ sub search_features {
     my $lid         = $opts{lid};
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
-
-    #	print STDERR "$lid $search_term\n";
+    #print STDERR "search_features: $lid $search_term\n";
     return 0 unless $lid;
 
     # Get lists already in list
@@ -999,23 +992,19 @@ sub search_features {
 
     # Try to display all items if blank search term
     if ( !$search_term ) {
-
         # Get all features
         $num_results = get_table_count($DB->storage->dbh, 'feature_name');
         if ( $num_results < $MAX_SEARCH_RESULTS ) {
             @fnames = $DB->resultset("FeatureName")->all;
         }
     }
-
     # Perform search
     else {
-
         # Fulltext search copied from FeatView.pl
         push @fnames, $DB->resultset('FeatureName')->search( { name => $search_term } );
         unless (@fnames) {
             push @fnames,
-              $DB->resultset('FeatureName')
-              ->search_literal( 'MATCH(me.name) AGAINST (?)', $search_term );
+              $DB->resultset('FeatureName')->search_literal( 'MATCH(me.name) AGAINST (?)', $search_term );
         }
         $num_results = @fnames;
     }
@@ -1025,8 +1014,7 @@ sub search_features {
         return encode_json(
             {
                 timestamp => $timestamp,
-                html =>
-"<option disabled='disabled'>$num_results results, please refine your search.</option>"
+                html => "<option disabled='disabled'>$num_results results, please refine your search.</option>"
             }
         );
     }
@@ -1036,6 +1024,7 @@ sub search_features {
     my %seen;
     foreach my $f ( sort featurecmp @fnames ) {
         next if ( $seen{ $f->feature_id }++ );
+        next unless ( defined $f->feature ); # mdb added 3/16/17 for "Can't call method "info" on an undefined value" on $f->feature->info reference below
         my $disable = $exists{ $f->feature_id } ? "disabled='disabled'" : '';
         my $item_spec = $node_types->{feature} . ':' . $f->feature_id;
         $html .=
@@ -1055,7 +1044,6 @@ sub search_lists
     return if ( $USER->user_name eq 'public' );
     my $search_term = $opts{search_term};
     my $timestamp   = $opts{timestamp};
-
     #	print STDERR "$search_term $timestamp\n";
 
     my @notebooks;
@@ -1083,8 +1071,7 @@ sub search_lists
         # Get public lists and user's private lists
         $search_term = '%' . $search_term . '%';
         foreach my $notebook (
-            $DB->resultset("List")->search_literal(
-"locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"
+            $DB->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"
             )
           )
         {
@@ -1099,8 +1086,7 @@ sub search_lists
         return encode_json(
             {
                 timestamp => $timestamp,
-                html =>
-"<option>$num_results matches, please refine your search.</option>"
+                html => "<option>$num_results matches, please refine your search.</option>"
             }
         );
     }
@@ -1170,8 +1156,7 @@ sub search_annotation_types {
 
         #		print STDERR "type_group=$type_group " . $group->id . "\n";
         @types = $DB->resultset("AnnotationType")->search(
-            \[
-'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
+            \[ 'annotation_type_group_id = ? AND (name LIKE ? OR description LIKE ?)',
                 [ 'annotation_type_group_id', $group->id ],
                 [ 'name',                     $search_term ],
                 [ 'description',              $search_term ]
@@ -1295,12 +1280,9 @@ sub send_to_gevo {
 
     my $url = "GEvo.pl?$accn_list";
     $count--;
-    return encode_json(
-        {
-            alert =>
-"You have exceeded the number of features you can send to GEvo (20 max)."
-        }
-    ) if $count > 20;
+    return encode_json({
+        alert => "You have exceeded the number of features you can send to GEvo (20 max)."
+    }) if $count > 20;
     $url .= "&num_seqs=$count";
     return encode_json( { url => $url } );
 }
@@ -1354,8 +1336,7 @@ sub send_to_fasta {
     my $list = $DB->resultset('List')->find($lid);
     return unless $list;
 
-    my $cogeweb =
-      CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+    my $cogeweb  = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
     my $basename = $cogeweb->basefilename;
     my $file     = $TEMPDIR . "$basename.faa";
     open( OUT, ">$file" );
@@ -1375,8 +1356,7 @@ sub send_to_tsv {
     my $list = $DB->resultset('List')->find($lid);
     return unless $list;
 
-    my $cogeweb =
-      CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+    my $cogeweb  = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
     my $basename = $cogeweb->basefilename;
     my $file     = "$TEMPDIR/$basename.tsv";
 
@@ -1458,8 +1438,7 @@ sub send_to_xls {
     my $accn_list = $args{accn};
     $accn_list =~ s/^,//;
     $accn_list =~ s/,$//;
-    my $cogeweb =
-      CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+    my $cogeweb  = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
     my $basename = $cogeweb->basefilename;
     my $file     = "$TEMPDIR/Excel_$basename.xls";
     my $workbook = Spreadsheet::WriteExcel->new($file);

@@ -69,6 +69,10 @@ var coge = window.coge = (function(namespace) {
 			// TODO add param validation
 			return this._ajax("GET", this.baseUrl + "notebooks/search/" + search_term + "/");
 		},
+
+		fetch_notebook: function(id) {
+		    return this._ajax("GET", this.baseUrl + "notebooks/" + id + "/");
+		},
 		
 		search_users: function(search_term) {
 			// TODO add param validation
