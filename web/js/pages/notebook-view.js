@@ -66,12 +66,10 @@ function get_notebook_info() {
 	});
 }
 
-function make_notebook_public () {
-	coge.services.update('notebook', NOTEBOOK_ID, {metadata: {restricted: 0}}).done(function() {get_notebook_info();});
-}
-
-function make_notebook_private () {
-	coge.services.update('notebook', NOTEBOOK_ID, {metadata: {restricted: 1}}).done(function() {get_notebook_info();});
+function make_notebook_public(public) {
+    if (typeof public === 'undefined')
+        public = true;
+	coge.services.update('notebook', NOTEBOOK_ID, {metadata: {restricted: !public}}).done(get_notebook_info);
 }
 
 function add_list_items(opts) {
@@ -332,6 +330,60 @@ function toggle_favorite(img) {
 			$(img).attr({ src: (val == '0' ? "picts/star-hollow.png" : "picts/star-full.png") });
 		}
 	});
+}
+
+function snp_merge(method) {
+        var experiments = contents.grid.dataTable.api().rows().data() //TODO add getRows() to DataGrid
+            .filter(function(item) { return (item.data_type === 'polymorphism') })
+            .map(function(item) { return item.id })
+            .toArray();
+
+        if (typeof experiments === 'undefined' || experiments.length == 0) {
+            alert("No SNP experiments exist in this notebook");
+            return;
+        }
+
+		coge.progress.begin({
+			title: "Merging (" + method + " method) SNP experiments ...",
+			width: '60%',
+	    	height: '50%'
+		});
+
+		// Build request
+		var request = {
+			type: 'merge_snps',
+			requester: {
+				page: PAGE_NAME,
+				url: PAGE_NAME + "?nid=" + NOTEBOOK_ID
+			},
+			parameters: {
+			    method: method,
+				experiments: experiments,
+				metadata: {
+				    name: "test" // FIXME
+				}
+			}
+		};
+
+		// Submit request
+		coge.services.submit_job(request)
+			.done(function(response) {
+		  		if (!response) {
+		  			coge.progress.failed("Error: empty response from server");
+		  			return;
+		  		}
+		  		else if (!response.success || !response.id) {
+		  			coge.progress.failed("Error: failed to start workflow");
+		  			return;
+		  		}
+
+		        // Start status update
+		  		window.history.pushState({}, "Title", PAGE_NAME + "?nid=" + NOTEBOOK_ID + "&wid=" + response.id); // Add workflow id to browser URL
+		  		coge.progress.update(response.id, response.site_url);
+		    })
+		    .fail(function(jqXHR, textStatus, errorThrown) {
+		    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
+		    });
 }
 
 class SendToMenu {

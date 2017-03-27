@@ -47,6 +47,7 @@ sub build {
         CoGe::Exception::MissingField->throw(message => "Missing metadata name field");
     }
     $metadata->{source_name} = $self->user->display_name unless $metadata->{source_name};
+    $metadata->{version} = 1 unless $metadata->{version};
 
     # Verify experiments and build list of VCF files for all experiments
     my $experiments = $self->request->experiments;
@@ -74,13 +75,24 @@ sub build {
         $self->fasta_dict($reheader_fasta, $gid)
     );
 
-    # Merge individual VCFs into multisample GVCF
-    $self->add_to_previous(
-        $self->gatk_GenotypeGVCFs(
-            input_fasta => $reheader_fasta,
-            input_vcfs => \@vcf_files
-        )
-    );
+    # There are two ways to merge
+    my $method = lc($self->params->{method});
+    if ($method eq 'combine') { # Combine individual gVCFs into multisample GVCF
+        $self->add_to_previous(
+            $self->gatk_CombineGVCFs(
+                input_fasta => $reheader_fasta,
+                input_vcfs  => \@vcf_files
+            )
+        );
+    }
+    elsif ($method eq 'genotype') { # Merge individual gVCFs into a single-sample GVCF
+        $self->add_to_previous(
+            $self->gatk_GenotypeGVCFs(
+                input_fasta => $reheader_fasta,
+                input_vcfs  => \@vcf_files
+            )
+        );
+    }
 
     # Load GVCF experiment
     $self->add_to_previous(
@@ -90,6 +102,40 @@ sub build {
             vcf => $self->previous_output
         )
     );
+}
+
+sub gatk_CombineGVCFs {
+    my $self = shift;
+    my %opts = @_;
+    my $input_fasta = $opts{input_fasta};
+    my $input_vcfs  = $opts{input_vcfs}; # ref to array of VCF files
+
+    my ($first_vcf) = @$input_vcfs;
+    my $output_vcf = to_filename_base($first_vcf) . '.vcf';
+
+    my $args = [
+        ['-R', qq[$input_fasta.fa], 0],
+        ['-o', $output_vcf,         1]
+    ];
+    push @$args, map { ['-V', $_, 1 ] } @$input_vcfs;
+
+    return {
+        cmd => "ln -sf $input_fasta $input_fasta.fa && " . # GATK expects the filename to end in .fa or .fasta
+               "ln -sf $input_fasta.fai $input_fasta.fa.fai && " .
+               "ln -sf $input_fasta.dict $input_fasta.fa.dict && " .
+                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T CombineGVCFs],
+        args => $args,
+        inputs => [
+            @$input_vcfs,
+            $input_fasta,
+            qq[$input_fasta.fai],
+            qq[$input_fasta.dict]
+        ],
+        outputs => [
+            catfile($self->staging_dir, $output_vcf)
+        ],
+        description => "Combining VCFs using GATK CombineGVCFs"
+    };
 }
 
 sub gatk_GenotypeGVCFs {
@@ -122,7 +168,7 @@ sub gatk_GenotypeGVCFs {
         outputs => [
             catfile($self->staging_dir, $output_vcf)
         ],
-        description => "Merging VCFs using GATK GenotypeGVCFs"
+        description => "Genotyping VCFs using GATK GenotypeGVCFs"
     };
 }
 
@@ -130,7 +176,11 @@ sub generate_additional_metadata {
     my $self = shift;
     my $experiments = $self->request->experiments;
 
-    my @md = ();
+    my @md = ({
+        type => 'SNP merge method',
+        text => lc($self->params->{method})
+    });
+
     foreach my $experiment (@$experiments) {
         push @md, {
             type_group => 'Source experiment',
@@ -139,7 +189,6 @@ sub generate_additional_metadata {
             link => url_for('ExperimentView.pl', eid => $experiment->id) #FIXME hardcoded page url
         };
     }
-    warn Dumper \@md;
 
     return \@md;
 }

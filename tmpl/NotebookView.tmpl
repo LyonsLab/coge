@@ -23,15 +23,37 @@
 
 <table>
 	<tr class="top">
-		<td>
-			<div class="bold text">Info</div>
+		<td rowspan="2">
+			<div class="coge-table-header">Info</div>
 			<div id="notebook_info">
 				<TMPL_VAR NAME="NOTEBOOK_INFO">
 			</div>
 		</td>
-		<td style="padding-left:20px;">
-			<span class="bold text">Metadata</span><br>
-			<div id='notebook_annotations'></div>
+		<td>
+			<table>
+				<tr>
+					<td style="padding-left:20px;">
+						<span class="coge-table-header">Metadata</span><br>
+						<div id='notebook_annotations'></div>
+					</td>
+				</tr>
+				<TMPL_IF NAME="MULTIPLE_SNP_EXPERIMENTS">
+				<tr>
+					<td style="padding-left:20px;padding-top:1em;">
+						<span class="coge-table-header">Tools</span><br>
+						<table class="border-top">
+							<tr>
+								<td class='title5'>Merge SNP experiments:</td>
+								<td class='data5'>
+									<span class='link' onclick="snp_merge('combine')">Combined multisample GVCF</span>&nbsp|
+									<span class='link' onclick="snp_merge('genotype')">Genotyped single-sample GVCF</span>
+								</td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				</TMPL_IF>
+			</table>
 		</td>
 	</tr>
 </table>
@@ -67,6 +89,8 @@
 
 <TMPL_INCLUDE NAME='widgets/Annotations.tmpl'>
 
+<TMPL_INCLUDE NAME="widgets/Progress.tmpl">
+
 <div id="list_contents_edit_box" class="dialog_box hidden" title="Add Items to Notebook" style="height:auto !important;"></div>
 
 <!--
@@ -80,6 +104,7 @@
 
 <script language="JavaScript">
 const NOTEBOOK_ID   = '<TMPL_VAR NAME="NOTEBOOK_ID">';
+const WORKFLOW_ID   = '<TMPL_VAR NAME="WORKFLOW_ID">';
 const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
 const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
 const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
@@ -110,7 +135,13 @@ $(function() {
     	userName: USER_NAME
     });
     annotations = new Annotations('notebook_annotations', 'notebook', NOTEBOOK_ID, '<TMPL_VAR NAME="USER_CAN_EDIT">', '<TMPL_VAR NAME="DEFAULT_TYPE">');
-	
+
+	coge.progress.init({
+    	baseUrl: API_BASE_URL,
+    	userName: USER_NAME,
+    	supportEmail: SUPPORT_EMAIL
+    });
+
     // Initialize newsfeed - not ready to deploy yet
 //	coge.newsfeed.init({ 
 //		element_id: 'newsfeed',
@@ -142,11 +173,18 @@ $(function() {
 
 			contents.show();
 		});
+
+	// Open status dialog
+    if (WORKFLOW_ID) {
+    	coge.progress.begin();
+    	coge.progress.update(WORKFLOW_ID);
+    }
 });
 </SCRIPT>
 
 <script type="text/javascript" src="./js/pages/notebook-view.js"></script>
 <script type="text/javascript" src="./js/coge/services.js"></script>
+<script type="text/javascript" src="./js/coge/progress.js"></script>
 <script type="text/javascript" src="./js/jquery.fileupload.js"></script>
 </TMPL_IF> <!-- MAIN -->
 

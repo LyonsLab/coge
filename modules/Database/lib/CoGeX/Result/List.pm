@@ -218,6 +218,7 @@ sub experiments {
     my $self       = shift;
     my %opts       = @_;
     my $restricted = $opts{restricted};           # limit result to restricted experiments
+    my $data_type  = $opts{data_type};            # limit result to experiments of given type
     my $include_deleted = $opts{include_deleted};
     my $count           = $opts{count};           # return count;
 
@@ -226,6 +227,7 @@ sub experiments {
         my $experiment = $conn->child;
         next if ( $experiment->deleted and not $include_deleted );
         next if ( $restricted and not $experiment->restricted );
+        next if ( $data_type and $experiment->data_type != $data_type);
         push @experiments, $experiment;
     }
     

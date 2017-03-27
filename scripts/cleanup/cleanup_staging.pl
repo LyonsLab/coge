@@ -9,8 +9,8 @@
 # Usage:
 #    perl cleanup_staging.pl <conf_file> <max_size> <older_than>
 #
-#    Delete staging subdirectories older than 3 days:
-#    perl ./scripts/cleanup/cleanup_staging.pl -conf ./coge.conf -older_than 14 -max_size 3298535977703
+#    Delete staging subdirectories older than 7 days:
+#    perl ./scripts/cleanup/cleanup_staging.pl -conf ./coge.conf -older_than 7
 #-------------------------------------------------------------------------------
 
 use strict;
@@ -71,7 +71,7 @@ unless ($jex) {
     exit(-1);
 }
 
-# Delete directories that do not meet constraints
+# Delete directories that exceed time and space constraints
 my $staging_size = get_dir_size($staging_root_path);
 print "Staging: $staging_root_path, size=$staging_size bytes\n";
 
@@ -122,7 +122,7 @@ exit;
 
 #-------------------------------------------------------------------------------
 
-# Return director size in bytes
+# Return directory size in bytes
 sub get_dir_size {
     my $dir = shift;
     my $size = `du -bs $dir | awk '{print \$1}'`;

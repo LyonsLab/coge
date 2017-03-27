@@ -15,7 +15,7 @@ use CoGe::Core::Metadata;
 use CoGe::Core::Experiment qw(experimentcmp);
 use CoGe::Core::Genome qw(genomecmp);
 use CoGe::Core::Notebook qw(notebookcmp delete_notebook undelete_notebook);
-use CoGe::Core::Storage qw(data_type);
+use CoGe::Core::Storage qw(data_type $DATA_TYPE_POLY);
 use CoGeDBI qw(get_table_count);
 use CoGeX::ResultSet::Experiment;
 use CoGeX::ResultSet::Genome;
@@ -23,7 +23,7 @@ use CoGeX::ResultSet::Feature;
 no warnings 'redefine';
 
 use vars
-  qw($P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $DB %FUNCTION $EMBED
+  qw($P $PAGE_TITLE $PAGE_NAME $TEMPDIR $USER $DB %FUNCTION $EMBED $WORKFLOW_ID
   $FORM $TEMPDIR $TEMPURL $MAX_SEARCH_RESULTS $LINK $node_types);
 
 $PAGE_TITLE = 'NotebookView';
@@ -35,6 +35,8 @@ $EMBED = $FORM->param('embed') || 0;
     cgi => $FORM,
     page_title => $PAGE_TITLE
 );
+
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
 
 $TEMPDIR = $P->{TEMPDIR} . "$PAGE_TITLE/";
 $TEMPURL = $P->{TEMPURL} . "$PAGE_TITLE/";
@@ -127,13 +129,15 @@ sub gen_body {
         EMBED        => $EMBED,
         PAGE_NAME    => $PAGE_TITLE . '.pl',
         NOTEBOOK_ID  => $lid,
+        WORKFLOW_ID  => $WORKFLOW_ID,
         DEFAULT_TYPE => 'note',
         API_BASE_URL => $P->{SERVER} . 'api/v1/', #TODO move into config file or module
         USER         => $USER->user_name,
         USER_CAN_EDIT  => $list->is_editable($USER) ? JSON::true : JSON::false,
         NOTEBOOK_TITLE => $title,
         FAVORITED      => int($favorites->is_favorite($list)),
-        USER_CAN_EDIT  => $list->is_editable($USER)
+        USER_CAN_EDIT  => $list->is_editable($USER),
+        MULTIPLE_SNP_EXPERIMENTS => $list->experiments(data_type => $DATA_TYPE_POLY, count => 1)
     );
     $template->param( LOGON => 1 ) unless $USER->user_name eq "public";
     $template->param( NOTEBOOK_INFO => get_notebook_info( nid => $lid ) );
@@ -155,10 +159,10 @@ sub get_notebook_info {
     if ($list->is_editable($USER)) {
         $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="edit_notebook_info();">Edit Info</span>};
         if ( $list->restricted ) {
-            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_notebook_public();">Make Public</span>};
+            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_notebook_public(true);">Make Public</span>};
         }
         else {
-            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_notebook_private();">Make Private</span>};
+            $html .= qq{<span class='coge-button' style="margin-right:5px;" onClick="make_notebook_public(false);">Make Private</span>};
         }
     }
 
