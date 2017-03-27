@@ -46,6 +46,10 @@ var coge = window.coge = (function(namespace) {
 		    
 		    return this.baseUrl + "downloads/?" + params;			
 		},
+
+		remove_users_from_group: function(group_id, user_ids) {
+			return this._ajax("POST", this.baseUrl + "groups/" + group_id + "/users/remove", user_ids);
+		},
 		
 		search_global: function(search_term) {
 			return this._ajax("GET", this.baseUrl + "global/search/" + encodeURIComponent(search_term) + "/");

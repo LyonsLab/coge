@@ -90,7 +90,7 @@ class ContentPanel {
     }
 
     setView(viewId) {
-    	console.log('ContentPanel.update: ' + viewId + ' ');
+    	console.log('ContentPanel.setView: ' + viewId + ' ');
     	this.selectedView = viewId;
     	return this;
     }

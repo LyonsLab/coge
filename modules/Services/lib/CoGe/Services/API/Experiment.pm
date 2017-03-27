@@ -61,12 +61,6 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $experiment = $self->_get_experiment($id, 0, $db, $user);
@@ -207,12 +201,6 @@ sub remove {
 sub update {
 	my $self = shift;
     my $id = int($self->stash('id'));
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $experiment = $self->_get_experiment($id, 1, $db, $user);
@@ -249,6 +237,10 @@ sub update_annotation {
 
 sub _get_experiment {
     my ($self, $id, $own_or_edit, $db, $user) = @_;
+    unless ($id) {
+        $self->render(API_STATUS_MISSING_ID);
+        return;
+    }
     my $experiment = $db->resultset("Experiment")->find($id);
     unless (defined $experiment) {
         $self->render(API_STATUS_NOTFOUND);

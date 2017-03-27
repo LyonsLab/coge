@@ -40,13 +40,6 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-#    print STDERR "CoGe::Services::API::Notebook fetch id=$id\n";
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $notebook = $self->_get_notebook($id, 0, $db, $user);
@@ -165,13 +158,6 @@ sub add_items {
     my $self = shift;
     my $id = int($self->stash('id'));
     
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
-    
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $notebook = $self->_get_notebook($id, 1, $db, $user);
     unless ($notebook) {
@@ -234,14 +220,7 @@ sub add_annotation {
 sub remove {
     my $self = shift;
     my $id = int($self->stash('id'));
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
-    
-    # Authenticate user and connect to the database
+
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $notebook = $self->_get_notebook($id, 1, $db, $user);
     unless ($notebook) {
@@ -279,14 +258,7 @@ sub remove {
 sub remove_items {
 	my $self = shift;
     my $id = int($self->stash('id'));
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $notebook = $self->_get_notebook($id, 1, $db, $user);
     return unless $notebook;
@@ -330,14 +302,7 @@ sub delete_annotation {
 sub update {
 	my $self = shift;
     my $id = int($self->stash('id'));
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $notebook = $self->_get_notebook($id, 1, $db, $user);
     return unless $notebook;
@@ -373,11 +338,18 @@ sub update_annotation {
 
 sub _get_notebook {
     my ($self, $id, $own_or_edit, $db, $user) = @_;
+    
+    unless ($id) {
+        $self->render(API_STATUS_MISSING_ID);
+        return;
+    }
+
     my $notebook = $db->resultset("List")->find($id);
     unless (defined $notebook) {
         $self->render(API_STATUS_NOTFOUND);
         return;
     }
+
     if ($own_or_edit) {
         unless ($user) {
             $self->render(API_STATUS_CUSTOM(404, "User not logged in"));
@@ -388,10 +360,12 @@ sub _get_notebook {
             return;
         }
     }
+
     unless ( !$notebook->restricted || (defined $user && $user->has_access_to_list($notebook)) ) {
         $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }
+
     return $notebook;
 }
 

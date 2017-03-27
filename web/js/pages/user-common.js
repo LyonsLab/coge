@@ -323,21 +323,12 @@ function add_users_to_group() {
 }
 
 function remove_user_from_group(user_id) {
-	var item_list = contentPanel.grid.getSelectedItemList();
-	if (user_id && item_list) {
-		$.ajax({
-		    url: 'User.pl',
-			data: {
-				fname: 'remove_user_from_group',
-				target_items: item_list,
-				user_id: user_id,
-			},
-			success : function(data) {
-				if (data) 
-					$('#group_dialog').html(data);
-			}
-		});
-	}
+	var item = contentPanel.grid.getSelectedItemList();
+	if (user_id && item)
+		coge.services.remove_users_from_group(parseInt(item.substring(0, item.indexOf('_'))), {users: [user_id]})
+			.done(function(){
+				group_dialog();
+			});
 }
 
 function edit_dialog() {

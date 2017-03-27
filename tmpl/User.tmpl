@@ -121,6 +121,19 @@ div.deleted { display: none; }
 	<li><a onclick="send_items_to('GEvo', 1);">GEvo</a></li>
 </ul>
 
+<script type="text/javascript" src="js/coge/datagrid.js"></script>
+<script type="text/javascript" src="js/coge/infopanel.js"></script>
+<script type="text/javascript" src="js/coge/tocpanel.js"></script>
+<script type="text/javascript" src="js/coge/contentpanel.js"></script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/pages/user-common.js"></script>
+<script type="text/javascript" src="js/pages/user.js"></script>
+<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="js/vendor/moment/moment.js"></script>
+<script type="text/javascript" src="js/vendor/moment-timezone-data/index.js"></script>
+<script type="text/javascript" src="js/jquery.fileupload.js"></script>
+
 <script type="text/javascript">
 //const ITEM_TYPE = <TMPL_VAR NAME="ITEM_TYPE">;
 //const ITEM_TYPE = {
@@ -141,19 +154,12 @@ div.deleted { display: none; }
 //};
 const PAGE_NAME = '<TMPL_VAR NAME="PAGE_NAME">';
 const USER_ID = '<TMPL_VAR NAME="USER_ID">';
-</script>
+coge.services.init({
+	baseUrl: '<TMPL_VAR NAME="API_BASE_URL">',
+	userName: '<TMPL_VAR NAME="USER_NAME">'
+});
 
-<script type="text/javascript" src="js/coge/datagrid.js"></script>
-<script type="text/javascript" src="js/coge/infopanel.js"></script>
-<script type="text/javascript" src="js/coge/tocpanel.js"></script>
-<script type="text/javascript" src="js/coge/contentpanel.js"></script>
-<script type="text/javascript" src="js/coge/utils.js"></script>
-<script type="text/javascript" src="js/pages/user-common.js"></script>
-<script type="text/javascript" src="js/pages/user.js"></script>
-<script type="text/javascript" src="js/vendor/datatables/media/js/jquery.dataTables.min.js"></script>
-<script type="text/javascript" src="js/vendor/moment/moment.js"></script>
-<script type="text/javascript" src="js/vendor/moment-timezone-data/index.js"></script>
-<script type="text/javascript" src="js/jquery.fileupload.js"></script>
+</script>
 
 </TMPL_IF> <!-- MAIN -->
 

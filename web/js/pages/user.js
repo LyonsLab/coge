@@ -159,7 +159,7 @@ $(function() {
 		shared: {
 			title: 'Shared with me',
 			displayType: 'grid',
-			dataTypes: ['genome', 'experiment', 'notebook'],
+			dataTypes: ['genome', 'experiment', 'notebook', 'group'],
 			operations: ['share', 'organize', 'favorite', 'sendto'],
 			shared: true
 		},
@@ -181,7 +181,7 @@ $(function() {
 			displayType: 'grid',
 			dataTypes: ['group'],
 			operations: ['edit', 'delete', 'add'],
-			shared: true,
+//			shared: true,
 			flagsColumn: false
 		},
 		activity: {
@@ -218,7 +218,8 @@ $(function() {
 			displayType: 'grid',
 			dataTypes: ['genome', 'experiment', 'notebook', 'group'],
 			operations: ['undelete'],
-			deleted: true
+			deleted: true,
+			role_id: '2'
 		}
 	};
 	
@@ -242,11 +243,13 @@ $(function() {
 						return false;
 					if (!view.deleted && data.deleted == '1')
 						return false;
+					if (view.favorite && data.favorite == '0')
+						return false;
+					if (view.role_id && data.role_id != view.role_id)
+						return false;
 					if (view.shared && data.role_id == '2')
 						return false;
 					if (!view.shared && data.role_id != '2' && !view.deleted)
-						return false;
-					if (view.favorite && data.favorite == '0')
 						return false;
 				}
 				return true;

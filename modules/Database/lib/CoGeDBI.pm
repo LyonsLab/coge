@@ -205,7 +205,7 @@ sub get_groups_for_user {
     # Get groups for user
     my $query = qq{
         SELECT ug.user_group_id AS id, ug.name AS name, ug.description AS description,
-        ug.deleted AS deleted, ug.locked AS locked, ug.role_id AS role_id
+        ug.deleted AS deleted, ug.locked AS locked, uc.role_id AS role_id
         FROM user_connector AS uc 
         JOIN user_group AS ug ON (uc.child_id=ug.user_group_id)
         WHERE uc.parent_type=5 AND uc.parent_id=$user_id AND uc.child_type=6

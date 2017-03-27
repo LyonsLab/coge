@@ -146,6 +146,7 @@ sub gen_body {
     }
 
     $template->param(
+        API_BASE_URL => 'api/v1/',
         PAGE_NAME   => "$PAGE_TITLE.pl",
         MAIN        => 1,
         USER_NAME   => $USER->user_name,
@@ -776,17 +777,9 @@ sub get_group_dialog {
 		foreach my $user ($group->users) {
 			my $uid = $user->id;
 	        $users{$uid} = $user;
-	        if ( not defined $roles{$uid}
-	        	 or $role->is_lower($roles{$uid}) )
-	        {
-	        	$roles{$uid} = $role;
-	        }
-	        if ($uid == $creator_id) {
-	        	$creators{$uid} = 1;
-	        }
-	        if ($uid == $owner_id) {
-	        	$owners{$uid} = 1;
-	        }
+	        $roles{$uid} = $role if not defined $roles{$uid} or $role->is_lower($roles{$uid});
+	        $creators{$uid} = 1 if $uid == $creator_id;
+	        $owners{$uid} = 1 if $uid == $owner_id;
 		}
     }
 

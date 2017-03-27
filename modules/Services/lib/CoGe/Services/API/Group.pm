@@ -1,7 +1,9 @@
 package CoGe::Services::API::Group;
 
 use Mojo::Base 'Mojolicious::Controller';
+use Data::Dumper;
 #use IO::Compress::Gzip 'gzip';
+
 use CoGeX;
 use CoGe::Services::Auth;
 use CoGe::Services::Error;
@@ -55,28 +57,10 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Deny a public user access to any group
-    unless ($user && !$user->is_public) {
-        $self->render(API_STATUS_UNAUTHORIZED);
-        return;
-    }
-
-    # Get group
-    my $group = $db->resultset("UserGroup")->find($id);
-    unless (defined $group) {
-        $self->render(API_STATUS_NOTFOUND);
-        return;
-    }
+    my $group = $self->_get_group($id, 1, $db, $user);
+    return unless $group;
 
     $self->render(json => {
         id => int($group->id),
@@ -93,28 +77,10 @@ sub fetch {
 sub items {
     my $self = shift;
     my $id = int($self->stash('id'));
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
 
-    # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
-
-    # Deny a public user access to any group
-    unless ($user && !$user->is_public) {
-        $self->render(API_STATUS_UNAUTHORIZED);
-        return;
-    }
-
-    # Get group
-    my $group = $db->resultset("UserGroup")->find($id);
-    unless (defined $group) {
-        $self->render(API_STATUS_NOTFOUND);
-        return;
-    }
+    my $group = $self->_get_group($id, 1, $db, $user);
+    return unless $group;
 
     # Restrict access to users in the group
     unless ($group->has_member($user)) {
@@ -149,6 +115,74 @@ sub items {
     $self->render(json => {
         items => [@experiments, @genomes, @notebooks]
     });
+}
+
+sub remove_users {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+    my $group = $self->_get_group($id, 1, $db, $user);
+    return unless $group;
+
+    if ($group->locked && !$user->is_admin) {
+        $self->render(API_STATUS__BAD_REQUEST("Group locked"));
+        return;
+    }
+
+    my $data = $self->req->json;
+    my @users;
+    foreach my $user_id (@{$data->{users}}) {
+        my $uc = $db->resultset('UserConnector')->find({
+            parent_id   => $user_id,
+            parent_type => 5,
+            child_id    => $id,
+            child_type  => 6
+        });
+        if ($uc && !$uc->role->is_owner) {
+            $uc->delete;
+            my $u = $db->resultset('User')->find($user_id);
+            CoGe::Accessory::Web::log_history(
+                db          => $db,
+                user_id     => $user->id,
+                description => 'removed user ' . $u->info . ' from group ' . $group->info_html,
+                page        => 'API',
+                parent_id   => $id,
+                parent_type => 6 #FIXME magic number
+            );
+        }
+    }
+    $self->render(json => { success => Mojo::JSON->true });
+}
+
+sub _get_group {
+    my ($self, $id, $own_or_edit, $db, $user) = @_;
+
+    # Deny a public user access to any group
+    unless ($user && !$user->is_public) {
+        $self->render(API_STATUS_UNAUTHORIZED);
+        return;
+    }
+    
+    # Validate input
+    unless ($id) {
+        $self->render(API_STATUS_MISSING_ID);
+        return;
+    }
+
+    my $group = $db->resultset("UserGroup")->find($id);
+    unless (defined $group) {
+        $self->render(API_STATUS_NOTFOUND);
+        return;
+    }
+
+    if ($own_or_edit) {
+        unless ($group->is_editable($user)) {
+            $self->render(API_STATUS_UNAUTHORIZED);
+            return;
+        }
+    }
+    return $group;
 }
 
 1;

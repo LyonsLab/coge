@@ -85,12 +85,6 @@ sub search {
 sub fetch {
     my $self = shift;
     my $id = int($self->stash('id'));
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $genome = $self->_get_genome($id, 0, $db, $user);
@@ -350,12 +344,6 @@ sub delete_annotation {
 sub update {
 	my $self = shift;
     my $id = int($self->stash('id'));
-    
-    # Validate input
-    unless ($id) {
-        $self->render(API_STATUS_MISSING_ID);
-        return;
-    }
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $genome = $self->_get_genome($id, 1, $db, $user);
@@ -392,6 +380,10 @@ sub update_annotation {
 
 sub _get_genome {
     my ($self, $id, $own_or_edit, $db, $user) = @_;
+    unless ($id) {
+        $self->render(API_STATUS_MISSING_ID);
+        return;
+    }
     my $genome = $db->resultset("Genome")->find($id);
     unless (defined $genome) {
         $self->render(API_STATUS_NOTFOUND);

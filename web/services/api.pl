@@ -299,6 +299,10 @@ $r->get("/groups/:id/items" => [id => qr/\d+/])
     ->name("groups-items")
     ->to("group#items", id => undef);
 
+$r->post("/groups/:id/users/remove" => [id => qr/\d+/])
+    ->name("groups-users-remove")
+    ->to("group#remove_users", id => undef);
+
 # Job routes
 $r->put("/jobs")
     ->name("jobs-add")
