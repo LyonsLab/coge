@@ -47,7 +47,6 @@ sub build {
     # Build workflow
     #
 
-    #my $wait_file;
     foreach my $record (@$records) {
         # Extract metadata from SRA record
         my ($accns, $metadata, $additional_metadata, $read_type) = _extract_metadata($record);
@@ -65,7 +64,6 @@ sub build {
         foreach (@$accns) {
             $self->add_to_previous(
                 $self->fastq_dump($_, $read_type),
-                #$wait_file ? [ $wait_file ] : undef
             );
             push @fastq, grep { $_ =~ /\.fastq$/ } @{$self->previous_outputs};
         }
@@ -77,11 +75,6 @@ sub build {
         my $load = CoGe::Builder::Load::Experiment->new($self);
         $load->build(data_files => \@fastq);
         $self->add_to_all($load);
-
-        # Add wait task to serialize experiment loads
-#        ($wait_file) = $self->add_to_all(
-#            $self->wait()
-#        );
     }
 }
 
