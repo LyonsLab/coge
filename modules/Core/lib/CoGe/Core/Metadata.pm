@@ -113,7 +113,8 @@ sub create_annotations {
                 text        => $anno_text,
                 link        => $link,
                 image_file  => $image_file,
-                locked      => $locked
+                locked      => $locked,
+                user        => $opts{user}
             );
             unless ($anno) {
                 print STDERR "CoGe::Core::Metadata: error creating annotation\n";
@@ -137,7 +138,8 @@ sub create_annotations {
                     type_name   => $_->{type},
                     text        => $_->{text},
                     link        => $_->{link},
-                    locked      => $locked
+                    locked      => $locked,
+                    user        => $opts{user}
                 );
                 unless ($anno) {
                     print STDERR "CoGe::Core::Metadata: error creating annotation\n";
@@ -432,6 +434,11 @@ sub _get_object {
     return 'Resource not found' unless $object;
     if ($own_or_edit) {
         return 'User not logged in' unless $user;
+        unless ($object_type) {
+            $object_type = lc(ref($object));
+            $object_type = substr($object_type, rindex($object_type, ':') + 1);
+            $object_type = 'notebook' if $object_type eq 'list';
+        }
         return 'Access denied' unless $user->is_owner_editor(lc($object_type) => $object->id);
     }
     return 'Access denied' unless !$object->restricted || ($user && $user->has_access_to($object));
@@ -451,7 +458,7 @@ sub _init {
     $group_id = $db->resultset('AnnotationTypeGroup')->find_or_create({ name => $group_name })->id if defined $group_name;
 
     my $type_id = $db->resultset('AnnotationType')->find_or_create({ name => $type_name, annotation_type_group_id => $group_id })->id;
-    return 'error creating annotation type' unless $type_id;
+    return 'Error creating annotation type' unless $type_id;
 
     my $link = $opts->{link};
     if ($link) {
@@ -467,11 +474,11 @@ sub _init {
         my $upload = $opts->{image};
         if ($upload) {
             ($bisque_id, $bisque_file) = create_bisque_image($object, $upload, $opts->{user});
-            return 'error creating image' unless $bisque_id;
+            return 'Error creating image' unless $bisque_id;
         }
         else {
             my $image = _create_image($opts);
-            return 'error creating image' unless $image;
+            return 'Error creating image' unless $image;
             $image_id = $image->id;
         }
     }
