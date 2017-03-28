@@ -186,7 +186,7 @@ sub generate_additional_metadata {
 
     foreach my $experiment (@$experiments) {
         push @md, {
-            group => 'Source experiment',
+            group => 'Source experiments',
             type => 'Experiment ID',
             text => $experiment->id,
             link => url_for('ExperimentView.pl', eid => $experiment->id) #FIXME hardcoded page url
