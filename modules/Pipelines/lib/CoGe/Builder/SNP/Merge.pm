@@ -94,10 +94,13 @@ sub build {
         );
     }
 
+    # Add metadata describing this pipeline to the resulting experiment
+    my $md = $self->generate_additional_metadata();
+    push @{$self->params->{additional_metadata}}, @$md;
+
     # Load GVCF experiment
     $self->add_to_previous(
         $self->load_vcf(
-            additional_metadata => $self->generate_additional_metadata(),
             gid => $gid,
             vcf => $self->previous_output
         )
@@ -183,7 +186,7 @@ sub generate_additional_metadata {
 
     foreach my $experiment (@$experiments) {
         push @md, {
-            type_group => 'Source experiment',
+            group => 'Source experiment',
             type => 'Experiment ID',
             text => $experiment->id,
             link => url_for('ExperimentView.pl', eid => $experiment->id) #FIXME hardcoded page url
