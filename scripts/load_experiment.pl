@@ -377,6 +377,22 @@ if ($tags || $detected_tags) {
     }
 }
 
+# Make user owner of the experiment
+my $node_types = CoGeX::node_types();
+my $conn       = $db->resultset('UserConnector')->create(
+    {
+        parent_id   => $user->id,
+        parent_type => $node_types->{user},
+        child_id    => $experiment->id,
+        child_type  => $node_types->{experiment},
+        role_id     => 2                            # FIXME hardcoded
+    }
+);
+unless ($conn) {
+    print STDOUT "log: error creating user connector\n";
+    exit(-1);
+}
+
 # Create annotations
 if ($annotations || $metadata_file) {
     CoGe::Core::Metadata::create_annotations(
@@ -403,23 +419,6 @@ print STDOUT 'Storage path: ', $storage_path, "\n";
 # This is a check for dev server which may be out-of-sync with prod
 if ( -e $storage_path ) {
     print STDOUT "log: error: install path already exists\n";
-    exit(-1);
-}
-
-#TODO create experiment type & connector
-
-my $node_types = CoGeX::node_types();
-my $conn       = $db->resultset('UserConnector')->create(
-    {
-        parent_id   => $user->id,
-        parent_type => $node_types->{user},
-        child_id    => $experiment->id,
-        child_type  => $node_types->{experiment},
-        role_id     => 2                            # FIXME hardcoded
-    }
-);
-unless ($conn) {
-    print STDOUT "log: error creating user connector\n";
     exit(-1);
 }
 
