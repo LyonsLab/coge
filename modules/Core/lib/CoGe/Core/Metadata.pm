@@ -462,7 +462,7 @@ sub _init {
     $group_id = $db->resultset('AnnotationTypeGroup')->find_or_create({ name => $group_name })->id if defined $group_name;
 
     my $type_id = $db->resultset('AnnotationType')->find_or_create({ name => $type_name, annotation_type_group_id => $group_id })->id;
-    return 'error creating annotation type' unless $type_id;
+    return 'Error creating annotation type' unless $type_id;
 
     my $link = $opts->{link};
     if ($link) {
@@ -478,11 +478,11 @@ sub _init {
         my $upload = $opts->{image};
         if ($upload) {
             ($bisque_id, $bisque_file) = create_bisque_image($object, $upload, $opts->{user});
-            return 'error creating image' unless $bisque_id;
+            return 'Error creating image' unless $bisque_id;
         }
         else {
             my $image = _create_image($opts);
-            return 'error creating image' unless $image;
+            return 'Error creating image' unless $image;
             $image_id = $image->id;
         }
     }
