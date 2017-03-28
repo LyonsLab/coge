@@ -80,6 +80,7 @@ sub create_annotation {
 sub create_annotations {
     my %opts = @_;
     my $db = $opts{db};
+    my $user = $opts{user};
     my $target = $opts{target};           # experiment, genome, or list object
     my ($target_id, $target_type) = ($opts{target_id}, $opts{target_type}); # or an experiment/genome/list id and type
     my $annotations = $opts{annotations}; # semicolon-separated list of annotations (image_file|link|group|type|text;[...])
@@ -104,6 +105,7 @@ sub create_annotations {
             }
 
             my $anno = create_annotation(
+                user        => $user,
                 db          => $db,
                 target      => $target,
                 target_id   => $target_id,
@@ -114,7 +116,6 @@ sub create_annotations {
                 link        => $link,
                 image_file  => $image_file,
                 locked      => $locked,
-                user        => $opts{user}
             );
             unless ($anno) {
                 print STDERR "CoGe::Core::Metadata: error creating annotation\n";
@@ -130,6 +131,7 @@ sub create_annotations {
         if ($annos) {
             foreach (@$annos) {
                 my $anno = create_annotation(
+                    user        => $user,
                     db          => $db,
                     target      => $target,
                     target_id   => $target_id,
@@ -138,8 +140,7 @@ sub create_annotations {
                     type_name   => $_->{type},
                     text        => $_->{text},
                     link        => $_->{link},
-                    locked      => $locked,
-                    user        => $opts{user}
+                    locked      => $locked
                 );
                 unless ($anno) {
                     print STDERR "CoGe::Core::Metadata: error creating annotation\n";
