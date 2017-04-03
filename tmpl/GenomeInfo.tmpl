@@ -92,6 +92,8 @@ $(document).ready(function() {
     
     if (CERTIFIED == '1')
     	$('#certified_box').show();
+    else
+        $('#recommend_certification').show();
     
     // Open status dialog
     if (job_id) {
@@ -150,6 +152,7 @@ $(document).ready(function() {
 	</TMPL_IF>
 	<span class="bold text coge-green"><TMPL_VAR NAME="GENOME_TITLE"></span>&nbsp;&nbsp;&nbsp;
 	<TMPL_INCLUDE NAME="widgets/Certified.tmpl">
+    <span id="recommend_certification" class='link' onClick="recommend_certification();" style="display:none;">Recommend for Certification</span>
 </div>
 </TMPL_UNLESS>
 

@@ -101,6 +101,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     get_wobble_gc_diff         => \&get_wobble_gc_diff,
     get_codon_usage            => \&get_codon_usage,
     get_experiments            => \&get_experiments,
+    recommend_certification    => \&recommend_certification,
     %ajax
 );
 
@@ -1831,6 +1832,21 @@ sub annotate { #TODO create API "annotate" job instead
     return encode_json({
         status => 'success'
     });
+}
+
+sub recommend_certification {
+    my %args = @_;
+    my $gid = $args{gid};
+    my $reason = $args{reason};
+
+    my $body = 'User ' . $USER->name . ' (' . $USER->email . ') has recommended genome <a href="https://genomevolution.org/coge/GenomeInfo.pl?gid=' . $gid . '">' . $gid . '</a> for certification in CoGe.<br><br>' . $reason;
+    my $email = $config->{SUPPORT_EMAIL};
+    CoGe::Accessory::Web::send_email(
+        from => $email,
+        to => 'seandavey@gmail.com',
+        subject => "genome certification recommendation\nContent-Type: text/html; charset=ISO-8859-1",
+        body => '<html><head></head><body>' . $body . '</body></html>'
+    );
 }
 
 sub generate_html {

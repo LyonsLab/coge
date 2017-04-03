@@ -231,7 +231,11 @@ var coge = window.coge = (function(ns) {
         },
 
         prompt: function(msg, title, value, on_ok) {
-            this.dialog(title, '<p>' + msg + ' <input value=' + JSON.stringify(value) + ' /></p>', {
+            var contents = '<p>' + msg + ' <input';
+            if (value)
+                contents += ' value=' + JSON.stringify(value);
+            contents += ' /></p>';
+            this.dialog(title, contents, {
                 ok: function(div) { var val=this.find('input').val(); div.dialog('close'); on_ok(val); },
                 cancel: true
             });

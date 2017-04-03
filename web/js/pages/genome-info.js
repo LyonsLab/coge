@@ -1491,3 +1491,29 @@ function toggle_favorite(img) {
 		}
 	});
 }
+
+function recommend_certification () {
+    var div = $('<div title="Recommend Genome for Certification"><p>A CoGe certified genome has been checked to be a complete version of a genome with annotation from a canonical or commonly used version of the genome. Please add any notes to accompany your recommendation.</p> <textarea rows="3" style="width:100%;"></textarea></div>').appendTo(document.body);
+    div.dialog({
+        buttons: {
+            Cancel: function() { div.dialog('close'); },
+            Ok: function() {
+                var reason = div.find('textarea').val();
+                div.dialog('close');
+                $.ajax({
+                    data: {
+                        fname: 'recommend_certification',
+                        gid: GENOME_ID,
+                        reason: reason
+                    },
+                    success : function(rc) {
+                        coge.utils.alert('Recommendation sent');
+                    },
+                });
+            }
+        },
+        close: function(){ this.remove(); div.remove(); },
+        modal: true,
+        width: 600
+    });
+}
