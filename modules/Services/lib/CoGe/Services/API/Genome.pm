@@ -394,6 +394,7 @@ sub _get_genome {
             $self->render(API_STATUS_CUSTOM(401, "User not logged in"));
             return;
         }
+        return $genome if $user->is_admin;
         unless ($user->is_owner_editor(genome => $id)) {
             $self->render(API_STATUS_UNAUTHORIZED);
             return;

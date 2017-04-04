@@ -355,6 +355,7 @@ sub _get_notebook {
             $self->render(API_STATUS_CUSTOM(404, "User not logged in"));
             return;
         }
+        return $notebook if $user->is_admin;
         unless ($user->is_owner_editor(list => $id)) {
             $self->render(API_STATUS_UNAUTHORIZED);
             return;

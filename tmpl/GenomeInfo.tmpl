@@ -92,8 +92,6 @@ $(document).ready(function() {
     
     if (CERTIFIED == '1')
     	$('#certified_box').show();
-    else
-        $('#recommend_certification').show();
     
     // Open status dialog
     if (job_id) {
@@ -151,8 +149,6 @@ $(document).ready(function() {
 	</div>
 	</TMPL_IF>
 	<span class="bold text coge-green"><TMPL_VAR NAME="GENOME_TITLE"></span>&nbsp;&nbsp;&nbsp;
-	<TMPL_INCLUDE NAME="widgets/Certified.tmpl">
-    <span id="recommend_certification" class='link' onClick="recommend_certification();" style="display:none;">Recommend for Certification</span>
 </div>
 </TMPL_UNLESS>
 
@@ -376,6 +372,21 @@ Are you sure you want to move this genome into your trash?<p>
             <td class='data5'><TMPL_VAR NAME="DESCRIPTION"></td>
         </tr>
         <tr>
+            <td class='title5' style='white-space:nowrap;'>Certified:</td>
+            <td class='data5'>
+                <TMPL_IF NAME="CERTIFIED">
+                    <style>.data5 #certified_box{padding:0;}.data5 .coge-certified-icon{padding:2px;}</style>
+                    <TMPL_INCLUDE NAME="widgets/Certified.tmpl">
+                <TMPL_ELSE>
+                    <TMPL_IF NAME="LOGON">
+                        No - <span id="recommend_certification" class='link' onClick="recommend_certification();">Recommend for Certification</span>
+                    <TMPL_ELSE>
+                        No
+                    </TMPL_IF>
+                </TMPL_IF>
+            </td>
+        </tr>
+        <tr>
             <td class='title5' style='white-space:nowrap;'>Restricted:</td>
             <td class='data5'><TMPL_IF NAME="RESTRICTED">Yes<TMPL_ELSE>No</TMPL_IF></td>
         </tr>
@@ -412,11 +423,11 @@ Are you sure you want to move this genome into your trash?<p>
     <div class="panel">
         <TMPL_IF NAME='USER_CAN_EDIT'>
             <span class='coge-button' onClick="edit_genome_info();">Edit Info</span>
-        </TMPL_IF>
-        <TMPL_IF NAME='RESTRICTED'>
-            <span class="coge-button" onclick="make_genome_public();">Make Public</span>
-        <TMPL_ELSE>
-            <span class="coge-button" onclick="make_genome_private();">Make Private</span>
+            <TMPL_IF NAME='RESTRICTED'>
+                <span class="coge-button" onclick="make_genome_public();">Make Public</span>
+            <TMPL_ELSE>
+                <span class="coge-button" onclick="make_genome_private();">Make Private</span>
+            </TMPL_IF>
         </TMPL_IF>
         <TMPL_IF NAME='USER_CAN_DELETE'>
             <TMPL_IF NAME='DELETED'>

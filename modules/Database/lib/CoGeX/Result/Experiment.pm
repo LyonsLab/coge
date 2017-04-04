@@ -211,14 +211,14 @@ sub is_editable {
     my $self = shift;
     my $user = shift;
 
-    return ( $user->is_admin || $user->is_owner_editor( experiment => $self->id ) );
+    return ( $user->is_admin || $user->is_owner_editor( experiment => $self->id ) ) ? 1 : 0;
 }
 
 sub is_deletable {
     my $self = shift;
     my $user = shift;
 
-    return ( $user->is_admin || $user->is_owner( experiment => $self->id ) );
+    return ( $user->is_admin || $user->is_owner( experiment => $self->id ) ) ? 1 : 0;
 }
 
 ################################################ subroutine header begin ##

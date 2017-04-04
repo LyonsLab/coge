@@ -932,6 +932,7 @@ sub get_genome_info {
     }
 
     my $template = HTML::Template->new( filename => $config->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    my $users_with_access = $genome->restricted ? join(', ', sort map { $_->display_name } $USER->users_with_access($genome)) : 'Everyone';
 
     $template->param(
         DO_GENOME_INFO => 1,
@@ -943,10 +944,12 @@ sub get_genome_info {
         USER_CAN_EDIT   => $genome->is_editable($USER),
         USER_CAN_DELETE => $genome->is_deletable($USER),
         RESTRICTED     => $genome->restricted,
-        USERS_WITH_ACCESS => ( $genome->restricted ? join(', ', sort map { $_->display_name } $USER->users_with_access($genome)) : 'Everyone' ),
+        USERS_WITH_ACCESS => $users_with_access,
         NAME           => $genome->name,
         DESCRIPTION    => $genome->description,
-        DELETED        => $genome->deleted
+        DELETED        => $genome->deleted,
+        CERTIFIED       => $genome->certified,
+        LOGON           => ( $USER->user_name ne "public" ),
     );
 
     my $owner = $genome->owner;
@@ -1916,7 +1919,7 @@ sub generate_body {
         USER_CAN_DELETE => $genome->is_deletable($USER),
         DELETED         => $genome->deleted,
         RESTRICTED      => $genome->restricted,
-        CERTIFIED       => int($genome->certified),
+        CERTIFIED       => $genome->certified,
         FAVORITED       => int($favorites->is_favorite($genome)),
         TRANSCRIPTOME   => ($genome->type->name =~ /transcriptome/i) ? 1 : 0,
         IRODS_HOME      => get_irods_path(),

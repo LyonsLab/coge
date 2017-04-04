@@ -384,7 +384,7 @@ sub is_editable {
     return (
              $user->is_admin
           || ( !$self->locked && $user->is_owner_editor( list => $self->id ) )
-    );
+    ) ? 1 : 0;
 }
 
 sub is_deletable {
@@ -394,7 +394,7 @@ sub is_deletable {
     return (
              $user->is_admin
           || ( !$self->locked && $user->is_owner( list => $self->id ) )
-    );
+    ) ? 1 : 0;
 }
 
 ################################################ subroutine header begin ##

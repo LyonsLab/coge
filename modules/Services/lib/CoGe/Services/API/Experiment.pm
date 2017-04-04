@@ -251,6 +251,7 @@ sub _get_experiment {
             $self->render(status => 401, json => { error => { message => "User not logged in"} });
             return;
         }
+        return $experiment if $user->is_admin;
         unless ($user->is_owner_editor(experiment => $id)) {
             $self->render(API_STATUS_UNAUTHORIZED);
             return;
