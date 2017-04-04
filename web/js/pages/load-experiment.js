@@ -1202,7 +1202,7 @@ $.extend(OptionsView.prototype, {
         return true;
     },
 
-    render: function() {
+    render: function(from) {
         var file_type = this.experiment.data[0].file_type;
         if (!file_type) {
             if (this.onError)
@@ -1211,17 +1211,18 @@ $.extend(OptionsView.prototype, {
         }
 
         //FIXME: An aggregate view should add analysis options for multiple file types
-        if ($.inArray(file_type, POLY_FILES) > -1)
-            this.analysis_view = new PolymorphismView();
-        else if ($.inArray(file_type, SEQ_FILES) > -1)
-            this.analysis_view = new FastqView({
-                experiment: this.experiment,
-                onError:    this.onError
-            });
-        else if ($.inArray(file_type, QUANT_FILES) > -1)
-            this.analysis_view = new QuantativeView();
-        else if ($.inArray(file_type, ALIGN_FILES) > -1)
-            this.analysis_view = new AlignmentOptionView();
+        if (from == 0) // only do this when coming from Select Data, else keep options when hitting Previous on Describe Experiment
+            if ($.inArray(file_type, POLY_FILES) > -1)
+                this.analysis_view = new PolymorphismView();
+            else if ($.inArray(file_type, SEQ_FILES) > -1)
+                this.analysis_view = new FastqView({
+                    experiment: this.experiment,
+                    onError:    this.onError
+                });
+            else if ($.inArray(file_type, QUANT_FILES) > -1)
+                this.analysis_view = new QuantativeView();
+            else if ($.inArray(file_type, ALIGN_FILES) > -1)
+                this.analysis_view = new AlignmentOptionView();
 
         this.layout_view.updateLayout(
             {"#analysis-options": this.analysis_view}

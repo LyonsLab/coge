@@ -54,7 +54,7 @@ $.extend(Wizard.prototype, {
         return this.currentIndex >= (this.steps.length - 1);
     },
 
-    render: function() {
+    render: function(from) {
         var titles = this.steps.map(function(step) {
             return $("<div></div>", { text:  step.title });
         });
@@ -72,7 +72,7 @@ $.extend(Wizard.prototype, {
 
         var step = this.steps[this.currentIndex];
         if (step.render)
-            step.render();
+            step.render(from);
         this.viewer.html(step.el);
 
         if (this.at_first())
@@ -90,8 +90,9 @@ $.extend(Wizard.prototype, {
     },
 
     move: function(index) {
+        var from = this.currentIndex;
     	this.currentIndex = index;
-    	this.render();
+    	this.render(from);
         this.notifications.stop(true, true).hide();
     },
 
@@ -235,6 +236,7 @@ $.extend(DataView.prototype, {
     },
 
     render: function() {
+        this.analysis_view = null; // hack for load experiment
         //FIXME: This selector should be in another view
         var selector = this.file_selector.clone();
         this.selector_container.empty();
