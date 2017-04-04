@@ -1843,7 +1843,7 @@ sub recommend_certification {
     my $email = $config->{SUPPORT_EMAIL};
     CoGe::Accessory::Web::send_email(
         from => $email,
-        to => 'seandavey@gmail.com',
+        to => $email,
         subject => "genome certification recommendation\nContent-Type: text/html; charset=ISO-8859-1",
         body => '<html><head></head><body>' . $body . '</body></html>'
     );
