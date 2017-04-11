@@ -69,7 +69,7 @@ sub get {
         unless ($filename) {
             $file_path = get_workflow_log_file($user->name, $wid);
             unless (-r $file_path) {
-                print STDERR "CoGe::Services::Download ERROR: workflow log not found for wid $wid\n";
+                print STDERR "CoGe::Services::Download ERROR: workflow log not found for wid $wid in $file_path\n";
                 return $self->render(API_STATUS_NOTFOUND);
             }
             $filename = "workflow_$wid.log";
