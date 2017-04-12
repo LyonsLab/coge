@@ -120,17 +120,20 @@ sub build {
 
     # Process and load each alignment output
     foreach my $bam_file (@{$self->bam}) {
+        # commented out 4/12/2017 at Jeff Grover's suggestion. bismark is only for methylation
         # Sort BAM file(s) -- bismark only (because methylation analysis requires unsorted BAM file), other aligner modules perform sort internally
-        if ($self->_aligner eq 'bismark') {
-            ($bam_file) = $self->add(
-                $self->sort_bam($bam_file)
-            );
-        }
+        # if ($self->_aligner eq 'bismark') { #) && !$self->params->{methylation_params}) {
+        #     ($bam_file) = $self->add(
+        #         $self->sort_bam($bam_file)
+        #     );
+        # }
 
         # Index BAM file -- requires sorted BAM
-        $self->add(
-            $self->index_bam($bam_file)
-        );
+        unless ($self->_aligner eq 'bismark') {
+            $self->add(
+                $self->index_bam($bam_file)
+            );
+        }
 
         # Load alignment
         if ($self->params->{alignment_params} && $self->params->{alignment_params}->{load_bam}) {

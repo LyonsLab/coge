@@ -80,7 +80,6 @@ sub build {
                     $self->sam_to_bam($bam_file)
                 );
             }
-
             ($bam_file) = $self->add(
                 $self->sort_bam($bam_file)
             );
@@ -116,9 +115,9 @@ sub build {
         
         # Add methylation workflow (if specified)
         if ( $self->params->{methylation_params} ) {
-            my $aligner = CoGe::Builder::Methylation::Analyzer->new($self);
-            $aligner->build(data_files => \@bam_files);
-            $self->add($aligner);
+            my $methylation = CoGe::Builder::Methylation::Analyzer->new($self);
+            $methylation->build(data_files => \@bam_files);
+            $self->add($methylation);
         }
         
         # Add ChIP-seq workflow (if specified)

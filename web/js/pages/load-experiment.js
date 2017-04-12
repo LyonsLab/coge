@@ -1026,7 +1026,12 @@ $.extend(FastqView.prototype, {
             && !opts.methylation_params
             && !opts.chipseq_params)
         {
-            this.onError('No outputs result from these settings.  Select the "Load alignment" option.');
+            var alignment = document.getElementById('alignment');
+            alignment = alignment.options[alignment.selectedIndex].value;
+            if (alignment == 'bismark' || alignment == 'bwameth')
+                this.onError(alignment.substring(0, 1).toUpperCase() + alignment.substring(1) + ' is designed for DNA methylation analysis. Please enable the Methylation Analysis pipeline.');
+            else
+                this.onError('No outputs result from these settings.  Select the "Load alignment" option.');
             return false;
         }
 
