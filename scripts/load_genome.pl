@@ -6,7 +6,7 @@ use CoGeX::Result::Genome qw(ERROR LOADING LOADED);
 use CoGe::Accessory::Web;
 use CoGe::Core::Genome qw(read_fasta_index);
 use CoGe::Core::Storage qw(get_tiered_path add_workflow_result);
-use CoGe::Accessory::IRODS qw(irods_imeta_add $IRODS_METADATA_PREFIX);
+#use CoGe::Accessory::IRODS qw(irods_imeta_add $IRODS_METADATA_PREFIX);
 use Data::Dumper;
 use Getopt::Long;
 use File::Touch;
