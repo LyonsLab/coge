@@ -294,20 +294,20 @@
 	        <label class="col-md-2">Trimmer:</label>
 	        <select id="trimming">
 				<option value="none">None</option>
-				<option value="cutadapt" selected>CutAdapt</option>
+				<option value="cutadapt" selected>CutAdapt <TMPL_VAR NAME=CUTADAPT_VERSION></option>
 				<option value="trimgalore">Trim Galore</option>
 				<option value="trimmomatic">Trimmomatic</option>
 				<option value="bbduk">BBDuk</option>
 	        </select>
 	    </div>
 	
-	    <div id="trim-container" class="hidden"></div>
+	    <div id="trim-container"></div>
 	</div>
 </script>
 
 <script id="cutadapt-template" type="text/template">
 	<div class="form-field">
-		<label class="col-md-2">CutAdapt: (<a href="https://cutadapt.readthedocs.org/en/stable/guide.html" target="_blank" class="small link">docs</a>)</label>
+		<label class="col-md-2">CutAdapt <TMPL_VAR NAME=CUTADAPT_VERSION>: (<a href="https://cutadapt.readthedocs.org/en/stable/guide.html" target="_blank" class="small link">docs</a>)</label>
 		<div class="form-group">
 		    <div class="form-entry" title="Used to trim low-quality ends from reads before adapter removal. For this to work correctly, the quality values must be encoded as ascii(phred quality + 33). If they are encoded as ascii(phred quality + 64), you need to set to 64.">
 		        <label>-q:</label>
@@ -473,7 +473,7 @@ the specified length after this step has been performed.">
 	        </select>
 	    </div>
 	
-	    <div id="align-container" class="hidden"></div>
+	    <div id="align-container"></div>
 
 		<div class="form-field" title="Load resulting BAM output as separate experiment.">
 			<label class="col-md-2">Load alignment:</label>

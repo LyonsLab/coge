@@ -106,7 +106,7 @@ sub bismark_alignment {
     ];
 
     my ($output_bam) = @$fastq;
-    $output_bam =~ s/\.gz$//; # mdb added 7/29/16 -- remove trailing ".fastq" for cutadapt
+    $output_bam =~ s/\.gz$//;
     $output_bam =~ s/\.fastq$//; # mdb added 7/29/16 -- remove trailing ".fastq" for cutadapt
     $output_bam =~ s/\.fq$//;    # mdb added 8/8/16  -- remove trailing ".fq" for cutadapt
 
@@ -119,8 +119,6 @@ sub bismark_alignment {
         $output_bam .= '_bismark_bt2.bam';
         push @$args, ['', join(' ', @$fastq), 0];
     }
-warn $cmd, $args;
-warn $output_bam;
     return {
         cmd         => $cmd,
         args        => $args,

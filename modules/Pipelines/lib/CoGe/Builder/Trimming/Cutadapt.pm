@@ -78,7 +78,7 @@ sub cutadapt {
         args => $args,
         inputs => [ @$fastq ],
         outputs => \@outputs,
-        description => 'Trimming (Cutadapt) ' . fastq_description($fastq, $read_type)
+        description => 'Trimming (Cutadapt' . $self->conf->{CUTADAPT_VERSION} . ') ' . fastq_description($fastq, $read_type)
     };
 }
 

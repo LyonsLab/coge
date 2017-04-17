@@ -130,6 +130,7 @@ sub generate_body {
         MAX_FTP_FILES            => 30,
         USER                     => $USER->user_name,
         IS_POWERUSER             => $USER->is_poweruser,
+        CUTADAPT_VERSION         => $CONF->{CUTADAPT_VERSION}
     );
     $template->param( SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
                       SPLASH_CONTENTS    => 'This page allows you to load quantitative, polymorphism, or alignment data onto a genome from a variety of file formats.' );

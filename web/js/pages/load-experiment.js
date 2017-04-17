@@ -558,7 +558,6 @@ $.extend(TrimmingView.prototype, {
     update: function() {
         var selected = this.el.find("#trimming").val();
         render_template(this.templates[selected], this.container);
-        this.container.show();
     },
 
     is_valid: function() {
@@ -662,7 +661,6 @@ $.extend(AlignmentView.prototype, {
         var el = $(document.getElementById(selected));
         this.data.alignment_params = $.extend({}, this.data.alignment_params, { tool: selected });
         el.show();
-        this.container.show();
         render_template(this.templates[selected], this.container);
         
         if (this.onChange)
