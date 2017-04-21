@@ -44,7 +44,7 @@ sub create_bisque_image {
         $upload->asset->move_to($source);
     }
     irods_iput($source, $dest);
-    my $bisque_id = _register_image($dest, basename($upload->filename));
+    my $bisque_id = _register_image($dest, basename($upload->filename), $user);
     return $bisque_id, $upload->filename;
 }
 
@@ -85,7 +85,7 @@ sub _get_dir {
 }
 
 sub _init_image {
-    my $bisque_id = shift;
+    my ($bisque_id, $user) = @_;
     my $ua = LWP::UserAgent->new();
     my $req = HTTP::Request->new(GET => 'https://bisque.cyverse.org/data_service/' . $bisque_id);
     $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
@@ -94,6 +94,11 @@ sub _init_image {
     my $start = index($content, 'permission="') + 12;
     my $end = index($content, '"', $start);
     $content = substr($content, 0, $start) . 'published" hidden="true' . substr($content, $end);
+    $content = substr($content, 0, length($content) - 2) . '>';
+    $content .= '<tag name="Added by CoGe" value="https://genomevolution.org" />';
+    $content .= '<tag name="uploaded by" value="' . $user->info . '" />';
+    $content .= '</image>';
+    warn $content;
     $req = HTTP::Request->new(POST => 'https://bisque.cyverse.org/data_service/' . $bisque_id, ['Content-Type' => 'application/xml']);
     $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
     $req->content($content);
@@ -101,7 +106,7 @@ sub _init_image {
 }
 
 sub _register_image {
-    my ($path, $name) = @_;
+    my ($path, $name, $user) = @_;
     my $ua = LWP::UserAgent->new();
     my $req = POST 'https://bisque.cyverse.org/import/transfer/', 'Content-Type' => 'form-data', 'Content' => [ file1_resource => '<image name="' . $name . '" value="irods://data.iplantcollaborative.org' . $path . '" owner="https://bisque.cyverse.org/data_service/00-h8Xeaz4KAexEt7L8kgEzwe"/>'];
     $req->authorization_basic('coge', CoGe::Accessory::Web::get_defaults()->{BISQUE_PASS});
@@ -110,7 +115,7 @@ sub _register_image {
     my $start = index($content, 'resource_uniq="') + 15;
     my $end = index($content, '"', $start);
     my $bisque_id = substr($content, $start, $end - $start);
-    _init_image($bisque_id);
+    _init_image($bisque_id, $user);
     return $bisque_id;
 }
 

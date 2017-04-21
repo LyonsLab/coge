@@ -81,7 +81,7 @@ sub bbduk {
 #    my $encoding = $read_params->{encoding} // 33;
     my $read_type = $read_params->{read_type} // 'single';
 
-    my @outputs = map { catfile($self->staging_dir, basename(remove_fastq_ext($_) . '.trimmed.fastq' . to_compressed_ext($_))) } @$fastq;
+    my @outputs = map { catfile($self->staging_dir, basename(remove_fastq_ext($_) . '.trimmed.fastq' . to_compressed_ext($_) . '.done')) } @$fastq;
 
     unless ($self->conf->{BBMAP}) {
         CoGe::Exception::Generic->throw(message => 'Missing BBMAP in configuration file');
@@ -121,6 +121,9 @@ sub bbduk {
             $cmd .= ' lref=' . $adapter_file_path;
         }
     }
+
+    $cmd .= ';touch ' . qq[$outputs[0]];
+    $cmd .= ';touch ' . qq[$outputs[1]] if $read_type eq 'paired';
 
     return {
         cmd         => $cmd,

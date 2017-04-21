@@ -180,8 +180,8 @@ sub irods_iput {
     return unless $env_file;
 
     my $cmd = "export irodsEnvFile='$env_file' && iput -T";
-       $cmd .= " -f " if $overwrite;
-       $cmd .= " $src $dest";
+    $cmd .= " -f " if $overwrite;
+    $cmd .= " '$src' '$dest'";
 
     return $cmd if $no_execute;
     #print STDERR "cmd: $cmd\n";
