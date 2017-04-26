@@ -614,7 +614,7 @@ sub generate_table {
         # mdb removed 7/31/13 issue 77
         #        my $file      = $dsg->file_path;
         #        $file =~ s/$COGEDIR/$URL/;
-        my $seq_url = api_url_for("genomes/$dsgid/sequence"); #"api/v1/legacy/sequence/$dsgid"; # mdb changed 2/12/16 for hypnotoad
+        my $seq_url = url_for(api_url_for("genomes/$dsgid/sequence")); #"api/v1/legacy/sequence/$dsgid"; # mdb changed 2/12/16 for hypnotoad
         $type = $type . "<br><a href='$seq_url'>Fasta</a><br><a onclick='get_gff($dsgid);'>GFF File</a>";
         my ($ds_source) = $dsg->source;
         my $source      = $ds_source->name;
