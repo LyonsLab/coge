@@ -1,7 +1,6 @@
 MANIFEST
 Makefile.PL
 Accessory/lib/CoGe/Accessory/Tile/Cache.pm
-Accessory/lib/CoGe/Accessory/LogUser.pm
 Accessory/lib/CoGe/Accessory/GBlite.pm
 Accessory/lib/CoGe/Accessory/Storage.pm
 Accessory/lib/CoGe/Accessory/Utils.pm

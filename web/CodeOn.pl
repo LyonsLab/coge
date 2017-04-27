@@ -3,7 +3,6 @@
 use strict;
 use CoGeX;
 use CoGeX::Result::Feature;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
 use CGI;
@@ -54,7 +53,7 @@ $USER = undef;
     coge        => $coge,
     this_url    => $FORM->url()
 ) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
+($USER) = CoGe::Accessory::Web->get_user(
     cookie_name => $COOKIE_NAME,
     coge        => $coge
 ) unless $USER;
@@ -148,9 +147,6 @@ sub get_orgs {
     }
     return map { $_->id } @db if $id_only;
 
-#my @db = $name ? $coge->resultset('Organism')->search({name=>{like=>"%".$name."%"}})
-#  : $coge->resultset('Organism')->all();
-#    ($USER) = CoGe::Accessory::LogUser->get_user();
     my @opts;
     foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @db ) {
         push @opts,
@@ -306,8 +302,6 @@ sub get_features {
     {
         return $weak_query;
     }
-
-    #    ($USER) = CoGe::Accessory::LogUser->get_user();
 
     my $search = {};
     $search->{feature_type_id} = 3;

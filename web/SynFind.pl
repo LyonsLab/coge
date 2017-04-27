@@ -5,7 +5,6 @@ use CoGeX;
 use CoGeX::Result::Genome qw(ERROR LOADING);
 use DBIxProfiler;
 use CoGe::Accessory::Utils qw( commify html_escape);
-use CoGe::Accessory::LogUser;
 use CoGe::JEX::Jex;
 use CoGe::Accessory::Web;
 use CoGe::Core::Notebook qw(notebookcmp);

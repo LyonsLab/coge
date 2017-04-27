@@ -5,7 +5,6 @@ use Data::Dumper;
 use CoGeX;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use File::Path;
 
@@ -54,7 +53,7 @@ $USER = undef;
     coge        => $coge,
     this_url    => $FORM->url()
 ) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
+($USER) = CoGe::Accessory::Web->get_user(
     cookie_name => $COOKIE_NAME,
     coge        => $coge
 ) unless $USER;

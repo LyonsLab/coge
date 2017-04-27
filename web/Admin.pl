@@ -39,8 +39,6 @@ $MAX_SEARCH_RESULTS = 400;
 
 our $node_types = CoGeX::node_types();
 
-#print STDERR $node_types->{user};
-
 %FUNCTION = (
 	user_is_admin					=> \&user_is_admin,
 	search_users                    => \&search_users,
@@ -79,7 +77,6 @@ our $node_types = CoGeX::node_types();
 CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&gen_html );
 
 sub gen_html {
-	#print STDERR "HTML\n";
 	my $html;
 	my $template =
 	  HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
@@ -115,8 +112,6 @@ sub gen_body {
 						USER			=> $user->user_name,	
 					);
 
-	#print STDERR $node_types->{user};
-	#$template->param( ITEM_TYPE_USER => $node_types->{user} );
 	return $template->output;
 }
 
@@ -130,8 +125,6 @@ sub user_info {
 	my $search_term = $opts{search_term};
 	my $search_type = $opts{search_type};
 	my $timestamp   = $opts{timestamp};
-
-	#print STDERR "$search_term\n";
 
 	my $user;
 	if ( $search_type eq "user" ) {
@@ -249,7 +242,6 @@ sub add_items_to_user_or_group {
 
 	my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
 
-	#print STDERR "$target_id $target_type\n";
 	return unless ( $target_id and $target_type );
 
 	# Verify that user has access to each item
@@ -257,10 +249,8 @@ sub add_items_to_user_or_group {
 	foreach my $item (@items) {
 		my ( $item_id, $item_type ) = $item =~ /content_(\d+)_(\d+)/;
 
-		#print STDERR "$item_id $item_type\n";
 		next unless ( $item_id and $item_type );
 
-		# print STDERR "add_items_to_user_or_group $item_id $item_type\n";
 		if ( $item_type == $node_types->{genome} ) {
 			my $genome = $db->resultset('Genome')->find($item_id);
 			next
@@ -280,20 +270,15 @@ sub add_items_to_user_or_group {
 		}
 	}
 
-	#print STDERR Dumper(\@verified);
-
 	# Assign each item to user/group
 	#TODO verify that user can use specified role (for admin/owner roles)
 	if ( $target_type == $node_types->{user} ) {
 		my $user = $db->resultset('User')->find($target_id);
 
-		#print STDERR "$user\n";
 		return unless $user;
 
 		foreach (@verified) {
 			my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
-
-			#print STDERR "   user: $item_id $item_type\n";
 
 			# Remove previous connection
 			foreach (
@@ -352,23 +337,19 @@ sub remove_items_from_user_or_group {
 	my %opts        = @_;
 	my $target_item = $opts{target_item};
 
-	#print STDERR "$target_item\n";
 	return unless $target_item;
 	my $item_list = $opts{item_list};
 	my @items = split( ',', $item_list );
 
-	#print STDERR Dumper(\@items);
 	return unless @items;
 
 	my ( $target_id, $target_type ) = $target_item =~ /(\d+)\:(\d+)/;
 
-	#print STDERR "remove target $target_id $target_type\n";
 	next unless ( $target_id and $target_type );
 
 	foreach (@items) {
 		my ( $item_id, $item_type ) = $_ =~ /content_(\d+)_(\d+)/;
 
-		#print STDERR "remove_item_from_user $item_id $item_type\n";
 		next unless ( $item_id and $item_type );
 
 		if ( $item_type == $node_types->{genome} ) {
@@ -425,11 +406,9 @@ sub remove_items_from_user_or_group {
 }
 
 sub get_share_dialog {    #FIXME this routine needs to be optimized
-	                      #print STDERR "GetShare called.\n";
 	my %opts      = @_;
 	my $item_list = $opts{item_list};
 
-	#print STDERR Dumper($item_list);
 	my @items = split( ',', $item_list );
 	return unless @items;
 
@@ -443,7 +422,6 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 
 		next unless ( $item_id and $item_type );
 
-		# print STDERR "get_share $item_id $item_type\n";
 		if ( $item_type == $node_types->{genome} ) {
 			my $genome = $db->resultset('Genome')->find($item_id);
 			next unless ( $user->has_access_to_genome($genome) );
@@ -729,7 +707,6 @@ sub modify_item {
     my $id  = $opts{id};
     my $mod  = $opts{modification};
     my $type = $opts{type};
-    #print STDERR "$mod $type $id\n";
     return 0 unless $id;
     my $item_type = $node_types->{lc($type)}; # mdb added 7/21/15 for newsfeed
     die unless $item_type;
@@ -768,7 +745,6 @@ sub add_users_to_group {
     return unless @target_items;
     my $new_item = $opts{new_item};
     return unless $new_item;
-    #print STDERR "add_users_to_group: $new_item @target_items\n";
 
     # Build a list of users to add to the target group
     my %users;
@@ -791,7 +767,6 @@ sub add_users_to_group {
     foreach (@target_items) {
         # Find target group and check permission to modify
         my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
-        #print STDERR "add_users_to_group $target_id\n";
         next unless ( $target_id and $target_type );
         next unless ( $target_type == $node_types->{group} ); # sanity check
         my $target_group = $db->resultset('UserGroup')->find($target_id);
@@ -845,7 +820,6 @@ sub remove_user_from_group {
     return unless @target_items;
     my $user_id = $opts{user_id};
     return unless $user_id;
-    #print STDERR "remove_user_from_group: $user_id @target_items\n";
 
     # Verify user
     my $user = $db->resultset('User')->find($user_id);
@@ -855,7 +829,6 @@ sub remove_user_from_group {
     foreach (@target_items) {
         # Find target group and check permission to modify
         my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
-        #print STDERR "remove_user_from_group $target_id\n";
         next unless ( $target_id and $target_type );
         next unless ( $target_type == $node_types->{group} ); # sanity check
         my $target_group = $db->resultset('UserGroup')->find($target_id);
@@ -897,7 +870,6 @@ sub change_group_role {
     return unless @target_items;
     my $role_id = $opts{role_id};
     return unless $role_id;
-    #print STDERR "change_group_role: $role_id @target_items\n";
 
     # Verify role
     my $role = $db->resultset('Role')->find($role_id);
@@ -907,7 +879,6 @@ sub change_group_role {
     foreach (@target_items) {
         # Find target group and check permission to modify
         my ( $target_id, $target_type ) = $_ =~ /content_(\d+)_(\d+)/;
-        #print STDERR "change_group_role $target_id\n";
         next unless ( $target_id and $target_type );
         next unless ( $target_type == $node_types->{group} ); # sanity check
         my $target_group = $db->resultset('UserGroup')->find($target_id);
@@ -923,38 +894,25 @@ sub change_group_role {
 
 sub get_jobs_for_user {
     my %opts = @_;
-    my $running_only = $opts{running_only}; #FIXME use "status=running" instead
 	my $status 		 = $opts{status}; # running, completed, failed, etc...
 	my $name         = $opts{name};   # SynMap, CoGeBlast, LoadGenome, etc...
 
 	return encode_json({ error => 'Not logged in' }) if ($user->is_public);
 
 	# Get workflows from DB
-	my %name_clause = ();
-	%name_clause = (page => $name) if $name;
-	my %user_clause = ();
-	%user_clause = (user => $user->id) if (!$user->is_admin);
-	my @entries = $db->resultset('Log')->search(
-		{
-			parent_id => { "!=" => undef},
-			type      => { '!=' => 0 },
-			%name_clause,
-			%user_clause
-		},
-		{ order_by => { -desc => 'time' } }
-	);
+	my $where = 'parent_id IS NOT NULL and type != 0';
+	$where .= ' AND page=' . $db->dbh->quote($name) if $name;
+	$where .= ' AND log.user_id=' . $user->id if !$user->is_admin;
+	my $logs = $db->storage->dbh->selectall_arrayref('SELECT page,link,parent_id,user_name FROM (SELECT page,link,parent_id,user_name,time FROM log JOIN user ON user.user_id=log.user_id WHERE ' . $where . ' ORDER BY log_id DESC) t GROUP BY parent_id ORDER BY time DESC');
 
 	# Get workflows from JEX
     my $workflows;
-    if ($running_only) { # Get all running workflows
-    	$workflows = $JEX->find_workflows(undef, 'running');
-    }
-	elsif ($status) { # Get workflows with given status
+    if ($status) { # Get workflows with given status
 		$workflows = $JEX->find_workflows(undef, $status);
 	}
 	else { # Get only workflows from DB query
-		my @workflows = map { $_->parent_id } @entries;
-    	$workflows = $JEX->find_workflows(\@workflows);
+		my @workflow_ids = map { $_->[2] } @{$logs};
+    	$workflows = $JEX->find_workflows(\@workflow_ids);
     }
 
     my %workflow_results;
@@ -982,37 +940,35 @@ sub get_jobs_for_user {
     }
 
 	# Intersect DB log with JEX workflows
-	my %user_names = map { $_->user_id => $_->name } $db->resultset('User')->all;
 	my @job_items;
-    foreach (@entries) {
-        my $entry = $workflow_results{$_->parent_id};
+    foreach (@{$logs}) {
+        my $entry = $workflow_results{int($_->[2])};
         next unless $entry; # a log entry must correspond to a workflow
-
-        # [ID, Started, Completed, Elapsed, User, Tool, Link, Status]
+		# [ID, Started, Completed, Elapsed, User, Tool, Link, Status]
         push @job_items, [
-            $_->parent_id,
+            $_->[2], # parent_id
             $entry->{started},
             $entry->{completed},
             $entry->{elapsed},
-            $user_names{$_->user_id} || "public",
-            $_->page,
-            $_->link,
+            $_->[3] || "public",
+            $_->[0], # page
+            $_->[1], # link
             $entry->{status},
         ];
     }
 
     # Remove repeated entries
-	my @filtered;
-    foreach (reverse @job_items) {
-    	my @job = @$_;
-        my $wid = $job[0];
-        next if (defined $wid and defined $workflow_results{$wid}{seen});
-        $workflow_results{$wid}{seen}++ if (defined $wid);
-        unshift @filtered, \@job;
-    }
+	# my @filtered;
+    # foreach (reverse @job_items) {
+    # 	my @job = @$_;
+    #     my $wid = $job[0];
+    #     next if (defined $wid and defined $workflow_results{$wid}{seen});
+    #     $workflow_results{$wid}{seen}++ if (defined $wid);
+    #     unshift @filtered, \@job;
+    # }
 
     return encode_json({ # formatted for DataTables
-    	data => \@filtered,
+    	data => \@job_items,
     	#bPaginate => 0,
 		columnDefs => [{ 
 			orderSequence => [ "desc", "asc" ], 
@@ -1154,8 +1110,6 @@ sub update_comment {
     my $log_id  = $opts{log_id};
     my $comment = $opts{comment};
 
-    # print STDERR "udpate_comment: $log_id $comment\n";
-
     my $entry = $db->resultset('Log')->find($log_id);
     return unless $entry;
 
@@ -1204,8 +1158,6 @@ sub update_history {
 
 #Graph tab
 sub get_user_nodes {
-    #print STDERR "get_all_nodes\n";
-
     my %childrenByList;
     foreach my $conn ( $db->resultset('ListConnector')->all ) {
     	if($conn->child_type != 4) {

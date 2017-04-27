@@ -40,7 +40,6 @@ has 'jobs' => ( #FIXME rename to "task"
 # Public functions
 sub add_job {
     my ( $self, $opts ) = @_;
-    #print STDERR 'Workflow::add_job ', Dumper $opts, "\n";
     my $cmd         = $opts->{cmd};
     my $script      = "" unless defined( $opts->{script} );
     my $args        = $opts->{args} || [];
@@ -87,7 +86,6 @@ sub add_job {
 
 sub add_jobs { #FIXME rename to "task"
     my ($self, $jobs) = @_;
-    #print STDERR Dumper "Workflow::add_jobs ", $jobs, "\n";
     
     my $rc = 1;
     foreach (@$jobs) {

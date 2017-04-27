@@ -2,7 +2,6 @@
 use strict;
 use CGI;
 use CGI::Ajax;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use HTML::Template;
 use Data::Dumper;
@@ -53,7 +52,7 @@ $USER = undef;
     coge        => $coge,
     this_url    => $FORM->url()
 ) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
+($USER) = CoGe::Accessory::Web->get_user(
     cookie_name => $COOKIE_NAME,
     coge        => $coge
 ) unless $USER;

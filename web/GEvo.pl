@@ -17,7 +17,6 @@ use File::Path;
 use CoGeX;
 use CoGeX::Result::Feature;
 use CoGe::Accessory::GenBank;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::bl2seq_report;

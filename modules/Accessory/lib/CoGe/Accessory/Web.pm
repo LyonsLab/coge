@@ -23,7 +23,6 @@ use File::Listing qw(parse_dir);
 use JSON;
 use HTTP::Request;
 use XML::Simple;
-use CoGe::Accessory::LogUser qw(get_cookie_session);
 use Digest::MD5 qw(md5_base64);
 use POSIX qw(!tmpnam !tmpfile);
 use Mail::Mailer;
@@ -82,6 +81,45 @@ BEGIN {
     );
 }
 
+#FIXME: Should have no knowledge of cookies but only sessions
+sub get_user {
+    my %opts        = @_;
+    my $cookie_name = $opts{cookie_name};
+    my $coge        = $opts{coge};
+    my ( $user, $uid, $session );
+
+    $session = get_cookie_session(cookie_name => $cookie_name);
+#    warn "Web::get_user: session=$session";
+
+    if ($session) {
+        my ($user_session) = $coge->resultset("UserSession")->find( { session => $session } );
+        $user = $user_session->user if $user_session;
+    }
+
+    unless ($user) {
+        $user = new CoGeX::Result::User;
+        $user->user_name("public");
+        $user->admin(0);
+    }
+    return ($user);
+}
+
+sub get_cookie_session {
+    my %opts        = @_;
+    my $cookie_name = $opts{cookie_name};
+    my %cookies     = fetch CGI::Cookie;
+
+#    warn "Web::get_cookie_session cookie=$cookie_name ", (defined $cookies{$cookie_name} ? 'exists' : '!exists');
+#    warn "Web::get_cookie_session cookies: ", Dumper \%cookies;
+
+    if ( $cookie_name && ref $cookies{$cookie_name} ) {
+        my %session = $cookies{$cookie_name}->value;
+        return $session{session};
+    }
+
+    return undef;
+}
+
 # TODO: instead of returning a list, this routine should return a "page object"
 sub init {
     my ( $self, %opts ) = self_or_default(@_);
@@ -127,7 +165,7 @@ sub init {
             );
     	}
     }
-    ($user) = CoGe::Accessory::LogUser->get_user(
+    ($user) = get_user(
         cookie_name => $CONF->{COOKIE_NAME},
         coge        => $db
     ) unless $user;
@@ -160,7 +198,7 @@ sub init {
 		}
     }
 
-    print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . ($fname ? " fname=$fname" : '') . " user=" . ($user ? $user->name : '') . "\n";
+#    print STDERR "Web::init ticket=" . ($ticket ? $ticket : '') . " url=" . ($url ? $url : '') . " page_title=" . ($page_title ? $page_title : '') . ($fname ? " fname=$fname" : '') . " user=" . ($user ? $user->name : '') . "\n";
 
     return ( $db, $user, $CONF, $link );
 }
@@ -301,110 +339,6 @@ sub dispatch {
     }
 }
 
-# mdb removed 7/20/15 -- what is this doing here?
-#sub dataset_search_for_feat_name {
-#    my ( $self, $accn, $num, $dsid, $featid, $coge ) = self_or_default(@_);
-#    $num = 1 unless $num;
-#    return (
-#qq{<input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">},
-#        $num
-#    ) unless $accn;
-#    my $html;
-#    my %sources;
-#    my %restricted_orgs = %{ $self->restricted_orgs } if $self->restricted_orgs;
-#    my $rs = $coge->resultset('Dataset')->search(
-#        { 'feature_names.name' => $accn },
-#        {
-#            'join' => { 'features' => 'feature_names' },
-#            'prefetch' => [ 'datasource', 'organism' ]
-#        }
-#    );
-#    while ( my $ds = $rs->next() ) {
-#        my $name    = $ds->name;
-#        my $ver     = $ds->version;
-#        my $desc    = $ds->description;
-#        my $sname   = $ds->datasource->name;
-#        my $ds_name = $ds->name;
-#        my $org     = $ds->organism->name;
-#        my $title   = "$org: $ds_name ($sname, v$ver)";
-#        next if $restricted_orgs{$org};
-#        $sources{ $ds->id } = { title => $title, version => $ver };
-#    }
-#    if ( keys %sources ) {
-#        $html .= qq{
-# <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['accn$num','dsid$num', 'args__$num'],['feat$num']);" >
-# };
-#        foreach my $id (
-#            sort { $sources{$b}{version} <=> $sources{$a}{version} }
-#            keys %sources
-#          )
-#        {
-#            my $val = $sources{$id}{title};
-#            $html .= qq{  <option value="$id"};
-#            $html .= qq{ selected } if $dsid && $id == $dsid;
-#            $html .= qq{>$val\n};
-#        }
-#        $html .= qq{</SELECT>\n};
-#        my $count = scalar keys %sources;
-#        $html .= qq{<font class=small>($count)</font>};
-#    }
-#    else {
-#        $html .=
-#qq{Accession not found <input type="hidden" id="dsid$num">\n<input type="hidden" id="featid$num">\n};
-#    }
-#    return ( $html, $num );
-#}
-
-# mdb removed 7/20/15 -- what is this doing here?
-#sub feat_search_for_feat_name {
-#    my ( $self, $accn, $dsid, $num, $coge ) = self_or_default(@_);
-#    return qq{<input type="hidden" id="featid$num">\n} unless $dsid;
-#    my @feats;
-#    my $rs = $coge->resultset('Feature')->search(
-#        {
-#            'feature_names.name' => $accn,
-#            'dataset.dataset_id' => "$dsid",
-#        },
-#        {
-#            'join'     => [ 'feature_type', 'dataset', 'feature_names' ],
-#            'prefetch' => [ 'feature_type', 'dataset' ],
-#        }
-#    );
-#    my %seen;
-#    while ( my $f = $rs->next() ) {
-#        next unless $f->dataset->id == $dsid;
-#
-#        #	next if $f->feature_type->name =~ /CDS/i;
-#        #	next if $f->feature_type->name =~ /RNA/i;
-#        push @feats, $f unless $seen{ $f->id };
-#        $seen{ $f->id } = 1;
-#    }
-#    my $html;
-#    if (@feats) {
-#        $html .= qq{<SELECT name = "featid$num" id = "featid$num" >};
-#        foreach my $feat ( sort { $a->type->name cmp $b->type->name } @feats ) {
-#            my $loc = "("
-#              . $feat->type->name
-#              . ") Chr:"
-#              . $feat->chromosome . " "
-#              . $feat->start . "-"
-#              . $feat->stop;
-#
-##working here, need to implement genbank_location_string before I can progress.  Need
-#            $loc =~ s/(complement)|(join)//g;
-#            my $fid = $feat->id;
-#            $html .= qq {  <option value="$fid">$loc \n};
-#        }
-#        $html .= qq{</SELECT>\n};
-#        my $count = scalar @feats;
-#        $html .= qq{<font class=small>($count)</font>};
-#    }
-#    else {
-#        $html .= qq{<input type="hidden" id="featid$num">\n};
-#    }
-#    return $html;
-#}
-
 sub self_or_default {    #from CGI.pm
     return @_
       if defined( $_[0] )
@@ -438,7 +372,7 @@ sub logout_coge { # mdb added 3/24/14, issue 329
     my $form        = $opts{form}; # CGI form for calling page
     my $url         = $opts{url};
     $url = $form->url() unless $url;
-    print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n";
+#    print STDERR "Web::logout_coge url=", ($url ? $url : ''), "\n";
 
     # Delete user session from db
     my $session_id = get_cookie_session(cookie_name => $CONF->{COOKIE_NAME})
@@ -458,7 +392,7 @@ sub logout_cas {
     my $form        = $opts{form}; # CGI form for calling page
     my $url         = $opts{url};
     $url = $form->url() unless $url;
-    print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n";
+#    print STDERR "Web::logout_cas url=", ($url ? $url : ''), "\n";
 
     # Delete user session from db
     my $session_id = get_cookie_session(cookie_name => $CONF->{COOKIE_NAME})
@@ -470,13 +404,28 @@ sub logout_cas {
     print "Location: ", $form->redirect(get_defaults()->{CAS_URL} . "/logout?service=" . $url . "&gateway=1");
 }
 
+sub gen_cookie {
+    my $self        = shift;
+    my %opts        = @_;
+    my $session     = $opts{session} || 0;
+    my $exp         = $opts{exp} || '+7d'; # issue 48, this field must have lowercase-only
+    my $cookie_name = $opts{cookie_name};
+    my %params      = ( -name => $cookie_name, -path => "/" );
+#    print STDERR "Web::gen_cookie session=$session cookie_name=$cookie_name\n";
+
+    $params{-expires} = $exp if $exp;
+    $params{ -values } = { session => $session } if $session;
+    my $c = new CGI::Cookie(%params);
+    return $c;
+}
+
 sub login_cas_proxy {
     my ( $self, %opts ) = self_or_default(@_);
     my $cookie_name = $opts{cookie_name};
     my $ticket      = $opts{ticket};        # CAS ticket from CyVerse
     my $this_url    = $opts{this_url};      # URL to tell CAS to redirect to
     my $coge        = $opts{coge};          # db object
-	print STDERR "Web::login_cas_proxy ticket=$ticket this_url=$this_url\n";
+#	print STDERR "Web::login_cas_proxy ticket=$ticket this_url=$this_url\n";
 
 	# https://wiki.jasig.org/display/CAS/Proxy+CAS+Walkthrough
 	my $ua = new LWP::UserAgent;
@@ -484,7 +433,6 @@ sub login_cas_proxy {
       HTTP::Request->new( GET => get_defaults()->{CAS_URL}.'/proxyValidate?service='.$this_url.'&ticket='.$ticket );
     my $response = $ua->request($request_ua);
     my $result   = $response->content;
-    print STDERR $result, "\n";
     my ($uname, $fname, $lname, $email);
     if ($result) {
     	( $uname, $fname, $lname, $email ) = parse_proxy_response($result);
@@ -521,7 +469,7 @@ sub login_cas_proxy {
 #    }
 
     #gen and set the web cookie, yum!
-    my $c = CoGe::Accessory::LogUser->gen_cookie(
+    my $c = gen_cookie(
         session     => $session_id,
         cookie_name => $cookie_name,
     );
@@ -552,7 +500,7 @@ sub login_cas_saml {
     my $ticket      = $opts{ticket};        # CAS ticket from CyVerse
     my $this_url    = $opts{this_url};      # URL to tell CAS to redirect to
     my $coge        = $opts{coge};          # db object
-	print STDERR "Web::login_cas_saml ticket=$ticket this_url=$this_url\n";
+#	print STDERR "Web::login_cas_saml ticket=$ticket this_url=$this_url\n";
 
     my $cas_url = get_defaults()->{CAS_URL};
     unless ($cas_url) {
@@ -575,7 +523,7 @@ sub login_cas_saml {
     my $response = $ua->request($request_ua);
     #print STDERR "SAML response: ", Dumper $response, "\n";
     my $result   = $response->content;
-    print STDERR "SAML result: ", Dumper $result, "\n";
+#    print STDERR "SAML result: ", Dumper $result, "\n";
     return unless $result;
     
     # Parse user info out of SAML response
@@ -613,7 +561,7 @@ sub login_cas_saml {
 #    }
 
     #gen and set the web cookie, yum!
-    my $c = CoGe::Accessory::LogUser->gen_cookie(
+    my $c = gen_cookie(
         session     => $session_id,
         cookie_name => $cookie_name,
     );
@@ -629,7 +577,7 @@ sub parse_saml_response {
     # mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
     if( $response =~ m/saml1p:Success/ ) {
         my $ref = XMLin($response);
-        print STDERR Dumper $ref, "\n";
+#        print STDERR Dumper $ref, "\n";
         my ($user_id) =
           $ref->{'SOAP-ENV:Body'}->{'saml1p:Response'}->{'saml1:Assertion'}
           ->{'saml1:AttributeStatement'}->{'saml1:Subject'}
@@ -645,7 +593,7 @@ sub parse_saml_response {
         my ($user_fname) = $attr{firstName}->{content};
         my ($user_email) = $attr{email}->{content};
 
-	print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
+#	print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
         return ( $user_id, $user_fname, $user_lname, $user_email );
     }
 }
@@ -657,7 +605,7 @@ sub parse_saml_response2 {
 	# mdb modified 4/4/13 for iPlant CAS update - XML::Simple doesn't support namespaces
     if ( $response =~ m/saml1?p:Success/ ) {
         my $ref = XMLin($response);
-        print STDERR Dumper $ref, "\n";
+#        print STDERR Dumper $ref, "\n";
         my ($user_id) =
           $ref->{'SOAP-ENV:Body'}->{'Response'}->{'Assertion'}
           ->{'AttributeStatement'}->{'Subject'}
@@ -673,7 +621,7 @@ sub parse_saml_response2 {
         my ($user_fname) = $attr{firstName};
         my ($user_email) = $attr{email};
 
-		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
+#		print STDERR "parse_saml_response: ".$user_id.'   '.$user_fname.'   '.$user_lname.'  '.$user_email."\n";
         return ( $user_id, $user_fname, $user_lname, $user_email );
     }
 }
@@ -682,7 +630,7 @@ sub parse_saml_response2 {
 sub jwt_decode_token {
     my $token = shift;           # JWT token
     my $key_path = shift; # file path to public RSA key
-    print STDERR "Web::jwt_decode_token token=", ($token ? $token : ''), " key_path=", ($key_path ? $key_path : ''), "\n";
+#    print STDERR "Web::jwt_decode_token token=", ($token ? $token : ''), " key_path=", ($key_path ? $key_path : ''), "\n";
     return unless ($token and $key_path);
     
     # Parse and decode token parts
@@ -765,7 +713,7 @@ sub login_cas4 {
     my $this_url    = $opts{this_url};      # URL that CAS redirected to
     my $db          = $opts{db};            # db object
     my $server      = $opts{server};        # server -- this was added to get apache proxying to work with cas
-    print STDERR "Web::login_cas4 ticket=$ticket this_url=$this_url\n";
+#    print STDERR "Web::login_cas4 ticket=$ticket this_url=$this_url\n";
     #print STDERR Dumper \%ENV, "\n";
 
     my $cas_url = get_defaults()->{CAS_URL};
@@ -786,7 +734,7 @@ sub login_cas4 {
     my $response = $agent->request($request);
     #print STDERR "cas4 response: ", Dumper $response, "\n";
     my $result   = $response->content;
-    print STDERR "cas result: ", Dumper $result, "\n";
+#    print STDERR "cas result: ", Dumper $result, "\n";
     return unless $result;
     
     return;
@@ -846,7 +794,7 @@ sub log_history {
     $type = 1 if ( $description and $description ne 'page access' );
     $user_id = 0 unless ( defined $user_id );
     $page =~ s/\.pl$//;    # remove trailing .pl extension
-    print STDERR "log_history: $description\n";
+#    print STDERR "log_history: $description\n";
     return $db->resultset('Log')->create(
         {
             user_id     => $user_id,
@@ -1160,18 +1108,18 @@ sub gzip {
 sub gunzip {
     my ( $self, $file, $debug ) = self_or_default(@_);
     my $GUNZIP = get_command_path('GUNZIP');
-    print STDERR "Debugging sub gunzip\n" if $debug;
-    print STDERR "\t", $file, "\n" if $debug;
+#    print STDERR "Debugging sub gunzip\n" if $debug;
+#    print STDERR "\t", $file, "\n" if $debug;
     $file .= ".gz" if -r $file . ".gz";
-    print STDERR "\t", $file, "!\n" if $debug;
+#    print STDERR "\t", $file, "!\n" if $debug;
     if ( -r $file && $file =~ /\.gz/ ) {
-        print STDERR "\t", "Running $GUNZIP $file\n";
+#        print STDERR "\t", "Running $GUNZIP $file\n";
         `$GUNZIP $file`;
     }
     my $tmp = $file;
     $tmp =~ s/\.gz$//;
     my $return = -r $tmp ? $tmp : $file;
-    print STDERR "\t", "returning $return\n" if $debug;
+#    print STDERR "\t", "returning $return\n" if $debug;
     return $return;
 }
 

@@ -186,7 +186,6 @@ sub find_workflows {
     my %data;
     $data{ids} = $ids if ($ids); # mdb changed 4/29/15 - rename key from "workflows" to "ids"
     $data{status} = $status if ($status);
-
     $request = {
         request => 'workflows',
         data    => \%data

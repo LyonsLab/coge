@@ -15,7 +15,6 @@ no warnings 'redefine';
 
 use CoGe::Accessory::Web;
 use CoGe::Accessory::genetic_code;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Utils qw( commify );
 use CoGeX;
 
@@ -58,7 +57,7 @@ $USER = undef;
     coge        => $coge,
     this_url    => $FORM->url()
 ) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
+($USER) = CoGe::Accessory::Web->get_user(
     cookie_name => $COOKIE_NAME,
     coge        => $coge
 ) unless $USER;

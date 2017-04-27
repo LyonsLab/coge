@@ -9,7 +9,6 @@ use Digest::MD5 qw(md5_base64);
 
 use CoGeX;
 use CoGe::Accessory::Web;
-use CoGe::Accessory::LogUser;
 no warnings 'redefine';
 
 use vars qw($P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $DATE $DEBUG

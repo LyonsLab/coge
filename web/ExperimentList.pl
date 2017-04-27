@@ -6,7 +6,6 @@ use CoGeX;
 use DBI;
 
 use Data::Dumper;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
 use HTML::Template;

@@ -27,7 +27,7 @@ app->config(
     }
 );
 #app->log( Mojo::Log->new( path => catdir(get_defaults->{_HOME_PATH}, 'mojo.log'), level => 'debug' ) ); # log in sandbox top-level directory
-app->log( Mojo::Log->new( ) ); # log to STDERR
+app->log( Mojo::Log->new(level => 'warn' ) ); # log to STDERR
 
 # mdb added 8/27/15 -- prevent "Your secret passphrase needs to be changed" message
 app->secrets('coge'); # it's okay to have this secret in the code (rather the config file) because we don't use signed cookies

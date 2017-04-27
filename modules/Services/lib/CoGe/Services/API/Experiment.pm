@@ -207,7 +207,6 @@ sub update {
     return unless $experiment;
 
     my $data = $self->req->json;
-    warn Dumper $data;
     if (exists($data->{metadata}->{id})) {
 	    delete $data->{metadata}->{id};
     }

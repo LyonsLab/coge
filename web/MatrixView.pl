@@ -3,7 +3,6 @@ use strict;
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use HTML::Template;
 use Data::Dumper;
 use CGI::Ajax;
@@ -55,7 +54,7 @@ $USER = undef;
     coge        => $coge,
     this_url    => $FORM->url()
 ) if ($cas_ticket);
-($USER) = CoGe::Accessory::LogUser->get_user(
+($USER) = CoGe::Accessory::Web->get_user(
     cookie_name => $COOKIE_NAME,
     coge        => $coge
 ) unless $USER;

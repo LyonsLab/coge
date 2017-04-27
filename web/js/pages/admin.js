@@ -982,7 +982,7 @@ $.extend(JobGrid.prototype, {
 			    data: {
 			        fname: 'get_jobs',
 			        time_range: 0,
-			        running_only: self.running_only,
+			        status: self.running_only ? 'running' : null,
 			    },
 			    success: function(data) {
 			    	//console.log(data)

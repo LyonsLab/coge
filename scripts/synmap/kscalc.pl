@@ -11,7 +11,6 @@ use Parallel::ForkManager;
 use Data::Dumper;
 use File::Spec;
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Algos::KsCalc;
 

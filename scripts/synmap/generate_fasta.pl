@@ -11,7 +11,6 @@ use Getopt::Long;
 use Parallel::ForkManager;
 
 use CoGeX;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use DBIxProfiler;
 

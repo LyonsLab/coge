@@ -62,7 +62,7 @@ sub init {
             my $session = $db->resultset('UserSession')->find( { session => $session_id } );
             if ($session) {# && $user && $session->user_id == $user->id) { # mdb changed 3/7/16 for hypnotoad
                 $user = $db->resultset('User')->find($session->user_id); # mdb added 3/7/16 for hypnotoad
-                print STDERR "CoGe::Services::Auth::init using existing session for user '", $user->name, "'\n";
+#                print STDERR "CoGe::Services::Auth::init using existing session for user '", $user->name, "'\n";
                 return ( $db, $user, $conf );
             }
         }
@@ -98,7 +98,7 @@ sub init {
     }
     
     # Return unauthenticated response if no token or existing session
-    print STDERR "CoGe::Services::Auth::init finished with no authentication\n";
+#    print STDERR "CoGe::Services::Auth::init finished with no authentication\n";
     return ( $db, undef, $conf );
 }
 
@@ -106,7 +106,7 @@ sub validate_jwt {
     my $token = shift;
     my $key_path = shift;
     return unless $token;
-    print STDERR "CoGe::Services::Auth::validate_jwt\n";
+#    print STDERR "CoGe::Services::Auth::validate_jwt\n";
     
     # Get path to JWT key
     unless ($key_path && -r $key_path) {
@@ -125,15 +125,15 @@ sub validate_jwt {
     my $fname = $claims->{'given_name'};
     my $lname = $claims->{'family_name'};
     my $email = $claims->{'email'};
-        
-    print STDERR "CoGe::Services::Auth::validate_jwt: success! ", ($uname ? $uname : ''), "\n";
+
+#    print STDERR "CoGe::Services::Auth::validate_jwt: success! ", ($uname ? $uname : ''), "\n";
     return ($uname, $fname, $lname, $email);
 }
 
 sub validate_agave {
     my ($username, $token) = @_;
     return unless ($username and $token);
-    print STDERR "CoGe::Services::Auth::validate_agave: username=$username token=$token\n";
+#    print STDERR "CoGe::Services::Auth::validate_agave: username=$username token=$token\n";
     
     my ($uname, $fname, $lname, $email);
 
@@ -203,7 +203,7 @@ sub validate_agave {
     $lname = $authResponse->{result}->{lastName};
     $email = $authResponse->{result}->{email};
 
-    print STDERR "CoGe::Services::Auth::validate_agave: success! ", ($uname ? $uname : ''), "\n";
+#    print STDERR "CoGe::Services::Auth::validate_agave: success! ", ($uname ? $uname : ''), "\n";
     return ($uname, $fname, $lname, $email);
 }
 

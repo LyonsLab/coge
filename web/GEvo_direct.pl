@@ -9,7 +9,6 @@ use HTML::Template;
 use Digest::MD5 qw(md5_base64);
 use DBI;
 use File::Path;
-#use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 no warnings 'redefine';
 

@@ -5,7 +5,6 @@ Todo
 Changes
 Makefile.PL
 lib/CoGe/Accessory/Tile/Cache.pm
-lib/CoGe/Accessory/LogUser.pm
 lib/CoGe/Accessory/GBlite.pm
 lib/CoGe/Accessory/Storage.pm
 lib/CoGe/Accessory/Utils.pm
