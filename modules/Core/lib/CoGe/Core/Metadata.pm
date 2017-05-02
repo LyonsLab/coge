@@ -11,7 +11,7 @@ use Mojo::JSON;
 use Switch;
 use Text::Unidecode qw(unidecode);
 
-use CoGe::Accessory::BisQue qw(create_bisque_image delete_bisque_image get_bisque_data_url set_bisque_visiblity);
+use CoGe::Accessory::BisQue qw(create_bisque_image delete_bisque_image get_bisque_data_url);
 use CoGe::Accessory::TDS;
 use CoGeX;
 

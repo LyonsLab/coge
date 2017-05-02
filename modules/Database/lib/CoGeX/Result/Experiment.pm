@@ -147,6 +147,14 @@ __PACKAGE__->has_many(
     { where => [ -and => [ child_type  => $node_types->{experiment} ] ] }
 );
 
+sub page {
+    return 'ExperimentView.pl';
+}
+
+sub type {
+    return 'experiment';
+}
+
 sub item_type {
     return $node_types->{experiment};   
 }

@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use base 'DBIx::Class::Core';
 use CoGe::Accessory::Annotation;
-use CoGe::Accessory::BisQue qw(set_bisque_visiblity);
 
 =head1 NAME
 
@@ -140,6 +139,14 @@ __PACKAGE__->has_many(
     { "foreign.child_id" => "self.list_id" },
     { where => [ -and => [ child_type  => $node_types->{list} ] ] }
 );
+
+sub page {
+    return 'NotebookView.pl';
+}
+
+sub type {
+    return 'notebook';
+}
 
 sub item_type {
     return $node_types->{list};   

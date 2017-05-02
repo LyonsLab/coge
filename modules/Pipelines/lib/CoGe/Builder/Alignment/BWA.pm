@@ -62,6 +62,7 @@ sub bwa_index {
         $name . ".bwt",
         $name . ".pac",
         $name . ".sa",
+        $done_file
     ]);
 
     return {

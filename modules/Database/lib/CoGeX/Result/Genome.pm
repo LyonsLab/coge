@@ -183,6 +183,14 @@ __PACKAGE__->has_many(
 
 __PACKAGE__->mk_accessors('_chromosomes');
 
+sub page {
+    return 'GenomeInfo.pl';
+}
+
+sub type {
+    return 'genome';
+}
+
 sub item_type {
     return $node_types->{genome};   
 }
