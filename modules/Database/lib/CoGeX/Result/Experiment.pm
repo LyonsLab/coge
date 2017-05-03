@@ -151,7 +151,7 @@ sub page {
     return 'ExperimentView.pl';
 }
 
-sub type {
+sub object_type {
     return 'experiment';
 }
 

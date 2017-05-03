@@ -684,11 +684,34 @@ sub picard_deduplicate {
     };
 }
 
+sub merge_bams {
+    my $self = shift;
+    my $bam_files = shift;
+
+    my $cmd = get_command_path('SAMTOOLS');
+
+    my @args;
+    push @args, ["merge", '', 0];
+    push @args, ["", "merged.bam", 0];
+    for (@$bam_files) {
+        push @args, $_;
+    }
+    return {
+        cmd => $cmd,
+        args => \@args,
+        inputs => $bam_files,
+        outputs => [
+            catfile($self->staging_dir, "merged.bam")
+        ],
+        description => "Merging BAM files"
+    };
+}
+
 sub sort_bam {
     my $self = shift;
     my $bam_file = shift;
 
-    my $filename = to_filename($bam_file);
+    my $out_file = to_filename($bam_file) . "-sorted.bam";
     my $cmd = get_command_path('SAMTOOLS');
 
     return {
@@ -696,13 +719,13 @@ sub sort_bam {
         args => [
             ["sort", '', 0],
             ["", $bam_file, 1],
-            ["-o", $filename . "-sorted.bam", 1] # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
+            ["-o", $out_file, 1] # mdb changed 1/5/17 -- added -o for SAMtools 1.3.1
         ],
         inputs => [
             $bam_file
         ],
         outputs => [
-            catfile($self->staging_dir, $filename . "-sorted.bam")
+            catfile($self->staging_dir, $out_file)
         ],
         description => "Sorting BAM file"
     };

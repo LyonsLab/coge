@@ -27,7 +27,7 @@ BEGIN {
 sub create_bisque_image {
     my ($object, $upload, $user) = @_;
 
-    my $dest = _get_dir($object->type, $object->id, $user);
+    my $dest = _get_dir($object->object_type, $object->id, $user);
     irods_imkdir($dest);
     $dest = catfile($dest, basename($upload->filename));
     my $source;
@@ -97,10 +97,10 @@ sub _init_image {
     $content = substr($content, 0, length($content) - 2) . '>';
     $content .= '<tag name="Added by CoGe" type="link" value="' . $conf->{SERVER} . '" />';
     $content .= '<tag name="uploaded by" value="' . $user->info . '" />';
-    $content .= '<tag name="' . $object->info . '" type="link" value="' . $conf->{SERVER} . $object->page . '?' . substr($object->type, 0, 1) . 'id=' . $object->id . '" />';
-    if ($object->type eq 'genome') {
+    $content .= '<tag name="' . $object->info . '" type="link" value="' . $conf->{SERVER} . $object->page . '?' . substr($object->object_type, 0, 1) . 'id=' . $object->id . '" />';
+    if ($object->object_type eq 'genome') {
         $content .= '<tag name="' . $object->organism->info . '" type="link" value="' . $conf->{SERVER} . 'OrganismView.pl?gid=' . $object->id . '" />';
-    } elsif ($object->type eq 'experiment') {
+    } elsif ($object->object_type eq 'experiment') {
         my $genome = $object->genome;
         my $organism = $genome->organism;
         $content .= '<tag name="' . $organism->info . '" type="link" value="' . $conf->{SERVER} . 'OrganismView.pl?gid=' . $genome->id . '" />';

@@ -187,7 +187,7 @@ sub page {
     return 'GenomeInfo.pl';
 }
 
-sub type {
+sub object_type {
     return 'genome';
 }
 

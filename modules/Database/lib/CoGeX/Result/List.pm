@@ -144,7 +144,7 @@ sub page {
     return 'NotebookView.pl';
 }
 
-sub type {
+sub object_type {
     return 'notebook';
 }
 
