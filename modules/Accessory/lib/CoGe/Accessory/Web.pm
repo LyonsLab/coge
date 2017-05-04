@@ -405,7 +405,6 @@ sub logout_cas {
 }
 
 sub gen_cookie {
-    my $self        = shift;
     my %opts        = @_;
     my $session     = $opts{session} || 0;
     my $exp         = $opts{exp} || '+7d'; # issue 48, this field must have lowercase-only

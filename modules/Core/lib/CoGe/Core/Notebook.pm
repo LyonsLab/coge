@@ -52,7 +52,7 @@ sub get_notebook {
 	}
 
 	if ($user) { # check permissions if user specified
-		if ($notebook->restricted && !$user->has_access_to_list($notebook)) {
+		if ($notebook->restricted && !$user->has_access_to_notebook($notebook)) {
 	    	print STDERR "attempt to load notebook without user permissions in CoGe::Core::Notebook::get_notebook\n";
 			return undef;
 		}
@@ -83,7 +83,7 @@ sub search_notebooks {
     # Filter result by permissions
     my @filtered = grep {
         (!$_->deleted || $include_deleted) &&
-        (!$_->restricted || (defined $user && $user->has_access_to_list($_)))
+        (!$_->restricted || (defined $user && $user->has_access_to_notebook($_)))
     } @notebooks;
 
     return \@filtered;

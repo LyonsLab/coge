@@ -362,7 +362,7 @@ sub _get_notebook {
         }
     }
 
-    unless ( !$notebook->restricted || (defined $user && $user->has_access_to_list($notebook)) ) {
+    unless ( !$notebook->restricted || (defined $user && $user->has_access_to_notebook($notebook)) ) {
         $self->render(API_STATUS_UNAUTHORIZED);
         return;
     }

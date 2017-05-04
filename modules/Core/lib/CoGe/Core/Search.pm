@@ -216,7 +216,7 @@ sub search {
 		my $rs = do_search('List', $conditions, undef, $query, $db, $user);
 		if ($rs) {
 			my @notebooks = sort { lc($a->name) cmp lc($b->name) } $rs->all();
-			push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_list', $favorites);
+			push_results(\@results, \@notebooks, 'notebook', $user, 'has_access_to_notebook', $favorites);
 		}
 	}
 

@@ -201,7 +201,7 @@ sub get_item_info { #TODO move into API and render on client-side -- this is als
     }
     elsif ( $item_type eq 'notebook' ) {
         my $notebook = $DB->resultset('List')->find($item_id);
-        return unless $USER->has_access_to_list($notebook);
+        return unless $USER->has_access_to_notebook($notebook);
 
         my $group_str = join( '<br>',
             sort map { $_->name } $USER->groups_with_access($notebook) );
@@ -653,7 +653,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
         }
         elsif ( $item_type eq 'notebook' ) {
             my $notebook = $DB->resultset('List')->find($item_id);
-            next unless $USER->has_access_to_list($notebook);
+            next unless $USER->has_access_to_notebook($notebook);
             map { $userconn{ $_->id } = $_ }
               ( $notebook->user_connectors, $notebook->group_connectors );
             $isPublic = 1 if ( not $notebook->restricted );
@@ -883,7 +883,7 @@ sub make_items_public {
         }
         elsif ( $item_type eq 'notebook' ) {
             my $notebook = $DB->resultset('List')->find($item_id);
-            next unless $USER->has_access_to_list($notebook);
+            next unless $USER->has_access_to_notebook($notebook);
             $notebook->restricted(!$make_public);
             $notebook->update();
         }
@@ -925,7 +925,7 @@ sub add_items_to_user_or_group {
         }
         elsif ( $item_type eq 'notebook' ) {
             my $notebook = $DB->resultset('List')->find($item_id);
-            next unless $USER->has_access_to_list($notebook);
+            next unless $USER->has_access_to_notebook($notebook);
             push @verified, { id => $item_id, type => $ITEM_TYPE{notebook}, type_name => $item_type, info => $notebook->info_html };
         }
     }
@@ -1063,7 +1063,7 @@ sub remove_items_from_user_or_group {
         }
         elsif ( $item_type eq 'notebook' ) {
             my $notebook = $DB->resultset('List')->find($item_id);
-            next unless $USER->has_access_to_list($notebook);
+            next unless $USER->has_access_to_notebook($notebook);
 
             my $conn = $DB->resultset('UserConnector')->find(
                 {
@@ -1377,8 +1377,7 @@ sub get_contents {
         return qq{<iframe frameborder="0" width="100%" height="100%" scrolling="no" src="//genomevolution.org/blacktea/standalone/$user_id/$job_list"></iframe>} #FIXME: hardcoded server name
     }
 
-#    print STDERR Dumper \@items, "\n";
-    return encode_json($items);
+    return encode_json($items) if $items;
 }
 
 sub get_stats {
@@ -1677,7 +1676,7 @@ sub search_notebooks
             foreach
               my $notebook ( $DB->resultset("List")->search_literal($sql) )
             {
-                next unless $USER->has_access_to_list($notebook);
+                next unless $USER->has_access_to_notebook($notebook);
                 push @notebooks, $notebook;
             }
         }
@@ -1690,7 +1689,7 @@ sub search_notebooks
         foreach my $notebook (
             $DB->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')")
         ) {
-            next unless $USER->has_access_to_list($notebook);
+            next unless $USER->has_access_to_notebook($notebook);
             push @notebooks, $notebook;
         }
         $num_results = @notebooks;
@@ -1727,7 +1726,7 @@ sub add_items_to_notebook {
     #print STDERR "add_items_to_notebook $nid $item_list\n";
 
     my $notebook = $DB->resultset('List')->find($nid);
-    return unless $USER->has_access_to_list($notebook);
+    return unless $USER->has_access_to_notebook($notebook);
 
     foreach (@items) {
         my ( $item_id, $item_type ) = $_ =~ /(\d+)_(\w+)/;

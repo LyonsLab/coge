@@ -511,7 +511,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
 #        if ( $num_results < $MAX_SEARCH_RESULTS ) {
 #            foreach my $notebook ( $coge->resultset("List")->search_literal($sql) )
 #            {
-#                next unless $USER->has_access_to_list($notebook);
+#                next unless $USER->has_access_to_notebook($notebook);
 #                push @notebooks, $notebook;
 #            }
 #        }
@@ -523,7 +523,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
         $search_term = '%' . $search_term . '%';
         foreach my $notebook ($coge->resultset("List")->search_literal("locked=0 AND (name LIKE '$search_term' OR description LIKE '$search_term')"))
         {
-            next unless $USER->has_access_to_list($notebook);
+            next unless $USER->has_access_to_notebook($notebook);
             push @notebooks, $notebook;
         }
         $num_results = @notebooks;

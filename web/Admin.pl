@@ -153,7 +153,7 @@ sub user_info {
 		# Find notebooks
 		foreach ( $currentUser->child_connectors( { child_type => 1 } ) ) {
 			$child = $_->child;
-			if ($user->has_access_to_list($child)) {
+			if ($user->has_access_to_notebook($child)) {
 				push @current,
 				  {
 					'type'          => "notebook",
@@ -265,7 +265,7 @@ sub add_items_to_user_or_group {
 		}
 		elsif ( $item_type == $node_types->{notebook} ) {
 			my $notebook = $db->resultset('List')->find($item_id);
-			next unless $user->has_access_to_list($notebook);
+			next unless $user->has_access_to_notebook($notebook);
 			push @verified, $item;
 		}
 	}
@@ -386,7 +386,7 @@ sub remove_items_from_user_or_group {
 		}
 		elsif ( $item_type == $node_types->{notebook} ) {
 			my $notebook = $db->resultset('List')->find($item_id);
-			next unless $user->has_access_to_list($notebook);
+			next unless $user->has_access_to_notebook($notebook);
 
 			my $conn = $db->resultset('UserConnector')->find(
 				{
@@ -443,7 +443,7 @@ sub get_share_dialog {    #FIXME this routine needs to be optimized
 		}
 		elsif ( $item_type == $node_types->{notebook} ) {
 			my $notebook = $db->resultset('List')->find($item_id);
-			next unless $user->has_access_to_list($notebook);
+			next unless $user->has_access_to_notebook($notebook);
 			map { $userconn{ $_->id } = $_ }
 			  ( $notebook->user_connectors, $notebook->group_connectors );
 			$isPublic = 1 if ( not $notebook->restricted );

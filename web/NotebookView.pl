@@ -116,7 +116,7 @@ sub gen_body {
     return "Must have valid notebook id\n" unless ($lid);
     my ($list) = $DB->resultset('List')->find($lid);
     return "<br>Notebook id$lid does not exist.<br>" unless ($list);
-    return "Access denied\n" unless $USER->has_access_to_list($list);
+    return "Access denied\n" unless $USER->has_access_to_notebook($list);
 
     my $title = $list->info;
     $title = substr($title, 0, MAX_TITLE_LENGTH) . '...' if (length($title) > MAX_TITLE_LENGTH);
@@ -152,7 +152,7 @@ sub get_notebook_info {
     return unless $nid;
 
     my ($list) = $DB->resultset('List')->find($nid);
-    return unless $USER->has_access_to_list($list);
+    return unless $USER->has_access_to_notebook($list);
 
     my $html = $list->annotation_pretty_print_html();
     $html .= qq{<div class="panel">};
@@ -731,7 +731,7 @@ sub search_lists
             foreach
               my $notebook ( $DB->resultset("List")->search_literal($sql) )
             {
-                next unless $USER->has_access_to_list($notebook);
+                next unless $USER->has_access_to_notebook($notebook);
                 push @notebooks, $notebook;
             }
         }
@@ -747,7 +747,7 @@ sub search_lists
             )
           )
         {
-            next unless $USER->has_access_to_list($notebook);
+            next unless $USER->has_access_to_notebook($notebook);
             push @notebooks, $notebook;
         }
         $num_results = @notebooks;

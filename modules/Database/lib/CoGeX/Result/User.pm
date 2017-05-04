@@ -67,7 +67,7 @@ __PACKAGE__->has_many( 'sessions' => "CoGeX::Result::UserSession", 'user_id' );
 __PACKAGE__->has_many( 'logs' => "CoGeX::Result::Log", 'user_id' );
 __PACKAGE__->has_many( 'jobs' => "CoGeX::Result::Job", 'user_id' );
 __PACKAGE__->has_many( 'favorites' => "CoGeX::Result::FavoriteConnector", 'user_id' );
-__PACKAGE__->has_many( # all children (groups/genomes/experiments/lists)
+__PACKAGE__->has_many(
 	'child_connectors' => "CoGeX::Result::UserConnector",
 	{ "foreign.parent_id" => "self.user_id" },
 	{ where => { parent_type => $node_types->{user} } } );
@@ -83,12 +83,12 @@ __PACKAGE__->has_many( # child experiments
 	'experiment_connectors' => "CoGeX::Result::UserConnector",
 	{ "foreign.parent_id" => "self.user_id" },
 	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{experiment} ] ] } );
-__PACKAGE__->has_many( # child lists
+__PACKAGE__->has_many(
 	'list_connectors' => "CoGeX::Result::UserConnector",
 	{ "foreign.parent_id" => "self.user_id" },
 	{ where => [ -and => [ parent_type => $node_types->{user}, child_type => $node_types->{list} ] ] } );
 
-__PACKAGE__->mk_accessors(qw(_genome_ids _experiment_ids _list_ids));
+__PACKAGE__->mk_accessors(qw(_genome_ids _experiment_ids _notebook_ids));
 #_genome_ids is a hash_ref of the genome_ids that a user has access to
 
 sub item_type {
@@ -283,23 +283,22 @@ sub has_access_to {
 	switch (ref($object)) {
 		case 'CoGeX::Result::Experiment' { return $self->has_access_to_experiment($object); }
 		case 'CoGeX::Result::Genome' { return $self->has_access_to_genome($object); }
-		case 'CoGeX::Result::List' { return $self->has_access_to_list($object); }
+		case 'CoGeX::Result::List' { return $self->has_access_to_notebook($object); }
 	}
 	return 0;
 }
 
-sub has_access_to_list {
-	my ($self, $list) = @_;
-	return 0 unless $list;
-	return 1 if (not $list->restricted or $self->is_admin); # public list or superuser
-	return 0 if ($self->is_public); # deny public user for restricted list
+sub has_access_to_notebook {
+	my ($self, $notebook) = @_;
+	return 0 unless $notebook;
+	return 1 if (not $notebook->restricted or $self->is_admin); # public notebook or superuser
+	return 0 if ($self->is_public); # deny public user for restricted notebook
 
-	my $lid = $list->id;
-	unless ( $self->_list_ids)  {
-	    $self->_list_ids({ map{$_->id=>1} $self->lists });
+	unless ( $self->_notebook_ids)  {
+	    $self->_notebook_ids({ map{$_->id=>1} $self->lists });
 	}
-	my $ids = $self->_list_ids();
-	return $ids->{$lid};
+	my $ids = $self->_notebook_ids();
+	return $ids->{$notebook->id};
 }
 
 #new version caches results
@@ -351,11 +350,11 @@ sub has_access_to_dataset {
 =head2 is_owner
 
  Usage     : $self->(dsg=>$dsg)
- Purpose   : checks to see if a user is the owner of a genome or dataset or list
+ Purpose   : checks to see if a user is the owner of a genome or dataset or notebook
  Returns   : 1/0
  Argument  : dsg=>genome object
              ds=>dataset object
-             list=>list object
+             notebook=>notebook object
  Throws    : None
  Comments  :
 
@@ -375,11 +374,11 @@ sub is_owner {
 =head2 is_editor
 
  Usage     : $self->(dsg=>$dsg)
- Purpose   : checks to see if a user is the editor of a genome or dataset or list
+ Purpose   : checks to see if a user is the editor of a genome or dataset or notebook
  Returns   : 1/0
  Argument  : dsg=>genome object
              ds=>dataset object
-             list=>list object
+             notebook=>notebook object
  Throws    : None
  Comments  :
 
@@ -400,11 +399,11 @@ sub is_editor {
 =head2 is_owner_editor
 
  Usage     : $self->(dsg=>$dsg)
- Purpose   : checks to see if a user is the owner/editor of a genome or dataset or list
+ Purpose   : checks to see if a user is the owner/editor of a genome or dataset or notebook
  Returns   : 1/0
  Argument  : dsg=>genome object
              ds=>dataset object
-             list=>list object
+             notebook=>notebook object
  Throws    : None
  Comments  :
 
@@ -429,11 +428,11 @@ sub is_owner_editor {
 =head2 is_reader
 
  Usage     : $self->(dsg=>$dsg)
- Purpose   : checks to see if a user is the reader of a genome or dataset or list
+ Purpose   : checks to see if a user is the reader of a genome or dataset or notebook
  Returns   : 1/0
  Argument  : dsg=>genome object
              ds=>dataset object
-             list=>list object
+             notebook=>notebook object
  Throws    : None
  Comments  :
 
@@ -454,13 +453,13 @@ sub is_reader {
 =head2 is_role
 
  Usage     : $self->(dsg=>$dsg)
- Purpose   : checks to see if a user has given role in relation to given group/genome/dataset/list/experiment
+ Purpose   : checks to see if a user has given role in relation to given genome/dataset/notebook/experiment
  Returns   : 1/0
  Argument  : role => "owner","editor","reader"
  			 group => user group object
              dsg => genome object
              ds => dataset object
-             list => list object
+             notebook => notebook object
              experiment => experiment object
  Throws    : None
  Comments  :
@@ -478,10 +477,10 @@ sub is_role {
 	my $group = $opts{group};
 	my $dsg  = $opts{dsg} || $opts{genome}; #FIXME get rid of dsg
 	my $ds   = $opts{ds};
-	my $list = $opts{list} || $opts{notebook}; #FIXME get rid of list
+	my $notebook = $opts{list} || $opts{notebook}; #FIXME get rid of list
 	my $experiment = $opts{experiment};
 	my $item = $opts{item};
-	return 0 unless $dsg || $ds || $list || $experiment || $group || $item;
+	return 0 unless $dsg || $ds || $notebook || $experiment || $group || $item;
 
     if ($dsg) { # genome
         my $dsgid = $dsg =~ /^\d+$/ ? $dsg : $dsg->id;
@@ -496,8 +495,8 @@ sub is_role {
 		}
 	}
 
-	if ($list) {
-		my $lid = $list =~ /^\d+$/ ? $list : $list->id;
+	if ($notebook) {
+		my $lid = $notebook =~ /^\d+$/ ? $notebook : $notebook->id;
 		my $conn = $self->child_connector(id=>$lid, type=>'list');
 		return 1 if ($conn && $conn->role_id == $role_id);
 	}
@@ -726,8 +725,7 @@ sub groups_with_access {
 
 	# Lists
 	foreach my $conn ( $item->list_connectors ) {
-		my $list = $conn->parent_list;
-		foreach ($list->group_connectors) {
+		foreach ($conn->parent_list->group_connectors) {
 			my $group = $_->parent;
 			$groups{$group->id} = $group;
 		}
@@ -755,14 +753,13 @@ sub users_with_access {
 
 	# Lists
 	foreach my $conn ( $item->list_connectors ) {
-		my $list = $conn->parent_list;
-		foreach ($list->user_connectors) {
+		foreach ($conn->parent_list->user_connectors) {
 			my $user = $_->parent;
             next unless defined $user;
 
 			$users{$user->id} = $user;
 		}
-		foreach ($list->group_connectors) {
+		foreach ($conn->parent_list->group_connectors) {
 			my $group = $_->parent;
 			map { $users{$_->id} = $_ } $group->users;
 		}
@@ -804,8 +801,7 @@ sub child_connector { #TODO replace with CoGeDBI literal query
 	# Scan user's lists
 	if ($type_id ne $node_types->{list}) { # Don't traverse lists within a list
 		foreach my $conn ($self->list_connectors) {
-			my $list = $conn->child;
-			foreach ($list->child_connectors({child_id=>$id, child_type=>$type_id})) {
+			foreach ($conn->child->child_connectors({child_id=>$id, child_type=>$type_id})) {
 				next if ($_->child_id != $id or $_->child_type != $type_id); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
 				next unless ($conn->role_id == 4); # mdb tempfix 10/16/13 issue 232 -- list can only grant read access
 				return $conn;
@@ -822,8 +818,7 @@ sub child_connector { #TODO replace with CoGeDBI literal query
 		# Scan group's lists
 		if ($type_id ne $node_types->{list}) { # Don't traverse lists within a list
 			foreach my $conn ($group->list_connectors) {
-				my $list = $conn->child;
-				foreach ($list->child_connectors({child_id=>$id, child_type=>$type_id})) {
+				foreach ($conn->child->child_connectors({child_id=>$id, child_type=>$type_id})) {
 					next if ($_->child_id != $id or $_->child_type != $type_id); # FIXME mdb tempfix 10/14/13 issue 232 -- why necessary with line above?
 					next unless ($conn->role_id == 4); # mdb tempfix 10/16/13 issue 232 -- list can only grant read access
 					return $conn;
@@ -850,8 +845,7 @@ sub all_child_connectors { #TODO replace with CoGeDBI literal query
 	# Scan user's lists
 	if ($type ne 'list') {
 		foreach my $conn ($self->list_connectors) {
-			my $list = $conn->child;
-			foreach ($list->child_connectors({child_type=>$type_num})) {
+			foreach ($conn->child->child_connectors({child_type=>$type_num})) {
 				$connectors{$_->id} = $_;
 			}
 		}
@@ -866,8 +860,7 @@ sub all_child_connectors { #TODO replace with CoGeDBI literal query
 		# Scan group's lists
 		if ($type ne 'list') {
 			foreach my $conn ($group->list_connectors) {
-				my $list = $conn->child;
-				foreach ($list->child_connectors({child_type=>$type_num})) {
+				foreach ($conn->child->child_connectors({child_type=>$type_num})) {
 					$connectors{$_->id} = $_;
 				}
 			}
@@ -894,8 +887,7 @@ sub children { #TODO replace with CoGeDBI literal query
 
 	# Scan user's lists
 	foreach my $conn ($self->list_connectors) {
-		my $list = $conn->child;
-		foreach ($list->child_connectors({child_type=>$type_num})) {
+		foreach ($conn->child->child_connectors({child_type=>$type_num})) {
 			my $child = $_->child;
 			$children{$child->id} = $child;
 		}
@@ -912,8 +904,7 @@ sub children { #TODO replace with CoGeDBI literal query
 		}
 		# Scan group's lists
 		foreach my $conn ($group->list_connectors) {
-			my $list = $conn->child;
-			foreach ($list->child_connectors({child_type=>$type_num})) {
+			foreach ($conn->child->child_connectors({child_type=>$type_num})) {
 				my $child = $_->child;
 				$children{$child->id} = $child;
 			}

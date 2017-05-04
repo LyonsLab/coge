@@ -162,7 +162,11 @@ $(function() {
 		buttonPanelElementId: "button_panel",
 		title: "Contents",
 		isEditable: USER_CAN_EDIT,
-		height: $(window).height() - (IS_ADMIN ? 555 : 445),
+<TMPL_IF NAME="EMBED">
+		height: $(window).height() - (IS_ADMIN ? 400 : 300)
+<TMPL_ELSE>
+		height: $(window).height() - (IS_ADMIN ? 550 : 460)
+</TMPL_IF>
 	});
 	get_list_contents()
 		.then(function() {
@@ -315,7 +319,6 @@ $(document).ready(function() {
 
 </div> <!-- tabs -->
 </TMPL_IF> <!-- ADD_LIST_ITEMS -->
-
 <TMPL_IF NAME='ADMIN_AREA'>
 <script>
 $(document).ready(function() {
@@ -346,7 +349,6 @@ function update_owner () {
     });
 }
 </script>
-
 <br>
 <hr>
 <div class="bold text">Admin Functions</div>
