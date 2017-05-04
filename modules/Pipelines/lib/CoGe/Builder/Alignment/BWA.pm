@@ -39,30 +39,30 @@ sub build {
         }
     }
     else {
-        # my $read_params = $self->params->{read_params} // {};
-        # my $read_type   = $read_params->{read_type} // 'single';
-        # if ($read_type eq 'paired' && scalar @$fastq > 2) {
-        #     my @bams;
-        #     for (my $i = 0; $i < scalar @$fastq; $i += 2) {
-        #         $self->add(
-        #             $self->bwa_alignment([$fastq->[$i], $fastq->[$i + 1]])
-        #         );
-        #         $self->add(
-        #             $self->sort_bam($self->previous_output)
-        #         );
-        #         push @bams, $self->previous_output;
-        #     }
-        #     $self->add(
-        #         $self->merge_bams(\@bams)
-        #     );
-        #     push @{$self->bam}, $self->previous_output;
-        # }
-        # else {
+        my $read_params = $self->params->{read_params} // {};
+        my $read_type   = $read_params->{read_type} // 'single';
+        if ($read_type eq 'paired' && scalar @$fastq > 2) {
+            my @bams;
+            for (my $i = 0; $i < scalar @$fastq; $i += 2) {
+                $self->add(
+                    $self->bwa_alignment([$fastq->[$i], $fastq->[$i + 1]])
+                );
+                $self->add(
+                    $self->sort_bam($self->previous_output)
+                );
+                push @bams, $self->previous_output;
+            }
+            $self->add(
+                $self->merge_bams(\@bams)
+            );
+            push @{$self->bam}, $self->previous_output;
+        }
+        else {
             $self->add(
                 $self->bwa_alignment($fastq)
             );
             push @{$self->bam}, $self->previous_output;
-        # }
+        }
     }
 }
 

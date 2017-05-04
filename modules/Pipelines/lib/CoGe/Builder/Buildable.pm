@@ -694,7 +694,7 @@ sub merge_bams {
     push @args, ["merge", '', 0];
     push @args, ["", "merged.bam", 0];
     for (@$bam_files) {
-        push @args, $_;
+        push @args, ["", $_, 1];
     }
     return {
         cmd => $cmd,
