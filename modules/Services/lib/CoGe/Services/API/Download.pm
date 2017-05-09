@@ -19,7 +19,7 @@ sub get {
     my $eid = $self->param('eid');
     my $wid = $self->param('wid');
     my $attachment = $self->param('attachment') // 1;
-    print STDERR "CoGe::Services::Download ", Dumper { gid => $gid, eid => $eid, wid => $wid, filename => $filename }, "\n";
+    my $admin = $self->param('admin');
     
     # Validate inputs
     unless ($gid || $eid || $wid) {
@@ -65,9 +65,15 @@ sub get {
             print STDERR "CoGe::Services::Download ERROR: not logged in\n";
             return $self->render(API_STATUS_UNAUTHORIZED);
         }
+        my $user_name = $user->name;
+        if ($admin) {
+            my $row = $db->storage->dbh->selectrow_arrayref('SELECT user_id FROM log WHERE parent_id=' . $wid . ' ORDER BY log_id DESC LIMIT 1');
+            $row = $db->storage->dbh->selectrow_arrayref('SELECT user_name FROM user WHERE user_id=' . $row->[0]);
+            $user_name = $row->[0];
+        }
         # get workflow log by default
         unless ($filename) {
-            $file_path = get_workflow_log_file($user->name, $wid);
+            $file_path = get_workflow_log_file($user_name, $wid);
             unless (-r $file_path) {
                 print STDERR "CoGe::Services::Download ERROR: workflow log not found for wid $wid in $file_path\n";
                 return $self->render(API_STATUS_NOTFOUND);
@@ -75,12 +81,12 @@ sub get {
             $filename = "workflow_$wid.log";
         }
         else {
-            my $dl_path = get_download_path('jobs', $user->name, $wid);
+            my $dl_path = get_download_path('jobs', $user_name, $wid);
             $file_path = File::Spec->catdir($dl_path, $filename);
         }
     }
     
-    say STDERR "CoGe::Services::Download file=$file_path";
+    # say STDERR "CoGe::Services::Download file=$file_path";
     return $self->render(API_STATUS_NOTFOUND) unless ($file_path);
 
     # Send file

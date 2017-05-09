@@ -23,27 +23,20 @@ var coge = window.coge = (function(namespace) {
 			this._debug('init completed');
 		},
 		
-		download_url: function(opts) { // duplicated in Web.pm::download_url_for()
-			var gid = opts.gid;
-			var eid = opts.eid;
-			var wid = opts.wid;
-			var filename = opts.filename;
-			var attachment = opts.attachment;
-
-		    var params = '';
-		    if (gid)
-		        params += "gid=" + gid;
-		    else if (eid)
-		        params += "eid=" + eid;
-		    else if (wid)
-		        params += "wid=" + wid;
-
-		    if (attachment != null)
-		        params += "&attachment=" + attachment;
-		    
-		    if (filename)
-		    	params += "&filename=" + filename;
-		    
+		download_url: function(opts) {
+		    var params;
+		    if (opts.gid)
+		        params = "gid=" + opts.gid;
+		    else if (opts.eid)
+		        params = "eid=" + opts.eid;
+		    else if (opts.wid)
+		        params = "wid=" + opts.wid;
+		    if (opts.admin)
+		        params += "&admin=" + opts.admin;
+		    if (opts.attachment)
+		        params += "&attachment=" + opts.attachment;
+		    if (opts.filename)
+		    	params += "&filename=" + opts.filename;
 		    return this.baseUrl + "downloads/?" + params;			
 		},
 

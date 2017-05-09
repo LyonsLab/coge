@@ -580,7 +580,7 @@ sub get_workflow_paths {
         my $results_dir = catdir($tmp_path, 'results');
         my @wdir = grep { -d "$results_dir/$_/$workflow_id" } read_dir($results_dir);
         if (@wdir != 1) {
-# mdb remopved 9/1/16 -- SynMap/CoGeBlast do not have a proper results dir yet
+# mdb removed 9/1/16 -- SynMap/CoGeBlast do not have a proper results dir yet
 #            warn "Storage::get_workflow_paths ERROR: ambiguous user directory";
 #            warn Dumper \@wdir;
             return;
