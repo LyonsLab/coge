@@ -32,7 +32,7 @@ sub build {
     # Add one or more alignment tasks
     if ($doSeparately) { # ChIP-seq pipeline (align each fastq individually)
         foreach my $file (@$fastq) {
-            $self->add(
+            $self->add_to_all(
                 $self->bwa_alignment([$file])
             );
             push @{$self->bam}, $self->previous_output;
@@ -46,7 +46,7 @@ sub build {
         if ($read_type eq 'paired' && scalar @$fastq > 2) {
             my @bams;
             for (my $i = 0; $i < scalar @$fastq; $i += 2) {
-                $self->add(
+                $self->add_to_all(
                     $self->bwa_alignment([$fastq->[$i], $fastq->[$i + 1]])
                 );
                 push @bams, $self->previous_output;
@@ -57,7 +57,7 @@ sub build {
             push @{$self->bam}, $self->previous_output;
         }
         else {
-            $self->add(
+            $self->add_to_all(
                 $self->bwa_alignment($fastq)
             );
             push @{$self->bam}, $self->previous_output;
