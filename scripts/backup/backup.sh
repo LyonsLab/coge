@@ -31,9 +31,7 @@ DBPASS=$(grep -P "DBPASS" $CONFIG | awk '{print $2}')
 LOCAL_MYSQL=$LOCAL/mysql_$VERSION
 mkdir -p $LOCAL_MYSQL
 echo `date` "Snapshotting MySQL databases"
-#mysqldump -u root -p$DBPASS wikidb -c | gzip -9 > $LOCAL_MYSQL/wikidb.sql.gz
-#mysqlhotcopy -u root -p $DBPASS cogelinks $LOCAL_MYSQL
-#mysqlhotcopy --port=3307 -u root -p $DBPASS coge $LOCAL_MYSQL
+
 innobackupex --user=root --password=$DBPASS --no-timestamp $LOCAL_MYSQL
 innobackupex --apply-log $LOCAL_MYSQL
 echo `date` "Pushing MySQL database backup to IRODS"
@@ -44,25 +42,32 @@ $ICMD/iput -bfr $LOCAL_MYSQL $REMOTE
 #
 echo `date` "Deleting old LOCAL database backups"
 #LOCAL_DELETIONS=`find $LOCAL/mysql_* -maxdepth 1 -type d -mtime +$DAYS_UNTIL_DELETE`
+
+COUNT=$MAX_REMOTE_BACKUPS;
 for d in `ls -td $LOCAL/*/ | grep 'mysql_'`
 do
-   if [ $MAX_LOCAL_BACKUPS -le 0 ];
+   echo $COUNT
+   if [ $COUNT -le 0 ];
    then
        echo deleting local $d 
        rm -rf $d
     fi
-    ((MAX_LOCAL_BACKUPS--))
+    #(($COUNT--))
+    COUNT=$((COUNT-1))
 done
 
 echo `date` "Deleting old REMOTE database backups (local & remote)"
-for d in `$ICMD/ils $REMOTE | grep 'mysql_' | sed 's/.*\(mysql_.*\)/\1/'`
+COUNT=$MAX_REMOTE_BACKUPS;
+for d in `$ICMD/ils $REMOTE | grep 'mysql_' | sort -r | sed 's/.*\(mysql_.*\)/\1/'`
 do
-    if [ $MAX_REMOTE_BACKUPS -le 0 ];
-    then
-        echo deleting IRODS backup/$d
-        $ICMD/irm -r backup/$d
-    fi
-    ((MAX_REMOTE_BACKUPS--))
+   echo $COUNT
+   if [ $COUNT -le 0 ];
+   then
+       echo deleting IRODS backup/$d
+       $ICMD/irm -r backup/$d
+   fi
+   #(($COUNT--))
+   COUNT=$((COUNT-1))
 done
 
 #
