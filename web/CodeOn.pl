@@ -20,43 +20,42 @@ use POSIX;
 no warnings 'redefine';
 
 use vars qw(
-    $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $TEMPDIR 
+    $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $PAGE_NAME $PAGE_TITLE $TEMPDIR 
     $USER $DATE $BASEFILE $coge $cogeweb $FORM $COOKIE_NAME
 );
 
-$P = CoGe::Accessory::Web::get_defaults();
+
+$PAGE_TITLE = 'CodeOn';
+$PAGE_NAME  = "$PAGE_TITLE.pl";
+
+$FORM = new CGI;
+( $coge, $USER, $P ) = CoGe::Accessory::Web->init(
+    cgi => $FORM,
+    page_title => $PAGE_TITLE
+);
+
 $ENV{PATH} = $P->{COGEDIR};
 
 $DATE = sprintf(
     "%04d-%02d-%02d %02d:%02d:%02d",
     sub { ( $_[5] + 1900, $_[4] + 1, $_[3] ), $_[2], $_[1], $_[0] }->(localtime)
 );
-$PAGE_NAME = "CodeOn.pl";
 $TEMPDIR   = $P->{TEMPDIR};
-$FORM      = new CGI;
-$DBNAME    = $P->{DBNAME};
-$DBHOST    = $P->{DBHOST};
-$DBPORT    = $P->{DBPORT};
-$DBUSER    = $P->{DBUSER};
-$DBPASS    = $P->{DBPASS};
-$connstr =
-  "dbi:mysql:dbname=" . $DBNAME . ";host=" . $DBHOST . ";port=" . $DBPORT;
-$coge = CoGeX->connect( $connstr, $DBUSER, $DBPASS );
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
 
-my ($cas_ticket) = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    cookie_name => $COOKIE_NAME,
-    ticket      => $cas_ticket,
-    coge        => $coge,
-    this_url    => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::Web->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+# my ($cas_ticket) = $FORM->param('ticket');
+# $USER = undef;
+# ($USER) = CoGe::Accessory::Web->login_cas4(
+#     cookie_name => $COOKIE_NAME,
+#     ticket      => $cas_ticket,
+#     coge        => $coge,
+#     this_url    => $FORM->url()
+# ) if ($cas_ticket);
+# ($USER) = CoGe::Accessory::Web->get_user(
+#     cookie_name => $COOKIE_NAME,
+#     coge        => $coge
+# ) unless $USER;
 
 #$coge->storage->debugobj(new DBIxProfiler());
 #$coge->storage->debug(1);
@@ -107,17 +106,19 @@ sub gen_body {
     @dsgids = map { split /::/, $_ } $form->param('dsgid');
     my $html;
     if ($USER->user_name eq "public") {
-	$html = "Due to the computationally intensive nature of CodeOn, you must be logged in to use this tool.";
+	    $html = "Due to the computationally intensive nature of CodeOn, you must be logged in to use this tool.";
     }	
-    elsif ( @fids || @oids || @dsgids ) {
-        my $res = go(
-            fids   => \@fids,
-            oids   => \@oids,
-            dsgids => \@dsgids,
-        );
-        $template->param( RESULTS => $res );
+    else {
+        if ( @fids || @oids || @dsgids ) {
+            my $res = go(
+                fids   => \@fids,
+                oids   => \@oids,
+                dsgids => \@dsgids,
+            );
+            $template->param( RESULTS => $res );
+        }
+        $html .= $template->output;
     }
-    $html .= $template->output;
     return $html;
 }
 
