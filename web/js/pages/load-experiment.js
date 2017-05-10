@@ -1289,7 +1289,7 @@ function load(experiment) {
     		}
     		
 	        // Start status update
-            window.history.pushState({}, "Title", "LoadExp+.pl" + "?wid=" + response.id); // Add workflow id to browser URL
+            window.history.pushState({}, "Title", "LoadExperiment.pl" + "?wid=" + response.id); // Add workflow id to browser URL
             coge.progress.update(response.id, response.site_url);
 	    })
 	    .fail(function(jqXHR, textStatus, errorThrown) {

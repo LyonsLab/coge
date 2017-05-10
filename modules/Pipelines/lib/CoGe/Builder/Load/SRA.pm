@@ -23,7 +23,7 @@ sub get_name {
 
 sub get_site_url {
     my $self = shift;
-    return url_for('LoadExp+.pl', wid => $self->workflow->id);
+    return url_for('LoadExperiment.pl', wid => $self->workflow->id);
 }
 
 sub build {
