@@ -28,7 +28,7 @@ use vars qw(
   %FUNCTION $LOAD_ID $WORKFLOW_ID
 );
 
-$PAGE_TITLE = 'LoadExperiment';
+$PAGE_TITLE = 'LoadExp+';
 
 $FORM = new CGI;
 ( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init(
@@ -75,10 +75,10 @@ sub generate_html {
     else {
         $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
         $template->param( PAGE_TITLE => $PAGE_TITLE,
-		                  TITLE      => "Load Experiment",
+		                  TITLE      => "LoadExp+",
         	              PAGE_LINK  => $LINK,
 			              HOME       => $CONF->{SERVER},
-                          HELP       => 'LoadExperiment',
+                          HELP       => 'LoadExp+',
                           WIKI_URL   => $CONF->{WIKI_URL} || '',
                           ADMIN_ONLY => $USER->is_admin,
                           USER       => $USER->display_name || '',
@@ -93,8 +93,8 @@ sub generate_html {
 }
 
 sub generate_body {
-    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
-    $template->param( PAGE_NAME => "$PAGE_TITLE.pl" );
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'LoadExperiment.tmpl' );
+    $template->param( PAGE_NAME => "LoadExperiment.pl" );
     
     # Force login
     if ( $USER->is_public ) {
@@ -121,7 +121,7 @@ sub generate_body {
     	LOAD_ID       => $LOAD_ID,
     	WORKFLOW_ID   => $WORKFLOW_ID,
         API_BASE_URL  => $CONF->{SERVER} . 'api/v1/', #TODO move into config file or module
-        HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadExperiment',
+        HELP_URL      => 'https://genomevolution.org/wiki/index.php/LoadExp+',
         SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
         DEFAULT_TAB              => 0,
         ENABLE_SRA               => 1,
@@ -221,14 +221,14 @@ sub send_error_report {
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
     unless ($load_id and $job_id) {
-        print STDERR "LoadExperiment::send_error_report: missing required params\n";
+        print STDERR "LoadExp+::send_error_report: missing required params\n";
         return;
     }
 
     # Get the staging directory
     my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
 
-    my $url = $CONF->{SERVER} . "$PAGE_TITLE.pl?";
+    my $url = $CONF->{SERVER} . "LoadExperiment.pl?";
     $url .= "job_id=$job_id;" if $job_id;
     $url .= "load_id=$load_id";
 

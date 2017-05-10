@@ -41,8 +41,6 @@ sub build {
     else {
         my $read_params = $self->params->{read_params} // {};
         my $read_type   = $read_params->{read_type} // 'single';
-        warn $read_type;
-        warn scalar @$fastq;
         if ($read_type eq 'paired' && scalar @$fastq > 2) {
             my @bams;
             for (my $i = 0; $i < scalar @$fastq; $i += 2) {

@@ -1529,7 +1529,7 @@ sub get_total_table {
 sub get_jobs_table {
 	return encode_json({
 		data => $db->storage->dbh->selectall_arrayref(
-			"SELECT page,FORMAT(COUNT(*), 0) FROM log WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY page"
+			"SELECT page,FORMAT(COUNT(*), 0) FROM log WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadExp+','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY page"
 		),
 		bPaginate => 0
 	});
@@ -1537,7 +1537,7 @@ sub get_jobs_table {
 
 sub add_row {
 	my ($user_id, $user_name, $counts) = @_;
-	my @jobs = ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D');
+	my @jobs = ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadExp+','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D');
 	my @row;
 	push @row, '<a href="#" onclick="user_job_plot(' . $user_id . ',\'' . $user_name . '\')">' . $user_name . '</a>';
 	foreach (@jobs) {
@@ -1550,7 +1550,7 @@ sub get_user_jobs_table {
 	my @data;
 	my %counts;
 	my $public_jobs = $db->storage->dbh->selectall_arrayref(
-		"SELECT page,FORMAT(COUNT(*), 0) FROM log WHERE type != 0 AND user_id = 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY page"
+		"SELECT page,FORMAT(COUNT(*), 0) FROM log WHERE type != 0 AND user_id = 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadExp+','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY page"
 	);
 	foreach (@$public_jobs) {
 		$counts{$_->[0]} = $_->[1];
@@ -1558,7 +1558,7 @@ sub get_user_jobs_table {
 	push @data, add_row(0, ' public', \%counts);
 	%counts = ();
 	my $user_jobs = $db->storage->dbh->selectall_arrayref(
-		"SELECT user.user_id,user_name,page,FORMAT(COUNT(*), 0) FROM user JOIN log ON user.user_id=log.user_id WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY user_id,page"
+		"SELECT user.user_id,user_name,page,FORMAT(COUNT(*), 0) FROM user JOIN log ON user.user_id=log.user_id WHERE type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadExp+','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY user_id,page"
 	);
 	my $user_id;
 	my $user_name;
@@ -1582,7 +1582,7 @@ sub get_user_jobs_table {
 sub get_user_jobs {
 	my %opts = @_;
     my $user_id = $opts{user_id};
-	my $user_jobs = $db->storage->dbh->selectall_arrayref("SELECT DATE(time),page,COUNT(*) FROM log WHERE user_id=" . $user_id . " AND type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY DATE(time),page");
+	my $user_jobs = $db->storage->dbh->selectall_arrayref("SELECT DATE(time),page,COUNT(*) FROM log WHERE user_id=" . $user_id . " AND type != 0 AND page IN ('API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadExp+','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D') GROUP BY DATE(time),page");
 	my %jobs;
 	foreach (@$user_jobs) {
 		my $job = $jobs{$_->[1]};

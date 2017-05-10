@@ -329,7 +329,7 @@ if ( $data_type == $DATA_TYPE_QUANT
 my $data_source =
   $db->resultset('DataSource')->find_or_create( {
       name => $source_name, description => "" }
-  );#, description => "Loaded into CoGe via LoadExperiment" } );
+  );#, description => "Loaded into CoGe via LoadExp+" } );
 unless ($data_source) {
     print STDOUT "log: error creating data source\n";
     exit(-1);

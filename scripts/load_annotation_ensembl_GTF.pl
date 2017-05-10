@@ -242,7 +242,7 @@ my $t2 = new Benchmark;
 my $datasource =
   $coge->resultset('DataSource')
   ->find_or_create( { name => $source_name, description => "" } )
-  ;    #, description => "Loaded into CoGe via LoadExperiment" } );
+  ;    #, description => "Loaded into CoGe via LoadExp+" } );
 unless ($datasource) {
     print $log "log: error creating data source\n";
     exit(-1);

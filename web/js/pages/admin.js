@@ -1626,7 +1626,7 @@ $.extend(ReportGrid.prototype, {
 		var self = this;
 		var element = this.elementId;
 		var fname;
-		let jobs = ['API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D'];
+		let jobs = ['API','CoGeBlast','GEvo','LoadAnnotation','LoadExperiment','LoadExp+','LoadGenome','SynFind','SynMap','SynMap2','SynMap3D'];
 		$('#' + element).hide();
 		$('#reports_loading').css('visibility', 'visible');
 		$('#report_type').prop('disabled', true);

@@ -225,7 +225,7 @@ sub send_error_report {
     my $load_id = $opts{load_id};
     my $job_id = $opts{job_id};
     unless ($load_id and $job_id) {
-        print STDERR "LoadExperiment::send_error_report: missing required params\n";
+        print STDERR "LoadExp+::send_error_report: missing required params\n";
         return;
     }
 

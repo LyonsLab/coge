@@ -23,12 +23,12 @@ sub get_name {
     $info .= ": " . $metadata->{description} if $metadata->{description};
     $info .= " (v" . $metadata->{version} . ")";
     $info .= '"';
-    return "Load Experiment " . $info;
+    return "LoadExp+ " . $info;
 }
 
 sub get_site_url {
     my $self = shift;
-    return url_for('LoadExperiment.pl', wid => $self->workflow->id);
+    return url_for('LoadExp+.pl', wid => $self->workflow->id);
 }
 
 sub build {
