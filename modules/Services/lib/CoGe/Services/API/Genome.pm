@@ -8,7 +8,7 @@ use CoGe::Accessory::Utils qw(sanitize_name);
 use CoGe::Core::Favorites;
 use CoGe::Core::Genome qw(genomecmp search_genomes);
 use CoGe::Core::Metadata qw( create_annotation delete_annotation get_annotation get_annotations );
-use CoGe::Core::Storage qw(get_genome_seq);
+use CoGe::Core::Storage qw(get_genome_file get_genome_seq);
 use CoGe::Services::API::Job;
 use CoGe::Services::Auth qw(init);
 use CoGe::Services::Error;
@@ -204,14 +204,21 @@ sub sequence {
     }
 
     # Get sequence from file
-    $self->render(text => get_genome_seq(
-        gid   => $gid,
-        chr   => $chr,
-        start => $start,
-        stop  => $stop,
-        strand => $strand,
-        format => $format
-    ));
+    unless (defined $chr and $chr ne '') {
+        $self->res->headers->content_type('text/plain');
+        $self->res->content->asset(Mojo::Asset::File->new(path => get_genome_file($gid)));
+        $self->rendered(200);
+    }
+    else {
+        $self->render(text => get_genome_seq(
+            gid   => $gid,
+            chr   => $chr,
+            start => $start,
+            stop  => $stop,
+            strand => $strand,
+            format => $format
+        ));
+    }
 }
 
 sub features {

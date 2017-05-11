@@ -309,7 +309,7 @@ sub get_genome_seq {
         }
     }
     else {
-        print STDERR "Storage::get_genome_seq: ERROR, file not found or zero length: $file_path\n";
+        print STDERR "Storage::get_genome_seq: ERROR, file not found or zero length: $file_path.fai\n";
         return;
     }
 #    else {    # old method
