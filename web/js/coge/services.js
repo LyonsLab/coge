@@ -30,9 +30,7 @@ var coge = window.coge = (function(namespace) {
 		    else if (opts.eid)
 		        params = "eid=" + opts.eid;
 		    else if (opts.wid)
-		        params = "wid=" + opts.wid;
-		    if (opts.admin)
-		        params += "&admin=" + opts.admin;
+		        params = "wid=" + opts.wid + '&user=' + this.userName;
 		    if (opts.attachment)
 		        params += "&attachment=" + opts.attachment;
 		    if (opts.filename)

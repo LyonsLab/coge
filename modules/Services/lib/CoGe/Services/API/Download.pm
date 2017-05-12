@@ -19,7 +19,6 @@ sub get {
     my $eid = $self->param('eid');
     my $wid = $self->param('wid');
     my $attachment = $self->param('attachment') // 1;
-    my $admin = $self->param('admin');
     
     # Validate inputs
     unless ($gid || $eid || $wid) {
@@ -65,11 +64,10 @@ sub get {
             print STDERR "CoGe::Services::Download ERROR: not logged in\n";
             return $self->render(API_STATUS_UNAUTHORIZED);
         }
-        my $user_name = $user->name;
-        if ($admin) {
-            my $row = $db->storage->dbh->selectrow_arrayref('SELECT user_id FROM log WHERE parent_id=' . $wid . ' ORDER BY log_id DESC LIMIT 1');
-            $row = $db->storage->dbh->selectrow_arrayref('SELECT user_name FROM user WHERE user_id=' . $row->[0]);
-            $user_name = $row->[0];
+        my $user_name = $self->param('user');
+        if ($user_name ne $user->name && !$user->is_admin) {
+            warn 'CoGe::Services::Download ERROR: different user';
+            return $self->render(API_STATUS_UNAUTHORIZED);
         }
         # get workflow log by default
         unless ($filename) {

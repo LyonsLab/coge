@@ -243,6 +243,26 @@ function percent_gc_at(chr, wsize, wstep, irods) {
         });
 }
 
+function download_chromosome() {
+	var i = $('input[name=chr]:checked');
+	var id = i.attr('id');
+	var type = id.substring(0,1);
+    if (type == 'f' || type == 'g')
+        download_chr_file(i.attr('id').substring(1));
+    else
+        ws_dialog(download_chr_file);
+}
+
+function export_chromosome() {
+	var i = $('input[name=chr]:checked');
+	var id = i.attr('id');
+	var type = id.substring(0,1);
+    if (type == 'f' || type == 'g')
+        export_chr_file(i.attr('id').substring(1));
+    else
+        ws_dialog(export_chr_file);
+}
+
 function download_chr_file(chr, wsize, wstep) {
 	var i = $('input[name=chr]:checked');
 	var id = i.attr('id');
