@@ -1,0 +1,3 @@
+[submodule "web/js/jbrowse/plugins/CoGe"]
+	path = web/js/jbrowse/plugins/CoGe
+	url = https://github.com/LyonsLab/CoGe_plugin
