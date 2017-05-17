@@ -1410,7 +1410,7 @@ function get_content_dialog(id, request, chromosome) {
         data: {
             fname: request,
             dsgid: GENOME_ID,
-            chr: chromosome,
+            chr: chromosome
         },
         dataType: "html",
         success: function(html) {

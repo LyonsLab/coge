@@ -295,16 +295,10 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         my $fid = $feats->{$type}{id};
 
         if ($dsgid) {
-            $feat_string .= qq{<td>|</td>}
-            . qq{<td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 0);">}
-            . qq{Export Nuc Seqs}
-            . qq{</td>};
+            $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 0);">Export Nuc Seqs</td>};
         }
         else {
-            $feat_string .= qq{<td>|</td>}
-            . qq{<td class="small link" onclick="export_features_to_irods($dsid, $fid, false, 0);">}
-            . qq{Export Nuc Seqs}
-            . qq{</td>};
+            $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsid, $fid, false, 0);">Export Nuc Seqs</td>};
         }
 
         if ( $feats->{$type}{name} eq "CDS" ) {
@@ -316,16 +310,10 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
             $feat_string .= "')\">Prot Seqs";
 
             if ($dsgid) {
-                $feat_string .= qq{<td>|</td>}
-                . qq{<td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 1);">}
-                . qq{Export Prot Seqs}
-                . qq{</td>};
+                $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 1);">Export Prot Seqs</td>};
             }
             else {
-                $feat_string .= qq{<td>|</td>}
-                . qq{<td class="small link" onclick="export_features_to_irods($dsid, $fid, false, 1);">}
-                . qq{Export Prot Seqs}
-                . qq{</td>};
+                $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsid, $fid, false, 1);">Export Prot Seqs</td>};
             }
         }
 
@@ -335,27 +323,16 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         my $param = defined $chr ? $chr : "";
 
         # Wobble codon
-        $feat_string .=qq{<tr><td colspan="13" class="small link" id="wobble_gc"}
-            . qq{ onclick="get_content_dialog('#wobble_gc_histogram', 'get_wobble_gc', '$param');">}
-            . qq{Histogram of wobble codon GC content}
-            . qq{</td></tr>};
+        $feat_string .=qq{<tr><td colspan="13" class="small link" id="wobble_gc" onclick="get_content_dialog('#wobble_gc_histogram', 'get_wobble_gc', '$param');">Histogram of wobble codon GC content</td></tr>};
 
         # Diff content
-        $feat_string .= qq{<tr><td colspan="13" class="small link" id="wobble_gc_diff"}
-            . qq{ onclick="get_content_dialog('#wobble_gc_diff_histogram','get_wobble_gc_diff', '$param');">}
-            . qq{Histogram of diff(CDS GC vs. wobble codon GC) content}
-            . qq{</td></tr>};
+        $feat_string .= qq{<tr><td colspan="13" class="small link" id="wobble_gc_diff" onclick="get_content_dialog('#wobble_gc_diff_histogram','get_wobble_gc_diff', '$param');">Histogram of diff(CDS GC vs. wobble codon GC) content</td></tr>};
 
         #Codon usage tables
-        $feat_string .= qq{<tr><td colspan="13" class="small link" id="codon_usage"}
-            . qq{ onclick="get_content_dialog('#codon_usage_table', 'get_codon_usage', '$param');">}
-            . qq{Codon usage table}
-            . qq{</td></tr>};
+        $feat_string .= qq{<tr><td colspan="13" class="small link" id="codon_usage" onclick="get_content_dialog('#codon_usage_table', 'get_codon_usage', '$param');">Codon usage table</td></tr>};
 
         #Amino acid usage table
-        $feat_string .= qq{<tr><td colspan="13" class="small link" id="aa_usage"}
-            . qq{ onclick="open_aa_usage_table('$param');">}
-            . qq{Amino acid usage table</td></tr>};
+        $feat_string .= qq{<tr><td colspan="13" class="small link" id="aa_usage" onclick="open_aa_usage_table('$param');">Amino acid usage table</td></tr>};
     }
 
     $feat_string .= "</table>";

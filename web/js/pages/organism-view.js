@@ -488,22 +488,11 @@ function remove_selected_genomes(){
 
 function clear_genome_list(){
     var i, num_genomes = get_genomelist_count();
-
-//    for(i=0; i < num_genomes; i++) {
-//        $('#'+$('#genomelist')[0][0].id).remove();
-//    }
     
     $('#genomelist').empty();
     
     get_genomelist_count();
 }
-
-
-//function add_all_org(){
-//    $("#org_id option").each(function(){
-//            get_genome_list_for_org(['args__oid','args__'+$(this).attr('value')],[add_all_genomes_from_org]);
-//    });
-//}
 
 function add_all_genomes_from_org(val) {
     if (val.length>0) {
