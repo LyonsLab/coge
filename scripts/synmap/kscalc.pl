@@ -322,8 +322,7 @@ sub gen_ks_blocks_file {
     $/ = "\n";
     open( IN,  $infile );
     open( OUT, ">" . $outfile );
-    print OUT
-      "#This file contains synonymous rate values in the first two columns:\n";
+    print OUT "#This file contains synonymous rate values in the first two columns:\n";
     my @block;
     my $block_title;
 
@@ -333,7 +332,7 @@ sub gen_ks_blocks_file {
                 ksdata => $ksdata,
                 block  => \@block,
                 header => $block_title
-            ) if $block_title;
+            ) if @block;
             print OUT $output if $output;
             @block       = ();
             $block_title = $_;
@@ -349,7 +348,7 @@ sub gen_ks_blocks_file {
         ksdata => $ksdata,
         block  => \@block,
         header => $block_title
-    ) if $block_title;
+    ) if @block;
     print OUT $output if $output;
     close OUT;
 }
