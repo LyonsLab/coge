@@ -82,6 +82,7 @@ $(function() {
 
 		$.ajax({
 			data: {
+				jquery_ajax: 1,
 				fname: action,
 				accn_list: accn
 			},
@@ -191,6 +192,7 @@ $(function() {
 
 	  $.ajax({
 	    data: {
+			jquery_ajax: 1,
 	 	    fname: 'get_codon_usage',
 			dsgid: dsgid
 		},
@@ -201,8 +203,9 @@ $(function() {
 	function blast (dsgids) {
 	$.ajax({
 	  data: {
-	   fname: 'blast',
-	   accn_list: dsgids
+		jquery_ajax: 1,
+	   	fname: 'blast',
+	   	accn_list: dsgids
 	 },
 	  success : create_callback(divid)
 	});
@@ -240,6 +243,7 @@ function run_get_gc(opts) {
 
 	$.ajax({
 	    data: {
+			jquery_ajax: 1,
 	 	    fname: 'get_gc',
 	       	dsgid: dsgid
 	    },
@@ -287,6 +291,7 @@ function run_get_gc(opts) {
 
 	  $.ajax({
 	    data: {
+			jquery_ajax: 1,
 	 	    fname: 'get_feature_counts',
 	    	dsgid: dsgid
 	    },
@@ -308,6 +313,7 @@ function run_get_gc(opts) {
 		   };
 		$.ajax({
 		     data: {
+				 jquery_ajax: 1,
 		  	    fname: 'cds_wgc_hist',
 				dsgid: dsgid
 			},
@@ -328,6 +334,7 @@ function run_get_gc(opts) {
 		   };
 		$.ajax({
 		     data: {
+				 jquery_ajax: 1,
 		  	    fname: 'get_gc_for_feature_type',
 				dsgid: dsgid,
 				typeid: 3
@@ -369,6 +376,7 @@ function run_get_gc(opts) {
 
 	  $.ajax({
 	    data: {
+			jquery_ajax: 1,
 	 	    fname: 'get_aa_usage',
 	    	dsgid: dsgid,
 	    	table_name: table_name,
@@ -427,6 +435,7 @@ function run_get_gc(opts) {
 	});
 	$.ajax({
 	    data: {
+			jquery_ajax: 1,
 	 	    fname: 'save_GenomeList_settings',
 	    	display: index
 		},
@@ -440,6 +449,7 @@ function run_get_gc(opts) {
 function edit_list_info (lid) {
  $.ajax({
         data: {
+			jquery_ajax: 1,
      	   	fname: 'edit_list_info',
 	   		lid: lid
         },

@@ -342,84 +342,13 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 
 sub get_codon_usage {
     my %opts  = @_;
-    my $dsid  = $opts{dsid};
     my $chr   = $opts{chr};
     my $dsgid = $opts{dsgid};
-    my $gstid = $opts{gstid};
-    return unless $dsid || $dsgid;
+    return unless $dsgid;
 
-    my $search = { "feature_type.name" => "CDS" };
-    $search->{"me.chromosome"} = $chr if defined $chr;
-
-    my (@items, @datasets);
-    if ($dsid) {
-        my $ds = $DB->resultset('Dataset')->find($dsid);
-        return "unable to find dataset id$dsid\n" unless $ds;
-        push @items, $ds;
-        push @datasets, $ds;
-    }
-    if ($dsgid) {
-        my $dsg = $DB->resultset('Genome')->find($dsgid);
-        return "unable to find genome id $dsgid\n" unless $dsgid;
-        $gstid = $dsg->type->id;
-        push @items, $dsg;
-        push @datasets, $dsg->datasets;
-    }
-
-    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-    foreach my $item (@items) {
-        my @chrs = (defined $chr and $chr) ? ($chr) : $item->chromosomes;
-
-        for my $chr (@chrs) {
-            $seqs{$chr} = $item->get_genomic_sequence(chr => $chr,
-                                                      seq_type => $gstid);
-        }
-    }
-
-    my %codons;
-    my $codon_total = 0;
-    my $feat_count  = 0;
-    my ( $code, $code_type );
-
-    foreach my $ds (@datasets) {
-        foreach my $feat (
-            $ds->features(
-                $search,
-                {
-                    join => [
-                        "feature_type", 'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ],
-                    prefetch => [
-                        'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ]
-                }
-            )
-          )
-        {
-            my $seq = substr(
-                $seqs{ $feat->chromosome },
-                $feat->start - 1,
-                $feat->stop - $feat->start + 1
-            );
-            $feat->genomic_sequence( seq => $seq );
-            $feat_count++;
-            ( $code, $code_type ) = $feat->genetic_code() unless $code;
-            my ($codon) = $feat->codon_frequency( counts => 1 );
-            grep { $codon_total += $_ } values %$codon;
-            grep { $codons{$_}  += $codon->{$_} } keys %$codon;
-            print STDERR ".($feat_count)" if !$feat_count % 10;
-        }
-    }
-    %codons = map { $_, $codons{$_} / $codon_total } keys %codons;
-
-    my $html = "Codon Usage: $code_type" .
-        CoGe::Accessory::genetic_code->html_code_table(
-            data => \%codons,
-            code => $code
-        );
-    return $html;
+    my $genome = $DB->resultset('Genome')->find($dsgid);
+    return "unable to find genome id $dsgid\n" unless $dsgid;
+    return $genome->get_codon_usage($chr);
 }
 
 sub get_wobble_gc {

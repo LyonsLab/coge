@@ -1006,87 +1006,12 @@ sub gc_content {
 
 sub get_codon_usage {
     my %opts  = @_;
-    my $dsid  = $opts{dsid};
-    my $chr   = $opts{chr};
     my $dsgid = $opts{dsgid};
-    my $gstid = $opts{gstid};
-    return unless $dsid || $dsgid;
+    return unless $dsgid;
 
-    my $search;
-    $search = { "feature_type.name" => "CDS" };
-    $search->{"me.chromosome"} = $chr if defined $chr;
-
-    my @dsids;
-    push @dsids, $dsid if $dsid;
-    if ($dsgid) {
-        my $dsg = $coge->resultset('Genome')->find($dsgid);
-        unless ($dsg) {
-            my $error = "unable to create dsg object using id $dsgid\n";
-            return $error;
-        }
-        $gstid = $dsg->type->id;
-        foreach my $ds ( $dsg->datasets() ) {
-            push @dsids, $ds->id;
-        }
-    }
-    my %codons;
-    my $codon_total = 0;
-    my $feat_count  = 0;
-    my ( $code, $code_type );
-
-    foreach my $dsidt (@dsids) {
-        my $ds = $coge->resultset('Dataset')->find($dsidt);
-        my %seqs
-          ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-        if ( defined $chr ) {
-            $seqs{$chr} =
-              $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
-        }
-        else {
-            %seqs =
-              map {
-                $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
-              } $ds->chromosomes;
-        }
-        foreach my $feat (
-            $ds->features(
-                $search,
-                {
-                    join => [
-                        "feature_type", 'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ],
-                    prefetch => [
-                        'locations',
-                        { 'dataset' => { 'dataset_connectors' => 'genome' } }
-                    ]
-                }
-            )
-          )
-        {
-            my $seq = substr(
-                $seqs{ $feat->chromosome },
-                $feat->start - 1,
-                $feat->stop - $feat->start + 1
-            );
-            $feat->genomic_sequence( seq => $seq );
-            $feat_count++;
-            ( $code, $code_type ) = $feat->genetic_code() unless $code;
-            my ($codon) = $feat->codon_frequency( counts => 1 );
-            grep { $codon_total += $_ } values %$codon;
-            grep { $codons{$_}  += $codon->{$_} } keys %$codon;
-            print STDERR ".($feat_count)" if !$feat_count % 10;
-        }
-    }
-    %codons = map { $_, $codons{$_} / $codon_total } keys %codons;
-
-#Josh put some stuff in here so he could get raw numbers instead of percentages for aa usage. He should either make this an option or delete this code when he is done. REMIND HIM ABOUT THIS IF YOU ARE EDITING ORGVIEW!
-    my $html = "Codon Usage: $code_type";
-    $html .= CoGe::Accessory::genetic_code->html_code_table(
-        data => \%codons,
-        code => $code
-    );
-    return $html;
+    my $genome = $coge->resultset('Genome')->find($dsgid);
+    return "unable to find genome id $dsgid\n" unless $dsgid;
+    return $genome->get_codon_usage();
 }
 
 sub get_aa_usage {
