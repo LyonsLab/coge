@@ -40,6 +40,7 @@ foreach my $rec (sort { $b->{length} <=> $a->{length} } @$index) {
     my $count = 0;
     while (my $line = <$fh>) {
         chomp $line;
+        $line=~ tr/\015//d;
         $count += length $line;
         print $line, "\n";
         last if ($count >= $rec->{length});
