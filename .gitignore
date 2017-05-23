@@ -11,10 +11,7 @@ pm_to_blib
 MYMETA.json
 MYMETA.yml
 api.log
-irodsEnv
-irodsEnv_local
-irodsA
-irodsA_local
+irods*
 web/tmp
 web/data
 coge.conf
@@ -35,3 +32,8 @@ experiments
 .agignore
 .DS_Store
 ._*
+node_modules
+.idea
+tests
+web/services/hypnotoad.pid
+coge.conf.*
