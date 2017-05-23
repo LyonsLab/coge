@@ -37,7 +37,7 @@ class DataGrid {
 
 	initialize() {
 		var self = this;
-		this.element.html('<table cellpadding="0" cellspacing="0" border="0" class="' + self.class + '" style="cursor:pointer;"></table>');
+		this.element.html('<img id="busy" src="picts/ajax-loader.gif" /><table cellpadding="0" cellspacing="0" border="0" class="' + self.class + '" style="cursor:pointer;"></table>');
 
 		// Instantiate grid
 		var dataTable = this.dataTable = this.element.children('table').dataTable($.extend(true, {}, {
@@ -147,7 +147,9 @@ class DataGrid {
     }
 
     setData(data) {
-        console.log('DataGrid.setData');
+        var busy = document.getElementById('busy');
+        if (busy)
+            busy.parentNode.removeChild(busy);
 
     	if (data) {
 	    	this.dataTable.api()
@@ -161,7 +163,9 @@ class DataGrid {
     }
 
     update(data) {
-    	console.log('DataGrid.update');
+        var busy = document.getElementById('busy');
+        if (busy)
+            busy.parentNode.removeChild(busy);
 
     	if (data) {
     	    this.setData(data);
