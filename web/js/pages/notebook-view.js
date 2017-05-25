@@ -571,7 +571,7 @@ class NotebookContents { // based on ContentPanel, perhaps we should just use th
 	}
 
 	set(data) {
-		this.grid.update(data).redraw();
+		this.grid.update(data);
 		this.renderButtons();
 		this.renderTitle();
 	}

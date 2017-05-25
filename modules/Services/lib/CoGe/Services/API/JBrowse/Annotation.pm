@@ -23,7 +23,7 @@ sub features {
     my $self = shift;
     my $gid  = $self->stash('gid');
     my $chr  = $self->stash('chr');
-   $chr = uri_unescape($chr) if (defined $chr);
+    $chr = uri_unescape($chr) if (defined $chr);
     my $feat_type    = $self->stash('type');
     my $dsid         = $self->stash('dsid');
     my $start        = $self->param('start');
@@ -32,7 +32,7 @@ sub features {
     my $scale        = $self->param('scale');
     my $basesPerSpan = $self->param('basesPerSpan');
     my $len = $end - $start;
-    print STDERR "JBrowse::Annotation::features gid=$gid ", ($dsid ? "dsid=$dsid " : ''), ($feat_type ? "type=$feat_type " : ''), "chr=$chr start=$start end=$end\n";
+#    print STDERR "JBrowse::Annotation::features gid=$gid ", ($dsid ? "dsid=$dsid " : ''), ($feat_type ? "type=$feat_type " : ''), "chr=$chr start=$start end=$end\n";
 
     # Check params
     if ( $end <= 0 ) {
