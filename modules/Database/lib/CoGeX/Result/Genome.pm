@@ -376,10 +376,8 @@ sub get_chromosome_length {
     my $self = shift;
     my $name = shift;
 	my $c = CoGe::Core::Chromosomes->new($self->id);
-	if ($c->find($name)) {
-		return $c->length;
-	}
-	print STDERR "CoGeX::Result::Genome::get_chromosome_length ERROR, chromosome '$name' not found for genome ", $self->id, "\n";
+	return $c->length if $c->find($name);
+	warn "CoGeX::Result::Genome::get_chromosome_length ERROR, chromosome '$name' not found for genome ", $self->id;
 	return 0;
 }
 
@@ -400,6 +398,7 @@ sub get_genomic_sequence {
     $start = 1 unless $start;
 #    my $last = $self->sequence_length($chr);
     my $last = $self->get_chromosome_length($chr);
+    return 0 unless $last; # chromosome not found
     $stop = $last unless $stop;
     $stop  = $last if $stop > $last;
     $start = $last if $start > $last;

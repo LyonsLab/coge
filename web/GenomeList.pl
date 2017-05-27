@@ -201,7 +201,7 @@ Type: <select id=wobble_hist_type>
 <option value = "percentage">Percentage</option>
 </select>
 };
-    $info =~ s/>Per/ selected>Per/ if $hist_type =~ /per/;
+    $info =~ s/>Per/ selected>Per/ if $hist_type && $hist_type =~ /per/;
     my $args;
     $args .= "'args__dsid','ds_id',"   if $dsid;
     $args .= "'args__dsgid','dsg_id'," if $dsgid;
@@ -285,13 +285,12 @@ sub get_gc_for_feature_type {
     foreach my $dsidt (@dsids) {
         my $ds = $coge->resultset('Dataset')->find($dsidt);
         unless ($ds) {
-            warn "no dataset object found for id $dsidt\n";
+            warn "no dataset object found for id $dsidt";
             next;
         }
 
         #        my $t1 = new Benchmark;
-        my %seqs
-          ; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
+        my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
               $ds->get_genomic_sequence( chr => $chr, seq_type => $gstid );
@@ -336,14 +335,8 @@ sub get_gc_for_feature_type {
             $total += $gc[2] if $gc[2];
             my $perc_gc = 100 * $gc[0] / $total if $total;
             next unless $perc_gc;    #skip if no values
-            next
-              if defined $min
-                  && $min =~ /\d+/
-                  && $perc_gc < $min;    #check for limits
-            next
-              if defined $max
-		&& $max =~ /\d+/
-                  && $perc_gc > $max;    #check for limits
+            next if defined $min && $min =~ /\d+/ && $perc_gc < $min;    #check for limits
+            next if defined $max && $max =~ /\d+/ && $perc_gc > $max;    #check for limits
             push @data, sprintf( "%.2f", $perc_gc );
             push @fids, $feat->id . "_" . $gstid;
         }
@@ -368,7 +361,6 @@ sub get_gc_for_feature_type {
     $file .= "_" . $type->name . "_gc.txt";
     my $out = $file;
     $out =~ s/txt$/png/;
-
     unless ( -r $out ) {
         open( OUT, ">" . $file );
         print OUT "#wobble gc for dataset ids: " . join( " ", @dsids ), "\n";
@@ -383,7 +375,6 @@ sub get_gc_for_feature_type {
         $cmd .= " -ht $hist_type" if $hist_type;
         `$cmd`;
     }
-
     $min = 0   unless defined $min && $min =~ /\d+/;
     $max = 100 unless defined $max && $max =~ /\d+/;
     my $info;
@@ -489,19 +480,23 @@ sub gen_body {
 
     my $dsgids = [];
     $dsgids = read_file() if $BASEFILE;    #: $opts{feature_list};
-    foreach my $item ( $form->param('dsgid') ) {
+    my $dsgid = $form->param('dsgid');
+    foreach my $item ( $dsgid ) {
         foreach my $item2 ( split /(::)|(,)/, $item ) {
             push @$dsgids, $item2 if ( $item2 and $item2 =~ /^\d+_?\d*$/ );
         }
     }
 
-    foreach ( $form->param('lid') ) {
-        foreach ( split /(::)|(,)/ ) {
-            next if ( !/^\d+_?\d*$/ );
-            my $list = $coge->resultset('List')->find($_);
-            next unless ($list);
-            foreach ( $list->genomes ) {
-	      push @$dsgids, $_->id;
+    my $lid = $form->param('lid');
+    if ($lid) {
+        foreach ( $lid ) {
+            foreach ( split /(::)|(,)/ ) {
+                next if ( !/^\d+_?\d*$/ );
+                my $list = $coge->resultset('List')->find($_);
+                next unless ($list);
+                foreach ( $list->genomes ) {
+            push @$dsgids, $_->id;
+                }
             }
         }
     }
