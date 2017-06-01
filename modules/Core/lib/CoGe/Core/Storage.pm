@@ -267,17 +267,20 @@ sub get_genome_seq {
     my $file_index_sz = -s "$file_path.fai";
     #print STDERR "file_path=$file_path file_index_sz=$file_index_sz\n";
     if ($file_index_sz) {    # new indexed method
-                             # Kludge chr/contig name
-        if   ( $chr =~ /\D+/ ) { $chr = 'lcl|' . $chr; }
-        else                   { $chr = 'gi|' . $chr; }
-
         # Extract requested piece of sequence file
         my $region = $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
         my $samtools = CoGe::Accessory::Web::get_command_path('SAMTOOLS');
         my $cmd = "$samtools faidx $file_path '$region'";
-
-        #print STDERR "$cmd\n";
         $seq = qx{$cmd};
+        # samtools returns heading line but no sequence if chr is not found, try again with characters prepended
+        my $nl = index($seq, "\n");
+        if ($nl == length($seq) - 1) {
+            if   ( $chr =~ /\D+/ ) { $chr = 'lcl|' . $chr; }
+            else                   { $chr = 'gi|' . $chr; }
+            $region = $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
+            $cmd = "$samtools faidx $file_path '$region'";
+            $seq = qx{$cmd};
+        }
         unless ($fasta) {
             	# remove header line
             	$seq =~ s/^(?:.*\n)//;

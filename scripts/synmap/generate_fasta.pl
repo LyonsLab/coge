@@ -144,12 +144,7 @@ sub gen_fasta {
                     $dataset = $feat->dataset;
                     $datasets{ $dataset->id } = $dataset;
                 }
-                $chr_sequence{ $feat->chromosome } =
-                  $genome->get_genomic_sequence( chr => $feat->chromosome )
-                  unless $chr_sequence{ $feat->chromosome };
-                unless ( $chr_sequence{ $feat->chromosome } ) {
-                    $chr_sequence{ $feat->chromosome } = $genome->get_genomic_sequence(chr => $feat->chromosome);
-                }
+                $chr_sequence{ $feat->chromosome } = $genome->get_genomic_sequence(chr => $feat->chromosome) unless $chr_sequence{ $feat->chromosome };
                 next unless $chr_sequence{ $feat->chromosome };
 
                 my $start_index;
@@ -229,9 +224,11 @@ sub gen_fasta {
         #}
     }
 
-    open( OUT, ">$file" ) || die "Can't open $file for writing: $!";
-    print OUT $output;
-    close OUT;
+    if ($output) {
+        open( OUT, ">$file" ) || die "Can't open $file for writing: $!";
+        print OUT $output;
+        close OUT;
+    }
     return 1 if -r $file;
 
     CoGe::Accessory::Web::write_log( "Error with fasta file creation", $cogeweb->logfile );
