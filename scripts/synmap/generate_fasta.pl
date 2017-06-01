@@ -148,9 +148,7 @@ sub gen_fasta {
                   $genome->get_genomic_sequence( chr => $feat->chromosome )
                   unless $chr_sequence{ $feat->chromosome };
                 unless ( $chr_sequence{ $feat->chromosome } ) {
-                    $chr_sequence{ $feat->chromosome } =
-                      $genome->get_genomic_sequence(
-                        chr => uc( $feat->chromosome ) );
+                    $chr_sequence{ $feat->chromosome } = $genome->get_genomic_sequence(chr => $feat->chromosome);
                 }
                 next unless $chr_sequence{ $feat->chromosome };
 

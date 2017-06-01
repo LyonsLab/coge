@@ -115,14 +115,14 @@ sub cds_wgc_hist {
             push @dsids, $ds->id;
         }
     }
+    warn "loading features";
     foreach my $dsidt (@dsids) {
         my $ds = $coge->resultset('Dataset')->find($dsidt);
         unless ($ds) {
             warn "no dataset object found for id $dsidt\n";
             next;
         }
-        foreach my $feat (
-            $ds->features(
+        my @feats =             $ds->features(
                 $search,
                 {
                     join => [
@@ -134,8 +134,9 @@ sub cds_wgc_hist {
                         { 'dataset' => { 'dataset_connectors' => 'genome' } }
                     ],
                 }
-            )
-          )
+            );
+        warn "calc";
+        foreach my $feat ( @feats )
         {
             my @gc = $feat->wobble_content( counts => 1 );
             $gc += $gc[0] if $gc[0] && $gc[0] =~ /^\d+$/;
@@ -175,7 +176,7 @@ sub cds_wgc_hist {
     $file .= "_wobble_gc.txt";
     my $out = $file;
     $out =~ s/txt$/png/;
-
+warn "hist";
     unless ( -r $out ) {
         open( OUT, ">" . $file );
         print OUT "#wobble gc for dataset ids: " . join( " ", @dsids ), "\n";
@@ -190,6 +191,7 @@ sub cds_wgc_hist {
         $cmd .= " -ht $hist_type" if $hist_type;
         `$cmd`;
     }
+warn "html";
     $min = 0   unless defined $min && $min =~ /\d+/;
     $max = 100 unless defined $max && $max =~ /\d+/;
     my $info;
@@ -289,7 +291,7 @@ sub get_gc_for_feature_type {
             next;
         }
 
-        #        my $t1 = new Benchmark;
+warn "get_genomic_sequence";
         my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
@@ -301,8 +303,7 @@ sub get_gc_for_feature_type {
                 $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
               } $ds->chromosomes;
         }
-
-        #        my $t2    = new Benchmark;
+warn "get features";
         my @feats = $ds->features(
             $search,
             {
@@ -316,6 +317,7 @@ sub get_gc_for_feature_type {
                 ],
             }
         );
+warn "calc";
         foreach my $feat (@feats) {
             my $seq = substr(
                 $seqs{ $feat->chromosome },

@@ -217,9 +217,7 @@ sub name {
 	my $self = shift;
 	my $name = $self->{tokens}[0];
 	my $index = index($name, '|');
-	if ($index != -1) {
-		$name = substr($name, $index + 1);
-	}
+	$name = substr($name, $index + 1) if $index != -1;
 	return $name;
 }
 
@@ -273,6 +271,32 @@ sub all {
         push @a, { name => $self->name, length => int($self->length) };
     }
     return wantarray ? @a : \@a;
+}
+
+################################################ subroutine header begin ##
+
+=head2 hash
+
+ Usage     :
+ Purpose   : 
+ Returns   : hash by name lengths and offsets of all chromosomes for the genome
+ Argument  :
+ Throws    :
+ Comments  :
+
+See Also   :
+
+=cut
+
+################################################## subroutine header end ##
+
+sub hash {
+    my $self = shift;
+    my $hash = {};
+    while ($self->next) {
+        $hash->{$self->name} = { length => int($self->length), offset => int($self->offset) };
+    }
+    return $hash;
 }
 
 ################################################ subroutine header begin ##

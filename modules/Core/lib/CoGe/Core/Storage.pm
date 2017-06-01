@@ -135,7 +135,7 @@ sub get_gff_cache_path {
     return $output_filename;
 }
 
-sub get_genome_path { #TODO rename to get_genome_data_path
+sub get_genome_path {
     my $gid = shift;
     return unless $gid;
 
