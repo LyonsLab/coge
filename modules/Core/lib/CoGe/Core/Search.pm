@@ -176,6 +176,16 @@ sub search {
     my $favorites;
 	$favorites = CoGe::Core::Favorites->new(user => $user) if ($user && !$user->is_public && (!$type || $type eq 'genome' || $type eq 'experiment' || $type eq 'notebook'));
 
+    # Genomes
+	if ((!$type || $type eq 'genome') && contains_none_of($query, ['feature_type', 'tag'])) {
+		my $conditions = build_conditions(['me.name', 'me.description', 'me.genome_id', 'organism.name', 'organism.description'],  $query->{'search_terms'});
+		my $rs = do_search('Genome', $conditions, $conditions ? { join => 'organism' } : undef, $query, $db, $user);
+		if ($rs) {
+			my @genomes = sort info_cmp $rs->all();
+			push_results(\@results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
+		}
+	}
+
     # Organisms
 	if ((!$type || $type eq 'organism') && $query->{'search_terms'} && contains_none_of($query, ['certified', 'deleted', 'favorite', 'feature_type', 'restricted', 'metadata_key', 'metadata_value', 'role', 'tag'])) {
 		my $conditions = build_conditions(['me.name', 'me.description', 'me.organism_id'],  $query->{'search_terms'});
@@ -187,16 +197,6 @@ sub search {
 				'id' => int $_->id,
 				'description' => $_->description
 			};
-		}
-	}
-
-    # Genomes
-	if ((!$type || $type eq 'genome') && contains_none_of($query, ['feature_type', 'tag'])) {
-		my $conditions = build_conditions(['me.name', 'me.description', 'me.genome_id', 'organism.name', 'organism.description'],  $query->{'search_terms'});
-		my $rs = do_search('Genome', $conditions, $conditions ? { join => 'organism' } : undef, $query, $db, $user);
-		if ($rs) {
-			my @genomes = sort info_cmp $rs->all();
-			push_results(\@results, \@genomes, 'genome', $user, 'has_access_to_genome', $favorites);
 		}
 	}
 
