@@ -201,7 +201,7 @@ sub export_annotations {
             # Escape quotes
             $info =~ s/"/\"/g;
 
-            my $filename;
+            my $filename = '';
             if ($a->image) {
                 $filename = $a->image->filename;
                 my $img =  File::Spec->catdir($export_path, $filename);

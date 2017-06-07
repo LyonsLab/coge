@@ -266,10 +266,10 @@ sub generate_export { #TODO migrate to API
     my $experiment = shift;
     my $eid = $experiment->id;
 
-    my $exp_name = sanitize_name($experiment->name);
-       $exp_name = $eid unless $exp_name;
+    # my $exp_name = sanitize_name($experiment->name);
+    #    $exp_name = $eid unless $exp_name;
 
-    my $filename = "experiment_$exp_name.tar.gz";
+    my $filename = "experiment_$eid.tar.gz";
 
     my $conf = $P->{_CONFIG_PATH};
     my $script = File::Spec->catdir($P->{SCRIPTDIR}, "export_experiment_or_genome.pl");
