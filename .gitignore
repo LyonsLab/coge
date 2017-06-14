@@ -39,4 +39,4 @@ web/services/hypnotoad.pid
 coge.conf.*
 Cargo.lock
 **/*.rs.bk
-/target/
+target

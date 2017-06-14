@@ -1,0 +1,6 @@
+[package]
+name = "gcat"
+version = "0.1.0"
+authors = ["sdavey <sdavey@email.arizona.edu>"]
+
+[dependencies]
