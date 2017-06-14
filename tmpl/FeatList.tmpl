@@ -26,7 +26,7 @@ $(document).ready(function(){
 
 	// Setup filter input
 	$("#search_bar").keyup( function() { filter_rows( $(this).val() ); });
-	$('#search_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
+	$('#filter_type').mouseup( function() { filter_rows( $('#search_bar').val() ); });
 	filter_rows();
 });
 
@@ -65,12 +65,15 @@ $(function() {
 });
 
 //Filters Rows for search_text - Case sensitive as of now, and searches hidden columns...
-function filter_rows (search_text){
-	if(! search_text) { $("#feat_table tr:hidden").show(0);}
+function filter_rows(search_text) {
+	if (!search_text)
+    $("#feat_table tr:hidden").show(0);
 	else if (search_text.length >= 3) {
 		$("#feat_table_body tr:hidden").show(0);
-		if( $('#search_type').val() == 1 ) { $("#feat_table_body tr:not(:icontains('"+search_text+"'))").hide(); }
-		else { $("#feat_table_body tr:icontains('"+search_text+"')").hide(); }
+		if ($('#filter_type').val() == 1) 
+      $("#feat_table_body tr:not(:icontains('"+search_text+"'))").hide();
+		else
+      $("#feat_table_body tr:icontains('"+search_text+"')").hide();
 	}
 	$('#filter_count').html('Showing ' + $("#feat_table_body tr:visible").length + ' of ' + $("#feat_table_body tr").length + ' lists');
 }
@@ -326,7 +329,7 @@ save_FeatList_settings(['args__display','args__'+index],[]);
 <div class="small" style="padding-top:15px;padding-bottom:5px;">
 Filter:
 <input type="text" id="search_bar">
-<select id="search_type">
+<select id="filter_type">
 <option value="1">Contains</option>
 <option value="0">Does NOT contain</option>
 </select>

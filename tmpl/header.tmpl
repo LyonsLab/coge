@@ -165,7 +165,7 @@ function search() {
 			if (text)
 				terms.push(text);
 		}
-		var type = $('#search_type').val();
+		var type = $('#advanced_search_type').val();
 		if (type != 'any')
 			terms.push('type::' + type);
 		var certified = $('#search_certified').val();
@@ -289,7 +289,7 @@ function hideDropdowns() {
 					<div id="coge-advanced-search" class="text">
 						<table>
 							<tr><td>type:</td><td>
-								<select id="search_type">
+								<select id="advanced_search_type">
 									<option>any</option>
 									<option>experiment</option>
 									<option>feature</option>
