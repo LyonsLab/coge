@@ -5,8 +5,10 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
+use CoGe::Core::Storage qw(get_genome_file get_genome_path);
 use CGI;
 use HTML::Template;
+use JSON qw(decode_json encode_json);
 use Spreadsheet::WriteExcel;
 no warnings 'redefine';
 
@@ -78,6 +80,7 @@ sub gen_html {
     $template->param( LOGON      => 1 ) unless $USER->user_name eq "public";
     $template->param( DATE       => $DATE );
     $template->param( BODY       => $body );
+    $template->param( NO_BOX     => 1 );
     $template->param( ADMIN_ONLY => $USER->is_admin );
     $template->param( CAS_URL    => $P->{CAS_URL} || '' );
     $html .= $template->output;
@@ -93,6 +96,7 @@ sub cds_wgc_hist {
     my $max   = $opts{max};     #limit results with gc values smaller than $max
     my $hist_type = $opts{hist_type};
     return "Error: No dsid or dsgid passed." unless $dsid || $dsgid;
+    
     my $gc = 0;
     my $at = 0;
     my $n  = 0;
@@ -164,6 +168,10 @@ sub cds_wgc_hist {
     }
     my $total = $gc + $at + $n;
     return "error" unless $total;
+
+    open FILE, '>' . get_genome_path($dsgid) . '3_wobble' . '.json';
+    print FILE encode_json({ gc => $gc / $total * 100, at => $at / $total * 100, nx => $n / $total * 100, total => $total });
+    close FILE;
 
     my $file = $TEMPDIR . "/" . join( "_", @dsids );    #."_wobble_gc.txt";
     ($min) = $min =~ /(.*)/ if defined $min;
@@ -349,6 +357,10 @@ warn "calc";
     }
     my $total = $gc + $at + $n;
     return "error" unless $total;
+
+    open FILE, '>' . get_genome_path($dsgid) . $typeid . '_percentages' . '.json';
+    print FILE encode_json({ gc => $gc / $total * 100, at => $at / $total * 100, nx => $n / $total * 100, total => $total });
+    close FILE;
 
     my $file = $TEMPDIR . "/" . join( "_", @dsids );
 

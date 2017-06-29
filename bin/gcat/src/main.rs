@@ -32,11 +32,12 @@ fn calc_percentages(fasta: &str) {
 
 fn read_fasta(fasta_path: &str) -> Result<String,io::Error> {
     let mut s = String::new();
-    let mut f = File::open(fasta_path)?;
-    let mut f = BufReader::new(f)?;
+    let f = File::open(fasta_path)?;
+    let f = BufReader::new(f);
     for line in f.lines() {
-        if !line.starts_with(">") {
-            s.push(line);
+        let l = line.unwrap();
+        if !l.starts_with(">") {
+            s += &l;
         }
     }
     Ok(s)

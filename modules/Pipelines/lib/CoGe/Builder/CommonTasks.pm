@@ -20,7 +20,7 @@ use CoGe::Core::Storage;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
-    generate_gff generate_features copy_and_mask create_gff_generation_job add_workflow_result
+    generate_gff generate_bed generate_features generate_tbl copy_and_mask create_gff_generation_job add_workflow_result
     create_transdecoder_longorfs_job create_transdecoder_predict_job
 );
 
@@ -71,6 +71,29 @@ sub copy_and_mask {
     );
 }
 
+sub generate_bed {
+    my %args = @_;
+
+    # Check for a genome or dataset id
+    return unless $args{gid};
+
+    # Generate file name
+    my $basename = $args{basename};
+    my $filename = "$basename" . "_id" . $args{gid} . ".bed";
+    my $path = get_genome_cache_path($args{gid});
+    my $output_file = catfile($path, $filename);
+
+    return $output_file, {
+        cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.pl"),
+        args => [
+            ['-gid', $args{gid}, 0],
+            ['-f', $filename, 0],
+            ['-config', $CONF->{_CONFIG_PATH}, 0],
+        ],
+        outputs => [$output_file]
+    };
+}
+
 sub generate_features {
     my %args = @_;
 
@@ -91,6 +114,26 @@ sub generate_features {
         ],
         outputs => [$output_file]
     );
+}
+
+sub generate_tbl {
+    my %args = @_;
+
+    # Generate filename
+    my $organism = $args{basename};
+    my $filename = $organism . "id" . $args{gid} . "_tbl.txt";
+    my $path = get_genome_cache_path($args{gid});
+    my $output_file = catfile($path, $filename);
+
+    return $output_file, {
+        cmd     => catfile($CONF->{SCRIPTDIR}, "export_NCBI_TBL.pl"),
+        args    => [
+            ['-gid', $args{gid}, 0],
+            ['-f', $filename, 0],
+            ["-config", $CONF->{_CONFIG_PATH}, 0]
+        ],
+        outputs => [$output_file]
+    };
 }
 
 #FIXME dup'ed below -- mdb 11/7/16

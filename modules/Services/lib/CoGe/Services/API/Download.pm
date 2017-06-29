@@ -84,8 +84,8 @@ sub get {
         }
     }
     
-    # say STDERR "CoGe::Services::Download file=$file_path";
-    return $self->render(API_STATUS_NOTFOUND) unless ($file_path);
+    warn "CoGe::Services::Download file=$file_path";
+    return $self->render(API_STATUS_NOTFOUND) unless $file_path && -e $file_path;
 
     # Send file
     $self->res->headers->content_disposition("attachment; filename=$filename;") if $attachment; # tell browser to download file

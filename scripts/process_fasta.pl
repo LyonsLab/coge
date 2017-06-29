@@ -18,7 +18,7 @@ use vars qw(
 use constant MAX_CHROMOSOMES     => 200_000; # max number of chromosomes/contigs
 use constant MIN_CHROMOSOME_SIZE => 1_000;   # min chromosome size (bp)
 use constant MAX_PRINT           => 50;
-use constant MAX_SEQUENCE_SIZE   => 5_000_000_000; # 5 Gbp total
+use constant MAX_SEQUENCE_SIZE   => 100_000_000_000; # 100 Gbp total
 use constant MAX_CHR_NAME_LENGTH => 255;
 
 GetOptions(
