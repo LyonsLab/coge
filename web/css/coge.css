@@ -180,7 +180,8 @@ div.box {
 
 div.footer {
     bottom: 0;
-	position: absolute;
+	margin-top: -50px;
+	position: relative;
 	padding-right: 7px;
 	height: 50px;
 	clear: both;
