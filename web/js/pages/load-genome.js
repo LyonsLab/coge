@@ -116,9 +116,9 @@ function handle_action(action) {
 	if (w.parent)
 		w = w.parent;
     if (action === "genome")
-	    w.location.href = "GenomeInfo.pl?embed=" + EMBED + "&gid=" + genome_id;
+	    w.location.href = "GenomeInfo.pl?gid=" + genome_id;
     else if (action === "annotation")
-	    w.location.href = "LoadAnnotation.pl?embed=" + EMBED + "&gid=" + genome_id;
+	    w.location.href = "LoadAnnotation.pl?gid=" + genome_id;
     else //if (action === "new") 
         coge.progress.reset();
 }
