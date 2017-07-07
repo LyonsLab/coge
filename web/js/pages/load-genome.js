@@ -112,12 +112,13 @@ function load(genome) {
 }
 
 function handle_action(action) {
-    console.log('handle_action '+action);
-
+	var w = window;
+	if (w.parent)
+		w = w.parent;
     if (action === "genome")
-	    window.location.href = "GenomeInfo.pl?embed=" + EMBED + "&gid=" + genome_id;
+	    w.location.href = "GenomeInfo.pl?embed=" + EMBED + "&gid=" + genome_id;
     else if (action === "annotation")
-	    window.location.href = "LoadAnnotation.pl?embed=" + EMBED + "&gid=" + genome_id;
+	    w.location.href = "LoadAnnotation.pl?embed=" + EMBED + "&gid=" + genome_id;
     else //if (action === "new") 
         coge.progress.reset();
 }
