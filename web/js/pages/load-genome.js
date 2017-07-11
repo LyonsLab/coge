@@ -113,8 +113,12 @@ function load(genome) {
 
 function handle_action(action) {
 	if (action === "genome") {
-		if (window.parent)
-			document.getElementById('coge_user_dialog_title').innerHTML = document.querySelector('.progress.result ').innerHTML + '<br><a class="xsmall" style="color:#eeeeee;" href="GenomeInfo.pl?gid=' + genome_id + '" target="_blank">[Open in new tab]</a>';
+		if (window.parent) {
+			var title = document.querySelector('.progress.result a').innerHTML;
+			var i = title.indexOf('Genome ');
+			title = title.substring(0, i) + title.substring(i + 8, title.length - 1);
+			window.parent.document.getElementById('coge_user_dialog_title').innerHTML = title + '<br><a class="xsmall" style="color:#eeeeee;" href="GenomeInfo.pl?gid=' + genome_id + '" target="_blank">[Open in new tab]</a>';
+		}
 		window.location.href = "GenomeInfo.pl?embed=" + EMBED + "&gid=" + genome_id;
 	} else if (action === "annotation")
 	    window.location.href = "LoadAnnotation.pl?embed=" + EMBED + "&gid=" + genome_id;
