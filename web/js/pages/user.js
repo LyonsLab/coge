@@ -655,18 +655,18 @@ class DataGridRow { //FIXME duplicated in search-results.js
             var title = title || this.getDescription();
             var link  = url || this.getLink();
             var flags = this.getFlags({noSpaces: 1});
-            title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a> ";
+            title = flags + ' ' + title + "<br><a class='xsmall' style='color:#eeeeee;' href='" + link + "' target='_blank'>[Open in new tab]</a>";
             link = link + "&embed=1";
             console.log('DataGrid.openItem: ' + link);
             var height = $(window).height() * 0.8;
-            var d = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
+            coge_user_dialog = $('<div class="dialog_box"><iframe src="'+link+'" height="100%" width="100%" style="border:none;"/></div>')
                 .dialog({
 					autoOpen: true,
                     //title: title,
                     width: '80%',
                     height: height,
                     open: function() { // mdb added 10/16/16 -- fix html in dialog title bar for jQuery 3.1.1 update
-                        $(this).prev().find("span.ui-dialog-title").append('<span>'+title+'</span>');
+                        $(this).prev().find("span.ui-dialog-title").append('<span id="coge_user_dialog_title">'+title+'</span>');
                     },
 					close: function() {
 						schedule_poll(0);
@@ -675,6 +675,7 @@ class DataGridRow { //FIXME duplicated in search-results.js
         }
     }
 }
+var coge_user_dialog;
 
 function dateSortAscending(x,y) {
     x = time_diff(x);
