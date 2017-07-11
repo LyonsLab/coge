@@ -99,7 +99,19 @@ sub get_feature {
             #$data{primary_name} = $feature->primary_name->name if $feature->primary_name;
         }
         
-        $data{sequence} = $feature->genomic_sequence;
+        my $seq = $feature->genomic_sequence;
+        $data{sequence} = $seq;
+        my $l = length($seq);
+        if ($l > 0) {
+            my $gc = $seq =~ tr/gcGC//;
+            my $at = $seq =~ tr/atAT//;
+            my $nx = $seq =~ tr/nxNX//;
+            $data{percentages} = {
+                gc => $gc / $l * 100,
+                at => $at / $l * 100,
+                nx => $nx / $l * 100
+            };
+        }
         
         my @annos;
         foreach ($feature->annos) {
