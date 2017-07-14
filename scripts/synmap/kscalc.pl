@@ -421,6 +421,6 @@ sub process_block {
     }
     chomp $header;
     $header .= "  Mean Ks:  $mean_ks\tMean Kn: $mean_kn\n";
-    $header .= "#Ks\tKn\ta<db_genome_id>_<chr>\tchr1||start1||stop1||name1||strand1||type1||db_feature_id1||percent_id1\tstart1\tstop1\tb<db_genome_id>_<chr>\tchr2||start2||stop2||name2||strand2||type2||db_feature_id2||percent_id2\tstart2\tstop2\teval\tblock_score\tGEVO_link\n";
+    $header .= "#Ks\tKn\ta<db_genome_id>_<chr>\tchr1||start1||stop1||name1||strand1||type1||db_feature_id1||genome_order1||percent_id1\tstart1\tstop1\tb<db_genome_id>_<chr>\tchr2||start2||stop2||name2||strand2||type2||db_feature_id2||genome_order2||percent_id2\tstart2\tstop2\teval\tblock_score\tGEVO_link\n";
     return $header . $output;
 }
