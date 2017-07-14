@@ -302,7 +302,6 @@ sub get_genomic_sequence {
             ($genome) = $self->genomes;
         }
     }
-
     return $genome->get_genomic_sequence(
         chr    => $chr,
         start  => $start,

@@ -184,7 +184,6 @@ sub cds_wgc_hist {
     $file .= "_wobble_gc.txt";
     my $out = $file;
     $out =~ s/txt$/png/;
-warn "hist";
     unless ( -r $out ) {
         open( OUT, ">" . $file );
         print OUT "#wobble gc for dataset ids: " . join( " ", @dsids ), "\n";
@@ -199,7 +198,6 @@ warn "hist";
         $cmd .= " -ht $hist_type" if $hist_type;
         `$cmd`;
     }
-warn "html";
     $min = 0   unless defined $min && $min =~ /\d+/;
     $max = 100 unless defined $max && $max =~ /\d+/;
     my $info;
@@ -299,7 +297,6 @@ sub get_gc_for_feature_type {
             next;
         }
 
-warn "get_genomic_sequence";
         my %seqs; #let's prefetch the sequences with one call to genomic_sequence (slow for many seqs)
         if ( defined $chr ) {
             $seqs{$chr} =
@@ -311,7 +308,6 @@ warn "get_genomic_sequence";
                 $_, $ds->get_genomic_sequence( chr => $_, seq_type => $gstid )
               } $ds->chromosomes;
         }
-warn "get features";
         my @feats = $ds->features(
             $search,
             {
@@ -325,7 +321,6 @@ warn "get features";
                 ],
             }
         );
-warn "calc";
         foreach my $feat (@feats) {
             my $seq = substr(
                 $seqs{ $feat->chromosome },

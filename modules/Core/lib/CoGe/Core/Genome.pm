@@ -394,19 +394,15 @@ sub _generate_gc_stats {
     my $genome = shift;
     my $gstid = $genome->type->id;
 
-    my %chr;
     my ( $gc, $at, $n, $x ) = (0) x 4;
 
     foreach my $ds ($genome->datasets) {
-        map { $chr{$_} = 1 } $ds->chromosomes;
-
-        foreach my $chr ( keys %chr ) {
-            my @gc =
-              $ds->percent_gc( chr => $chr, seq_type => $gstid, count => 1 );
-            $gc += $gc[0] if $gc[0];
-            $at += $gc[1] if $gc[1];
-            $n  += $gc[2] if $gc[2];
-            $x  += $gc[3] if $gc[3];
+        foreach my $chr ( $ds->chromosomes ) {
+            my @gc = $ds->percent_gc( chr => $chr, seq_type => $gstid, count => 1 );
+            $gc += $gc[0];
+            $at += $gc[1];
+            $n  += $gc[2];
+            $x  += $gc[3];
         }
     }
     my $total = $gc + $at + $n + $x;
@@ -423,19 +419,15 @@ sub _generate_gc_stats {
 
 sub _generate_noncoding_gc_stats {
     my $genome = shift;
-    my (@items, @datasets);
-
     my $gstid = $genome->type->id;
-    push @items, $genome;
+
+    my %seqs; # prefetch the sequences (slow for many seqs)
+    map {
+        $seqs{$_} = $genome->get_genomic_sequence( chr => $_, seq_type => $gstid )
+    } $genome->chromosomes;
+
+    my @datasets;
     push @datasets, $genome->datasets;
-
-    my %seqs; # prefetch the sequences with one call to genomic_sequence (slow for many seqs)
-    foreach my $item (@items) {
-        map {
-            $seqs{$_} = $item->get_genomic_sequence( chr => $_, seq_type => $gstid )
-        } $item->chromosomes;
-    }
-
     foreach my $ds (@datasets) {
         foreach my $feat ($ds->features(@LOCATIONS_PREFETCH)) {
             foreach my $loc ( $feat->locs ) {
@@ -452,8 +444,6 @@ sub _generate_noncoding_gc_stats {
                     ( $loc->stop - $loc->start + 1 )
                 ) = "-" x ( $loc->stop - $loc->start + 1 );
             }
-
-            #push @data, sprintf("%.2f",100*$gc[0]/$total) if $total;
         }
     }
 
