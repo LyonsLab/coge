@@ -90,7 +90,7 @@ sub get_feature {
     if (!$fast) {
         my @names = $feature->names;
         my $num_names = scalar @names;
-        if ($num_names > 10) {
+        if ($num_names > 50) {
             push @{$data{warning}}, "Names truncated, too many names to list ($num_names)";
             #@names = splice(@names, 0, 10);
         }

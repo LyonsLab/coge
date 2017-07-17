@@ -158,23 +158,6 @@ $(function() {
 
 	}
 
-	function get_all_gc(num) {
-	for (var i=1; i<=num; i++) {
-	  $('#gc_'+i).removeClass('link');
-	  $('#gc_'+i).html('<span class=alert>loading...</span>');
-	  $('#at_'+i).removeClass('link');
-	  $('#at_'+i).html('<span class=alert>loading...</span>');
-	  $('#n_'+i).removeClass('link');
-	  $('#n_'+i).html('<span class=alert>loading...</span>');
-	  $('#x_'+i).removeClass('link');
-	  $('#x_'+i).html('<span class=alert>loading...</span>');
-	  var dsgid = $('#dsgid_'+i).val();
-	  run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i, divid4: 'x_'+i});
-	 }
-	 $('#get_all_gc').remove();
-	   update_table();
-	}
-
 	function run_get_codon_usage(opts){
 	  opts = opts || {};
 	  dsgid = opts.dsgid;
@@ -200,52 +183,41 @@ $(function() {
 	  });
 	}
 
-	function blast (dsgids) {
+function blast (dsgids) {
 	$.ajax({
-	  data: {
-		jquery_ajax: 1,
-	   	fname: 'blast',
-	   	accn_list: dsgids
-	 },
-	  success : create_callback(divid)
+		data: {
+			jquery_ajax: 1,
+	   		fname: 'blast',
+	   		accn_list: dsgids
+		},
+		success : create_callback(divid)
 	});
-	}
+}
 
-	function get_all_gc(num) {
-	for (var i=1; i<=num; i++) {
-	  $('#gc_'+i).removeClass('link');
-	  $('#gc_'+i).html('<span class=alert>loading...</span>');
-	  $('#at_'+i).removeClass('link');
-	  $('#at_'+i).html('<span class=alert>loading...</span>');
-	  $('#n_'+i).removeClass('link');
-	  $('#n_'+i).html('<span class=alert>loading...</span>');
-	  $('#x_'+i).removeClass('link');
-	  $('#x_'+i).html('<span class=alert>loading...</span>');
-	  var dsgid = $('#dsgid_'+i).val();
-	  run_get_gc({dsgid: dsgid, divid1: 'gc_'+i, divid2: 'at_'+i, divid3: 'n_'+i, divid4: 'x_'+i});
-	 }
-	 $('#get_all_gc').remove();
-	   update_table();
-	}
+function get_all_gc(num) {
+	for (var i=1; i<=num; i++)
+		run_get_gc($('#dsgid_'+i).val(), i);
+	$('#get_all_gc').remove();
+	update_table();
+}
 
-function run_get_gc(opts) {
-	var dsgid = opts.dsgid;
-	var div1 = $('#'+opts.divid1);
-	var div2 = $('#'+opts.divid2);
-	var div3 = $('#'+opts.divid3);
-	var div4 = $('#'+opts.divid4);
+function run_get_gc(gid, i) {
+	var div1 = $('#gc_'+i);
+	var div2 = $('#at_'+i);
+	var div3 = $('#n_'+i);
+	var div4 = $('#x_'+i);
 
 	var busy = '<img src="picts/ajax-loader.gif"/>';
-	div1.html(busy);
-	div2.html(busy);
-	div3.html(busy);
-	div4.html(busy);
+	div1.removeClass('link').html(busy);
+	div2.removeClass('link').html(busy);
+	div3.removeClass('link').html(busy);
+	div4.removeClass('link').html(busy);
 
 	$.ajax({
 	    data: {
 			jquery_ajax: 1,
 	 	    fname: 'get_gc',
-	       	dsgid: dsgid
+	       	dsgid: gid
 	    },
 		success: function(data) {
 			var items = data.split('_');
@@ -257,10 +229,9 @@ function run_get_gc(opts) {
 	});
 }
 
-        function delete_row (val)
-         {
-           $('#gl'+val).remove();
-	 }
+function delete_row (val) {
+	$('#gl'+val).remove();
+}
 
 	function get_all_feat_counts(num) {
 	for (var i=1; i<=num; i++)
@@ -527,24 +498,24 @@ function get_gff(genome_id) {
 	  <TH>Chr Count</TH>
 	  <TH>Length (bp)</TH>
 	  <TH>GC%
-	<br><span id="get_all_gc" class="link small" onclick="get_all_gc(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
+	<br><span id="get_all_gc" class="link small" onclick="get_all_gc(<TMPL_VAR NAME="GENOME_COUNT">);event.stopPropagation();">Get&nbsp;all</span>
 	  </TH>
 	  <TH >AT%</TH>
 	  <TH >N%</TH>
 	  <TH >X%</TH>
 	  <TH >Feature Counts
-	<br><span id="get_all_feat_counts" class="link small" onclick="get_all_feat_counts(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
+	<br><span id="get_all_feat_counts" class="link small" onclick="get_all_feat_counts(<TMPL_VAR NAME="GENOME_COUNT">)">Get&nbsp;all</span>
 	  </TH>
 	  <TH >Amino Acid Usage
-	<br><span id="get_all_aa_usage" class="link small" onclick="get_all_aa_usage(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
+	<br><span id="get_all_aa_usage" class="link small" onclick="get_all_aa_usage(<TMPL_VAR NAME="GENOME_COUNT">)">Get&nbsp;all</span>
 	  </TH>
 	  <th >Codon Usage
-	<br><span id="show_all_codon" class="link small" onclick="show_all_codon_tables(<TMPL_VAR NAME="GENOME_COUNT">)">Get all codon tables</span>
+	<br><span id="show_all_codon" class="link small" onclick="show_all_codon_tables(<TMPL_VAR NAME="GENOME_COUNT">)">Get&nbsp;all</span>
 	  </th>
 	  <th >CDS GC Histogram
-		<br><span id="get_all_cg" class="link small" onclick="get_all_gc_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get all </span></th>
+		<br><span id="get_all_cg" class="link small" onclick="get_all_gc_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get&nbsp;all </span></th>
 	  <th >CDS Wobble GC Historgram
-	        <br><span id="get_all_wcg" class="link small" onclick="get_all_wobble_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get all</span>
+	        <br><span id="get_all_wcg" class="link small" onclick="get_all_wobble_hist(<TMPL_VAR NAME="GENOME_COUNT">)">Get&nbsp;all</span>
 	</th>
 	  </tr>
 	</THEAD>
@@ -560,10 +531,10 @@ function get_gff(genome_id) {
 	     <TD align='center'><TMPL_VAR NAME=VER></TD>
 	     <TD align='center'><TMPL_VAR NAME=CHR_COUNT></TD>
 	     <TD align='right'><TMPL_VAR NAME=LENGTH></TD>
-	     <TD align='center' id="gc_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get GC</TD>
-	     <TD align='center' id="at_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get AT</TD>
-	     <TD align='center' id="n_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get N</TD>
-	     <TD align='center' id="x_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#gc_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#at_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#n_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_gc({dsgid: <TMPL_VAR NAME=DSGID>,divid1: 'gc_<TMPL_VAR NAME=COUNT>', divid2: 'at_<TMPL_VAR NAME=COUNT>', divid3: 'n_<TMPL_VAR NAME=COUNT>', divid4: 'x_<TMPL_VAR NAME=COUNT>'})">Get X</TD>
+	     <TMPL_VAR NAME=GC>
+	     <TMPL_VAR NAME=AT>
+	     <TMPL_VAR NAME=N>
+	     <TMPL_VAR NAME=X>
 	     <TD align='left' id="feat_counts_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#feat_counts_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_feat_counts({dsgid: <TMPL_VAR NAME=DSGID>, divid: 'feat_counts_<TMPL_VAR NAME=COUNT>'})">Count Features</TD>
 	     <TD align='left' id="aa_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#aa_usage_<TMPL_VAR NAME=COUNT>').html('<span class=alert>loading...</span>'); run_get_aa_usage({dsgid: '<TMPL_VAR NAME=DSGID>',divid: 'aa_usage_<TMPL_VAR NAME=COUNT>', table_name: 'aa_table<TMPL_VAR NAME=COUNT>'})">Amino Acid Usage</TD>
 	     <TD align='left' id="codon_usage_<TMPL_VAR NAME=COUNT>" class="link" onclick="$('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); $('#codon_usage_<TMPL_VAR NAME=COUNT>').removeClass('link'); run_get_codon_usage({dsgid:<TMPL_VAR NAME=DSGID>, divid: 'codon_usage_<TMPL_VAR NAME=COUNT>'})">Codon Usage</TD>

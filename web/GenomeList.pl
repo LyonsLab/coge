@@ -5,6 +5,7 @@ use strict;
 use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
+use CoGe::Core::Genome qw( calc_gc get_stats has_statistic );
 use CoGe::Core::Storage qw(get_genome_file get_genome_path);
 use CGI;
 use HTML::Template;
@@ -119,7 +120,6 @@ sub cds_wgc_hist {
             push @dsids, $ds->id;
         }
     }
-    warn "loading features";
     foreach my $dsidt (@dsids) {
         my $ds = $coge->resultset('Dataset')->find($dsidt);
         unless ($ds) {
@@ -645,6 +645,17 @@ sub generate_table {
             $provenance .= $item . "<br>";
         }
         $provenance =~ s/<br>$//;
+        my $gc = '<td align="center" id="gc_' . $count . '" class="link"><span onclick="run_get_gc(' . $dsgid . ',' . $count . ')">Get GC</span></td>';
+        my $at = '<td align="center" id="at_' . $count . '" class="link"><span onclick="run_get_gc(' . $dsgid . ',' . $count . ')">Get AT</span></td>';
+        my $n = '<td align="center" id="n_' . $count . '" class="link"><span onclick="run_get_gc(' . $dsgid . ',' . $count . ')">Get N</span></td>';
+        my $x = '<td align="center" id="x_' . $count . '" class="link"><span onclick="run_get_gc(' . $dsgid . ',' . $count . ')">Get X</span></td>';
+        if (has_statistic($dsg, 'gc')) {
+            my $data = get_stats($dsg, 'gc', \&calc_gc);
+            $gc = '<td align="center">' . sprintf("%.2f", 100 * $data->{gc}) . '</td>';
+            $at = '<td align="center">' . sprintf("%.2f", 100 * $data->{at}) . '</td>';
+            $n = '<td align="center">' . sprintf("%.2f", 100 * $data->{n}) . '</td>';
+            $x = '<td align="center">' . sprintf("%.2f", 100 * $data->{x}) . '</td>';
+        }
         push @table, {
             COUNT      => $count,
             DSGID      => $dsgid,
@@ -656,7 +667,10 @@ sub generate_table {
             TYPE       => $type,
             CHR_COUNT  => commify($chr_count),
             LENGTH     => commify($length),
-
+            GC => $gc,
+            AT => $at,
+            N => $n,
+            X =>$x
         };
         $count++;
     }
@@ -1110,14 +1124,10 @@ sub get_gc {
     my %opts  = @_;
     my $dsgid = $opts{dsgid};
     return "No dataset group id" unless $dsgid;
-    my ($dsg) = $coge->resultset('Genome')->find($dsgid);
-    return "No dsg object for id $dsgid" unless $dsg;
-    my ( $gc, $at, $n, $x ) = $dsg->percent_gc();
-    $at *= 100;
-    $gc *= 100;
-    $n  *= 100;
-    $x  *= 100;
-    return ( $gc . "_" . $at . "_" . $n . "_" . $x );
+    my ($genome) = $coge->resultset('Genome')->find($dsgid);
+    return "No dsg object for id $dsgid" unless $genome;
+    my $data = get_stats($genome, 'gc', \&calc_gc);
+    return sprintf("%.2f", 100 * $data->{gc}) . "_" . sprintf("%.2f", 100 * $data->{at}) . "_" . sprintf("%.2f", 100 * $data->{n}) . "_" . sprintf("%.2f", 100 * $data->{x});
 }
 
 sub get_wobble_gc {

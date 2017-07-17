@@ -60,10 +60,16 @@ sub write {
     my ($filepath, $pData) = @_;
     
     mkpath(dirname($filepath), 0, 0777);
-    return 0 unless (-r dirname($filepath));
+    unless (-r dirname($filepath)) {
+        warn 'TDS::write() directory ' . $filepath . ' not readable';
+        return 0;
+    }
 
     my $json = encode_json($pData);
-    return if (length($json) > $MAX_DOCUMENT_SZ);
+    if (length($json) > $MAX_DOCUMENT_SZ) {
+        warn 'TDS::write() JSON larger than ' . $MAX_DOCUMENT_SZ;
+        return;
+    }
 
     open(my $fh, ">", $filepath) || return;
     flock($fh, 2); # exclusive lock

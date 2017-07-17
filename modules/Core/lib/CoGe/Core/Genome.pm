@@ -19,7 +19,7 @@ BEGIN {
 
     $VERSION = 0.1;
     @ISA = qw( Exporter );
-    @EXPORT = qw( has_statistic get_gc_stats get_noncoding_gc_stats
+    @EXPORT = qw( has_statistic get_stats calc_gc calc_noncoding_gc
         get_wobble_histogram get_wobble_gc_diff_histogram get_feature_type_gc_histogram
         fix_chromosome_id read_fasta_index get_irods_metadata);
     @EXPORT_OK = qw(genomecmp genomecmp2 search_genomes);
@@ -235,48 +235,93 @@ sub _generate_wobble_content {
     return $wobble_content;
 }
 
-sub get_gc_stats {
-    my $genome = _get_genome_or_exit(shift);
+sub get_stats {
+    my ($genome, $key, $calc_func) = @_;
     my $storage_path = _get_stats_file($genome->id);
-
     my $data = read($storage_path);
-    return $data->{gc} if defined $data->{gc};
+    return $data->{$key} if defined $data->{$key};
 
-    $data->{gc} = _generate_gc_stats($genome);
-
-    # Exit if generate failed
-    unless(defined $data->{gc}) {
-        say STDERR "Genome::get_gc_stats: generate noncoding gc stats failed!";
-        exit;
-    }
-
-    say STDERR "Genome::get_gc_stats: write failed!"
-        unless write($storage_path, $data);
-
-    # Return data
-    return $data->{gc};
+    $data->{$key} = $calc_func->($genome);
+    write($storage_path, $data);
+    return $data->{$key};
 }
 
-sub get_noncoding_gc_stats {
-    my $genome = _get_genome_or_exit(@_);
-    my $storage_path = _get_stats_file($genome->id);
+sub calc_gc {
+    my $genome = shift;
+    my $gstid = $genome->type->id;
 
-    my $data = read($storage_path);
-    return $data->{noncoding_gc} if defined $data->{noncoding_gc};
+    my ( $gc, $at, $n, $x ) = (0) x 4;
 
-    $data->{noncoding_gc} = _generate_noncoding_gc_stats($genome);
+    foreach my $ds ($genome->datasets) {
+        foreach my $chr ( $ds->chromosomes ) {
+            my @gc = $ds->percent_gc( chr => $chr, seq_type => $gstid, count => 1 );
+            $gc += $gc[0];
+            $at += $gc[1];
+            $n  += $gc[2];
+            $x  += $gc[3];
+        }
+    }
+    my $total = $gc + $at + $n + $x;
+    return unless $total;
 
-    # Exit if generate failed
-    unless(defined $data->{noncoding_gc}) {
-        say STDERR "Genome::get_noncoding_gc_stats: generate noncoding gc stats failed!";
-        exit;
+    return {
+        total => $total,
+        gc    => $gc / $total,
+        at    => $at / $total,
+        n     => $n  / $total,
+        x     => $x  / $total,
+    };
+}
+
+sub calc_noncoding_gc {
+    my $genome = shift;
+    my $gstid = $genome->type->id;
+
+    my %seqs; # prefetch the sequences (slow for many seqs)
+    map {
+        $seqs{$_} = $genome->get_genomic_sequence( chr => $_, seq_type => $gstid )
+    } $genome->chromosomes;
+
+    my @datasets;
+    push @datasets, $genome->datasets;
+    foreach my $ds (@datasets) {
+        foreach my $feat ($ds->features(@LOCATIONS_PREFETCH)) {
+            foreach my $loc ( $feat->locs ) {
+                if ( $loc->stop > length( $seqs{ $feat->chromosome } ) ) {
+                    print STDERR "feature "
+                      . $feat->id
+                      . " stop exceeds sequence length: "
+                      . $loc->stop . " :: "
+                      . length( $seqs{ $feat->chromosome } ), "\n";
+                }
+                substr(
+                    $seqs{ $feat->chromosome },
+                    $loc->start - 1,
+                    ( $loc->stop - $loc->start + 1 )
+                ) = "-" x ( $loc->stop - $loc->start + 1 );
+            }
+        }
     }
 
-    say STDERR "Genome::get_noncoding_gc_stats: write failed!"
-        unless write($storage_path, $data);
+    my ( $gc, $at, $n, $x ) = ( 0, 0, 0, 0 );
 
-    # Return data
-    return $data->{noncoding_gc};
+    foreach my $seq ( values %seqs ) {
+        $gc += $seq =~ tr/GCgc/GCgc/;
+        $at += $seq =~ tr/ATat/ATat/;
+        $n  += $seq =~ tr/nN/nN/;
+        $x  += $seq =~ tr/xX/xX/;
+    }
+
+    my $total = $gc + $at + $n + $x;
+    return unless $total;
+
+    return {
+        total => $total,
+        gc    => $gc / $total,
+        at    => $at / $total,
+        n     => $n  / $total,
+        x     => $x  / $total,
+    };
 }
 
 #
@@ -388,84 +433,6 @@ sub _generate_feature_type_gc {
     }
 
     return $gc_content;
-}
-
-sub _generate_gc_stats {
-    my $genome = shift;
-    my $gstid = $genome->type->id;
-
-    my ( $gc, $at, $n, $x ) = (0) x 4;
-
-    foreach my $ds ($genome->datasets) {
-        foreach my $chr ( $ds->chromosomes ) {
-            my @gc = $ds->percent_gc( chr => $chr, seq_type => $gstid, count => 1 );
-            $gc += $gc[0];
-            $at += $gc[1];
-            $n  += $gc[2];
-            $x  += $gc[3];
-        }
-    }
-    my $total = $gc + $at + $n + $x;
-    return unless $total;
-
-    return {
-        total => $total,
-        gc    => $gc / $total,
-        at    => $at / $total,
-        n     => $n  / $total,
-        x     => $x  / $total,
-    };
-}
-
-sub _generate_noncoding_gc_stats {
-    my $genome = shift;
-    my $gstid = $genome->type->id;
-
-    my %seqs; # prefetch the sequences (slow for many seqs)
-    map {
-        $seqs{$_} = $genome->get_genomic_sequence( chr => $_, seq_type => $gstid )
-    } $genome->chromosomes;
-
-    my @datasets;
-    push @datasets, $genome->datasets;
-    foreach my $ds (@datasets) {
-        foreach my $feat ($ds->features(@LOCATIONS_PREFETCH)) {
-            foreach my $loc ( $feat->locs ) {
-                if ( $loc->stop > length( $seqs{ $feat->chromosome } ) ) {
-                    print STDERR "feature "
-                      . $feat->id
-                      . " stop exceeds sequence length: "
-                      . $loc->stop . " :: "
-                      . length( $seqs{ $feat->chromosome } ), "\n";
-                }
-                substr(
-                    $seqs{ $feat->chromosome },
-                    $loc->start - 1,
-                    ( $loc->stop - $loc->start + 1 )
-                ) = "-" x ( $loc->stop - $loc->start + 1 );
-            }
-        }
-    }
-
-    my ( $gc, $at, $n, $x ) = ( 0, 0, 0, 0 );
-
-    foreach my $seq ( values %seqs ) {
-        $gc += $seq =~ tr/GCgc/GCgc/;
-        $at += $seq =~ tr/ATat/ATat/;
-        $n  += $seq =~ tr/nN/nN/;
-        $x  += $seq =~ tr/xX/xX/;
-    }
-
-    my $total = $gc + $at + $n + $x;
-    return unless $total;
-
-    return {
-        total => $total,
-        gc    => $gc / $total,
-        at    => $at / $total,
-        n     => $n  / $total,
-        x     => $x  / $total,
-    };
 }
 
 # Used by the load scripts:  load_genome.pl, load_experiment.pl, and load_annotation.pl

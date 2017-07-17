@@ -553,7 +553,7 @@ sub get_gc_for_genome {
     my $dsgid = $opts{dsgid};
 
     my $genome = $DB->resultset('Genome')->find($dsgid);
-    my $data = get_gc_stats($genome);
+    my $data = get_stats($genome, 'gc', \&calc_gc);
 
     # Skip if no data
     return unless $data;
@@ -584,16 +584,16 @@ sub get_gc_for_noncoding {
     my $x  = 0;
 
     my $genome = $DB->resultset('Genome')->find($dsgid);
-    my $stats = get_noncoding_gc_stats($genome);
+    my $data = get_stats($genome, 'noncoding_gc', \&calc_noncoding_gc);
 
     return
-        commify($stats->{total}) . " bp"
+        commify($data->{total}) . " bp"
       . "&nbsp(GC: "
-      . sprintf( "%.2f", 100 * $stats->{gc})
+      . sprintf( "%.2f", 100 * $data->{gc})
       . "%  AT: "
-      . sprintf( "%.2f", 100 * $stats->{at}) . "% N: "
-      . sprintf( "%.2f", 100 * $stats->{n}) . "% X: "
-      . sprintf( "%.2f", 100 * $stats->{x}) . "%)";
+      . sprintf( "%.2f", 100 * $data->{at}) . "% N: "
+      . sprintf( "%.2f", 100 * $data->{n}) . "% X: "
+      . sprintf( "%.2f", 100 * $data->{x}) . "%)";
 }
 
 sub get_gc_for_feature_type {
