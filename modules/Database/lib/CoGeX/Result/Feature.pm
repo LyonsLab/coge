@@ -6,6 +6,7 @@ use base 'DBIx::Class::Core';
 use CoGe::Accessory::genetic_code;
 use CoGe::Accessory::Annotation;
 use CoGe::Accessory::Utils qw( commify get_link_coords );
+use CoGe::Core::Sequence qw( wobble_percentages );
 use Text::Wrap;
 use Data::Dumper;
 use base 'Class::Accessor';

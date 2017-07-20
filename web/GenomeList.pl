@@ -126,7 +126,7 @@ sub cds_wgc_hist {
             warn "no dataset object found for id $dsidt\n";
             next;
         }
-        my @feats =             $ds->features(
+        my @feats = $ds->features(
                 $search,
                 {
                     join => [
@@ -139,9 +139,7 @@ sub cds_wgc_hist {
                     ],
                 }
             );
-        warn "calc";
-        foreach my $feat ( @feats )
-        {
+        foreach my $feat ( @feats ) {
             my @gc = $feat->wobble_content( counts => 1 );
             $gc += $gc[0] if $gc[0] && $gc[0] =~ /^\d+$/;
             $at += $gc[1] if $gc[1] && $gc[1] =~ /^\d+$/;

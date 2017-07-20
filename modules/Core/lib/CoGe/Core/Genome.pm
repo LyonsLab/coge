@@ -306,10 +306,10 @@ sub calc_noncoding_gc {
     my ( $gc, $at, $n, $x ) = ( 0, 0, 0, 0 );
 
     foreach my $seq ( values %seqs ) {
-        $gc += $seq =~ tr/GCgc/GCgc/;
-        $at += $seq =~ tr/ATat/ATat/;
-        $n  += $seq =~ tr/nN/nN/;
-        $x  += $seq =~ tr/xX/xX/;
+        $gc += $seq =~ tr/GCgc//;
+        $at += $seq =~ tr/ATat//;
+        $n  += $seq =~ tr/nN//;
+        $x  += $seq =~ tr/xX//;
     }
 
     my $total = $gc + $at + $n + $x;

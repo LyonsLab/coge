@@ -5,6 +5,8 @@ use warnings;
 
 use Data::Dumper;
 
+use CoGe::Core::Sequence qw( wobble_percentages );
+
 BEGIN {
     our ( @EXPORT, @EXPORT_OK, @ISA, $VERSION );
     require Exporter;
@@ -111,6 +113,12 @@ sub get_feature {
                 at => $at / $l * 100,
                 nx => $nx / $l * 100
             };
+            ($gc, $at, $nx) = wobble_percentages($seq);
+            $data{wobble} = {
+                gc => $gc,
+                at => $at,
+                nx => $nx
+            }
         }
         
         my @annos;

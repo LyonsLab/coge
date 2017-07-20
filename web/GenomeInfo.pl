@@ -356,7 +356,6 @@ sub get_wobble_gc {
     my $dsid  = $opts{dsid};
     my $dsgid = $opts{dsgid};
     my $chr   = $opts{chr};
-    my $gstid = $opts{gstid};   #genomic sequence type id
     my $min   = $opts{min};     #limit results with gc values greater than $min;
     my $max   = $opts{max};     #limit results with gc values smaller than $max;
     my $hist_type = $opts{hist_type};
@@ -463,7 +462,6 @@ sub get_wobble_gc_diff {
     my $dsid  = $opts{dsid};
     my $dsgid = $opts{dsgid};
     my $chr   = $opts{chr};
-    my $gstid = $opts{gstid};    #genomic sequence type id
     return "error", " " unless $dsid || $dsgid;
     my $search;
     $search = { "feature_type_id" => 3 };
@@ -549,7 +547,6 @@ sub get_gc_for_genome {
     my %opts  = @_;
     my $dsid  = $opts{dsid};
     my $chr   = $opts{chr};
-    my $gstid = $opts{gstid};
     my $dsgid = $opts{dsgid};
 
     my $genome = $DB->resultset('Genome')->find($dsgid);
@@ -576,7 +573,6 @@ sub get_gc_for_noncoding {
     my $dsid  = $opts{dsid};
     my $dsgid = $opts{dsgid};
     my $chr   = $opts{chr};
-    my $gstid = $opts{gstid};    #genomic sequence type id
     return "error" unless $dsid || $dsgid;
     my $gc = 0;
     my $at = 0;
@@ -601,7 +597,6 @@ sub get_gc_for_feature_type {
     my $dsid   = $opts{dsid};
     my $dsgid  = $opts{dsgid};
     my $chr    = $opts{chr}; my $typeid = $opts{typeid};
-    my $gstid  = $opts{gstid};  #genomic sequence type id
     my $min    = $opts{min};    #limit results with gc values greater than $min;
     my $max    = $opts{max};    #limit results with gc values smaller than $max;
     my $hist_type = $opts{hist_type};

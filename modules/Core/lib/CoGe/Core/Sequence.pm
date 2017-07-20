@@ -4,10 +4,17 @@ use strict;
 use warnings;
 
 use File::Slurp;
-use JSON qw(decode_json encode_json);
+use JSON qw( decode_json encode_json );
 
 use CoGe::Core::Chromosomes;
-use CoGe::Core::Storage qw(get_genome_file get_genome_path);
+use CoGe::Core::Storage qw( get_genome_file get_genome_path );
+
+BEGIN {
+    our ( @EXPORT_OK, @ISA );
+    require Exporter;
+    @ISA = qw( Exporter );
+    @EXPORT_OK = qw( wobble_percentages );
+}
 
 ##################################################
 
@@ -85,9 +92,7 @@ sub calc_wobble {
     while (<FILE>) {
         my @a = split /\t/, $_;
         my $s = substr($seq, $a[0], $a[1]);
-        $gc += $s =~ tr/gcGC//;
-        $at += $s =~ tr/atAT//;
-        $nx += $s =~ tr/nxNX//;
+        # TODO
         $num++;
         warn $num if $num % 1000 == 0;
     }
@@ -113,6 +118,24 @@ sub get_percentages {
     print FILE encode_json($percentages);
     close FILE;
     return $percentages;
+}
+
+##################################################
+
+sub wobble_percentages {
+	my $seq  = shift;
+	my $at = 0;
+	my $gc = 0;
+	my $nx = 0;
+	for ( my $i = 2 ; $i < length($seq) ; $i += 3 ) {
+		my $n = substr( $seq, $i, 1 );
+        $gc += $n =~ tr/gcGC//;
+        $at += $n =~ tr/atAT//;
+        $nx += $n =~ tr/nxNX//;
+	}
+    my $num_codons = length($seq) / 3;
+    return (0, 0, 0) unless $num_codons;
+	return ( $gc / $num_codons * 100, $at / $num_codons * 100, $nx / $num_codons * 100 );
 }
 
 1;
