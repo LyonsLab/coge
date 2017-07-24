@@ -222,7 +222,9 @@ function display_legacy_settings() {  //AKB Added 2016-10-18
 
     if ($('#visualizer_select')[0].checked) {
         $('#legacy_opts').hide(0);
+        $('#synteny_vis_opts').show(0);
     } else {
+        $('#synteny_vis_opts').hide(0);
         $('#legacy_opts').show(0);
     }
 
@@ -696,6 +698,7 @@ var coge = window.coge = (function(namespace) {
                 dagchainer_type: $('#dagchainer_type:checked').val(),
                 ks_type: $('#ks_type').val(),
                 assemble: $('#assemble')[0].checked,
+                spa: $('#spa')[0].checked,
                 axis_metric: $('#axis_metric').val(),
                 axis_relationship: $('#axis_relationship').val(),
                 min_chr_size: $('#min_chr_size').val(),

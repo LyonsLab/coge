@@ -298,6 +298,18 @@
             </ul>
         </fieldset>
 
+        <fieldset class="ui-widget-content ui-corner-all coge-section" id="synteny_vis_opts">
+            <legend style="color:#009900">SynMap2 options</legend>
+            <ul>
+                <li>
+                    <label>
+                        <a href="http://genomevolution.org/wiki/index.php/Syntenic_path_assembly" target="_CoGepedia">Syntenic Path Assembly (SPA)</a>?
+                    </label>
+                    <input type="checkbox" name="spa" id="spa" <tmpl_var name=spa>>
+                </li>
+            </ul>
+        </fieldset>
+
         <fieldset class="ui-widget-content ui-corner-all coge-section" id="legacy_opts">
             <legend style="color:#009900">Legacy options</legend>
             <ul>
@@ -381,6 +393,7 @@
                     </span>
                     <span class ="small">(Note: SPA is not compatible with syntenic depth or merging syntenic blocks.  If SPA is selected with those options, your dotplot image will fail to be drawn.)</span>
                     </div>
+                </li>
                 <li>
                     <label>Hide contigs without synteny?</label>
                     <input type="checkbox" name="show_non_syn" id="show_non_syn" value="true" <tmpl_var name="show_non_syn">><span><br>

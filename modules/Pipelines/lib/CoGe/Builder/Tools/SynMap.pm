@@ -99,7 +99,8 @@ sub build1x1 {
 	my $RUN_ALIGNMENT = 'nice ' . catfile( $SCRIPTDIR, 'quota_align_merge.pl' );
 	my $RUN_COVERAGE  = 'nice ' . catfile( $SCRIPTDIR, 'quota_align_coverage.pl' );
 	my $PROCESS_DUPS  = 'nice ' . catfile( $SCRIPTDIR, 'process_dups.pl' );
-	my $DOTPLOT       = 'nice ' . catfile($config->{BINDIR}, 'dotplot.pl') . " -cf " . $config->{_CONFIG_PATH} . " -tmpl " . catdir($config->{TMPLDIR}, 'widgets');
+	my $DOTPLOT       = 'nice ' . catfile( $config->{BINDIR}, 'dotplot.pl' ) . " -cf " . $config->{_CONFIG_PATH} . " -tmpl " . catdir($config->{TMPLDIR}, 'widgets');
+	my $SPA           = 'nice ' . catfile( $config->{BINDIR}, 'spa.pl' );
 	my $SVG_DOTPLOT   = 'nice ' . catfile( $SCRIPTDIR, 'dotplot.py' );
 	my $FRACBIAS      = 'nice ' . $PYTHON . ' ' . catfile( $SCRIPTDIR, 'fractionation_bias.py' );
 	my $DOTPLOTDOTS   = 'nice ' . $PYTHON . ' ' . catfile( $SCRIPTDIR, 'dotplot_dots.py' );
@@ -1053,8 +1054,25 @@ sub build1x1 {
 		inputs      => \@plotinputs,
 		outputs     => \@plotoutputs,
 		overwrite   => $regen_images,
-		description => "Generating images",
+		description => "Generating images"
 	});
+
+	# run spa.pl for synteny-vis
+	warn 'yo';
+	if (test($opts{spa})) {
+		warn 'ya';
+		my $spa_file2 = $final_dagchainer_file . '.spa';
+		$self->add({
+			cmd  => $SPA,
+			args => [
+				[ '-alignfile', $final_dagchainer_file, 1 ],
+				[ '-output', $spa_file2 ]
+			],
+			inputs => [ $final_dagchainer_file ],
+			outputs => [ $spa_file2 ],
+		description => ""
+		});
+	}
 
 	#    my $dot_args = [
 	#        [ '-cf', $config->{_CONFIG_PATH}, 0 ],
@@ -1338,7 +1356,8 @@ sub defaults {
 		logks             => 1,
 		merge_algo        => 1,
 		show_non_syn_dots => 'false',
-		skip_rand         => 1
+		skip_rand         => 1,
+		spa               => 0
 	};
 }
 
@@ -1480,6 +1499,7 @@ sub get_query_link {
 	my $assemble = test($url_options{assemble});
 	$assemble = 2 if $assemble && test($url_options{show_non_syn});
 	$assemble *= -1 if $assemble && $url_options{spa_ref_genome} < 0;
+	my $spa = test($url_options{spa});
 	my $axis_metric       = $url_options{axis_metric};
 	my $axis_relationship = $url_options{axis_relationship};
 	my $min_chr_size      = $url_options{min_chr_size};
@@ -1576,6 +1596,7 @@ sub get_query_link {
 	$synmap_link .= ";bd=$box_diags"           if $box_diags;
 	$synmap_link .= ";mcs=$min_chr_size"       if $min_chr_size;
 	$synmap_link .= ";sp=$assemble"            if $assemble;
+	$synmap_link .= ";spa=$spa"                if $spa;
 	$synmap_link .= ";ma=$merge_algo"          if $merge_algo;
 	$synmap_link .= ";da=$depth_algo"          if $depth_algo;
 	$synmap_link .= ";do1=$depth_org_1_ratio"  if $depth_org_1_ratio;

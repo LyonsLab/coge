@@ -244,6 +244,7 @@ function show_vis2() {
                 data_url: '<TMPL_VAR NAME=file_url>',
                 genome_x: { name: '<TMPL_VAR NAME=xorg_name>', id: '<TMPL_VAR NAME=dsgid1>', chromosomes: <TMPL_VAR NAME=chromosomes1>},
                 genome_y: { name: '<TMPL_VAR NAME=yorg_name>', id: '<TMPL_VAR NAME=dsgid2>', chromosomes: <TMPL_VAR NAME=chromosomes2>}
+                <TMPL_IF name=spa_url>, spa_url: '<TMPL_VAR name=spa_url>'</TMPL_IF>
             });
     if (!Cookies.get("instruct_synmap")) { $("#instruct").removeClass('hidden') };
     sm2_load = true;

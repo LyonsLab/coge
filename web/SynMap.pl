@@ -435,6 +435,7 @@ sub gen_body {
 	$template->param( 'SHOW_NON_SYN' => "checked" ) if $spa && $spa =~ /2/;
 	$template->param( 'SPA_FEW_SELECT'  => "selected" ) if $spa && $spa > 0;
 	$template->param( 'SPA_MORE_SELECT' => "selected" ) if $spa && $spa < 0;
+	$template->param( 'SPA' => "checked" ) if $FORM->param('spa'); # synteny-vis
 
 	my $file = $FORM->param('file');
 	if ($file) {
@@ -1354,15 +1355,9 @@ sub get_results {
 	$org_name2 .= " (v" . $genome2->version . ")";
 
 	my $out_url = $out;
-# not sure why this test is done
-#		if ($DIR =~ /$URL/) {
-		$out_url =~ s/$DIR/$URL/;
-		$y_label =~ s/$DIR/$URL/;
-		$x_label =~ s/$DIR/$URL/;
-#		}
-#		else {
-#		    print STDERR "get_results: ERROR !!!!, cannot perform URL substitution: out_url=$out_url DIR=$DIR URL=$URL\n";
-#		}
+	$out_url =~ s/$DIR/$URL/;
+	$y_label =~ s/$DIR/$URL/;
+	$x_label =~ s/$DIR/$URL/;
 
 	$/ = "\n";
 	my $tmp;
@@ -1431,6 +1426,13 @@ sub get_results {
 		$_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
 	}
 	$results->param( chromosomes2 => encode_json($chromosomes2) );
+
+	# synteny-vis
+	if ($opts{spa} =~ /true/i) {
+		my $final_dagchainer_url = $final_dagchainer_file;
+		$final_dagchainer_url =~ s/$DIR/$URL/;
+		$results->param( spa_url => $final_dagchainer_url . '.spa' );
+	};
 
 	# fractionation bias
 	# my $gff_sort_output_file;
