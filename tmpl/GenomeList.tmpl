@@ -523,7 +523,7 @@ function get_gff(genome_id) {
 	 <TMPL_LOOP NAME=INFO>
 	   <TR id='gl<TMPL_VAR NAME=DSGID>'>
 	     <TD><input type=checkbox checked id='<TMPL_VAR NAME=DSGID>'><input type=hidden id='dsgid_<TMPL_VAR NAME=COUNT>' value='<TMPL_VAR NAME=DSGID>'></TD>
-	     <TD><span class=link onclick=window.open('OrganismView.pl?dsgid=<TMPL_VAR NAME=DSGID>')> <TMPL_VAR NAME=NAME></span> [id:&nbsp<TMPL_VAR NAME=DSGID>]</TD>
+	     <TD><span class=link onclick=window.open('GenomeInfo.pl?gid=<TMPL_VAR NAME=DSGID>')> <TMPL_VAR NAME=NAME></span> [id:&nbsp<TMPL_VAR NAME=DSGID>]</TD>
 	     <TD><TMPL_VAR NAME=DESC></TD>
 	     <TD><TMPL_VAR NAME=SOURCE></TD>
 	     <TD><TMPL_VAR NAME=PROVENANCE></TD>
