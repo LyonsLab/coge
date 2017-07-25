@@ -5,6 +5,7 @@ extends 'CoGe::Builder::Buildable';
 
 use Data::Dumper qw(Dumper);
 use File::Basename qw(basename);
+use File::Spec::Functions qw(catfile);
 
 use CoGe::Accessory::Web qw(url_for);
 use CoGe::Accessory::Utils;
