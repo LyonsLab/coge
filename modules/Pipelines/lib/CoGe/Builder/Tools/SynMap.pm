@@ -1058,10 +1058,10 @@ sub build1x1 {
 	});
 
 	# run spa.pl for synteny-vis
-	warn 'yo';
 	if (test($opts{spa})) {
-		warn 'ya';
+		warn $SPA;
 		my $spa_file2 = $final_dagchainer_file . '.spa';
+		warn $spa_file2;
 		$self->add({
 			cmd  => $SPA,
 			args => [
@@ -1070,7 +1070,7 @@ sub build1x1 {
 			],
 			inputs => [ $final_dagchainer_file ],
 			outputs => [ $spa_file2 ],
-		description => ""
+			description => "Generating syntenic path assembly"
 		});
 	}
 
