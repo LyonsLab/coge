@@ -1059,14 +1059,12 @@ sub build1x1 {
 
 	# run spa.pl for synteny-vis
 	if (test($opts{spa})) {
-		warn $SPA;
 		my $spa_file2 = $final_dagchainer_file . '.spa';
-		warn $spa_file2;
 		$self->add({
 			cmd  => $SPA,
 			args => [
 				[ '-alignfile', $final_dagchainer_file, 1 ],
-				[ '-output', $spa_file2 ]
+				[ '-output', $spa_file2, 0 ]
 			],
 			inputs => [ $final_dagchainer_file ],
 			outputs => [ $spa_file2 ],
