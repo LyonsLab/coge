@@ -1429,9 +1429,10 @@ sub get_results {
 
 	# synteny-vis
 	if ($opts{spa} =~ /true/i) {
-		my $final_dagchainer_url = $final_dagchainer_file;
-		$final_dagchainer_url =~ s/$DIR/$URL/;
-		$results->param( spa_url => $final_dagchainer_url . '.spa' );
+		my $spa_path = $final_dagchainer_file . '.spa';
+		return encode_json( { error => "The output $spa_path could not be found." } ) unless (-r $spa_path);
+		$spa_path =~ s/$DIR/$URL/;
+		$results->param( spa_url => $spa_path );
 	};
 
 	# fractionation bias
