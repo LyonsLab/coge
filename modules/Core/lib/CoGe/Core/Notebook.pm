@@ -166,7 +166,7 @@ sub add_items_to_notebook {
     return "Missing arguments: db, notebook, user" unless ($db and $notebook and $user);
 
     # Check permissions
-    return 'Access denied' unless ( $user->admin || $user->is_owner_editor(list => $notebook) );
+    return 'Access denied' unless ( $user->is_admin || $user->is_owner_editor(list => $notebook) );
 
     # Convert item list to item array
     if ($item_list) {
@@ -214,7 +214,7 @@ sub remove_items_from_notebook {
     return "Missing arguments: $db and $notebook and $user" unless ($db and $notebook and $user);
     
     # Check permissions
-    return 'User does not have permission to remove items from this notebook' unless ($user->admin || $user->is_owner_editor(list => $notebook));
+    return 'User does not have permission to remove items from this notebook' unless ($user->is_admin || $user->is_owner_editor(list => $notebook));
 
     # Create connections for each item
     if ($item_list) {

@@ -314,7 +314,7 @@ sub track_config {
         my $eid = $e->{experiment_id};
         my $role = $connectors->{3}{$eid} if $connectors;
         $role = $role->{role_id} if $role;
-        next if $e->{restricted} && !($user && $user->admin) && !($connectors && $connectors->{3}{$eid});
+        next if $e->{restricted} && !($user && $user->is_admin) && !($connectors && $connectors->{3}{$eid});
         $experiments{$eid} = $e;
 
         # Build a list of notebook id's
@@ -323,7 +323,7 @@ sub track_config {
             my $nid = $conn->{parent_id};
             my $n = $allNotebooks->{$nid};
             next if $n->{deleted};
-            next if $n->{restricted} && !($user && $user->admin) && !($connectors && $connectors->{1}{$nid});
+            next if $n->{restricted} && !($user && $user->is_admin) && !($connectors && $connectors->{1}{$nid});
             push @notebooks, $nid;
             $notebooks{$nid} = $n;
             push @{ $expByNotebook{$nid} },
@@ -373,14 +373,14 @@ sub track_config {
             id          => $eid,
             type        => 'experiment',
             data_type   => $e->{data_type} || 1,
-            editable    => (($user && $user->admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
+            editable    => (($user && $user->is_admin) || ($role && ($role == 2 || $role == 3))) ? 1 : 0, # mdb added 2/6/15 #TODO move this obscure code into an API
             name        => $e->{name},
             description => $e->{description},
             notebooks   => ( @notebooks ? \@notebooks : undef ),
             onClick     => "ExperimentView.pl?embed=1&eid=$eid",
             annotations => _annotations('experiment', $eid, $db)
         };
-        $coge->{editable} = 1 if (($user && $user->admin) || ($role && ($role == 2 || $role == 3)));
+        $coge->{editable} = 1 if (($user && $user->is_admin) || ($role && ($role == 2 || $role == 3)));
         $coge->{restricted} = 1 if $e->{restricted};
         $coge->{role} = $role if $role;
         my $config = {
@@ -441,7 +441,7 @@ sub track_config {
             onClick     => "NotebookView.pl?embed=1&lid=$nid",
             annotations => _annotations('list', $nid, $db)
         };
-        $coge->{editable} = 1 if (($user && $user->admin) || ($role && ($role == 2 || $role == 3)));
+        $coge->{editable} = 1 if (($user && $user->is_admin) || ($role && ($role == 2 || $role == 3)));
         $coge->{restricted} = 1 if $n->{restricted};
         $coge->{role} = $role if $role;
         push @tracks, {
