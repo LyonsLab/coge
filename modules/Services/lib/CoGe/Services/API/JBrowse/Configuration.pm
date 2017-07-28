@@ -300,7 +300,8 @@ sub track_config {
     my %notebooks;      # all notebokos hashed by id -- used later for creating individual notebooks
     my %expByNotebook;  # all experiments hashed by notebook id -- used later for creating individual notebooks
 
-    my $connectors = get_user_access_table($db->storage->dbh, $user->id) if $user;
+    my $connectors;
+    $connectors = get_user_access_table($db->storage->dbh, $user->id) if $user;
     my $allNotebooks = get_table($db->storage->dbh, 'list');
     my $allNotebookConn = get_table($db->storage->dbh, 'list_connector', ['child_id', 'list_connector_id'], {child_type => 3});
     my @genome_experiments = get_experiments($db->storage->dbh, $genome->id);

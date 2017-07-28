@@ -5,6 +5,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use CoGe::Core::Experiment;
 use CoGe::Core::Storage qw( $DATA_TYPE_QUANT $DATA_TYPE_POLY $DATA_TYPE_ALIGN $DATA_TYPE_MARKER get_experiment_path get_upload_path );
 use CoGe::Services::Auth;
+use CoGe::Services::Error;
 use CoGeDBI qw( get_dataset_ids feature_type_names_to_id );
 use File::Path qw( mkpath );
 use File::Spec::Functions qw( catdir catfile );
@@ -184,7 +185,6 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
             foreach my $line (@{$lines}) {
                 my $tokens = _transform_line($line, $transform);
                 if (!$c) {
-                    warn Dumper $tokens;
                     $c = $tokens->[0];
                     $markers = [];
                     push @chrs, [$c, $markers];
