@@ -300,7 +300,6 @@ sub track_config {
     my %notebooks;      # all notebokos hashed by id -- used later for creating individual notebooks
     my %expByNotebook;  # all experiments hashed by notebook id -- used later for creating individual notebooks
 
-    # mdb added 2/9/15 for performance improvement, COGE-166
     my $connectors = get_user_access_table($db->storage->dbh, $user->id) if $user;
     my $allNotebooks = get_table($db->storage->dbh, 'list');
     my $allNotebookConn = get_table($db->storage->dbh, 'list_connector', ['child_id', 'list_connector_id'], {child_type => 3});
@@ -312,9 +311,9 @@ sub track_config {
     foreach my $e ( sort experimentcmp @genome_experiments ) { # sort experimentcmp $genome->experiments
         next if ( $e->{deleted} );
         my $eid = $e->{experiment_id};
-        my $role = $connectors->{3}{$eid};
+        my $role = $connectors->{3}{$eid} if $connectors;
         $role = $role->{role_id} if $role;
-        next if ($e->{restricted} && !($user && $user->admin) && !$connectors->{3}{$eid}); #next unless $user->has_access_to_experiment($e); #TODO move into an API
+        next if $e->{restricted} && !($user && $user->admin) && !($connectors && $connectors->{3}{$eid});
         $experiments{$eid} = $e;
 
         # Build a list of notebook id's
@@ -323,7 +322,7 @@ sub track_config {
             my $nid = $conn->{parent_id};
             my $n = $allNotebooks->{$nid};
             next if $n->{deleted};
-            next if ($n->{restricted} && !($user && $user->admin) && !$connectors->{1}{$nid});
+            next if $n->{restricted} && !($user && $user->admin) && !($connectors && $connectors->{1}{$nid});
             push @notebooks, $nid;
             $notebooks{$nid} = $n;
             push @{ $expByNotebook{$nid} },
@@ -429,7 +428,7 @@ sub track_config {
     #
     foreach my $n ( sort { $a->{name} cmp $b->{name} } values %notebooks ) {
         my $nid = $n->{list_id};
-        my $role = $connectors->{1}{$nid};
+        my $role = $connectors->{1}{$nid} if $connectors;
         $role = $role->{role_id} if $role;
         my $coge = {
             id      => $nid,
