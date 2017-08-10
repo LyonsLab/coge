@@ -42,7 +42,7 @@ sub _can_view {
 	return 1;
 }
 
-sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
+sub data {
     my $self = shift;
     my $id = int($self->stash('eid'));
     my $chr = $self->stash('chr');
@@ -68,19 +68,21 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
 	return unless $self->_can_view($experiment, $user);
 
     my $exp_data_type = $experiment->data_type;
-    $exp_data_type = $DATA_TYPE_MARKER if defined $gap_max;
+    $exp_data_type = $DATA_TYPE_MARKER if defined $gap_max || $data_type && $data_type == $DATA_TYPE_MARKER;
     my $ext = $exp_data_type == $DATA_TYPE_POLY ? '.vcf' : $exp_data_type == $DATA_TYPE_ALIGN ? '.sam' : $exp_data_type == $DATA_TYPE_MARKER ? '.gff' : '.csv';
 
     my $fh;
     my $tempfile;
     my $path;
+	my $file_path;
     if ($irods_path) {
         ($fh, $tempfile) = tempfile();
     }
     elsif ($load_id) {
         $path = catdir(get_upload_path($user->name, $load_id), 'upload');
         mkpath($path);
-        open $fh, ">", catfile($path, 'search_results' . $ext);
+		$file_path = catfile($path, 'search_results' . $ext);
+        open $fh, ">", $file_path;
     }
 
     $filename = 'experiment' unless $filename;
@@ -167,13 +169,14 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
             $self->_write("\n", $fh);
         }
     }
-    elsif ( $exp_data_type == $DATA_TYPE_MARKER) {
+    else {
         my $type_names = $self->param('features');
         if ($type_names) {
             $self->_write('# search: Markers in ' . $type_names . "\n", $fh);
         }
         $self->_write("#seqid\tsource\ttype\tstart\tend\tscore\tstrand\tphase\tattributes\n", $fh);
-        if (defined $gap_max) {
+        if (defined $gap_max || $experiment->data_type != $DATA_TYPE_MARKER) {
+			$gap_max = 0 if !defined $gap_max;
             my ($columns, $lines) = _get_quant_lines($id, $chr, $data_type, $type, $gte, $lte);
             my $c;
             my @chrs;
@@ -249,17 +252,22 @@ sub data { #TODO move this out of this module into Core layer (mdb 8/26/16)
         }
         else {
             my $markers = $self->_markers;
-            my $s = (index(@{$markers}[0], ', ') == -1 ? 1 : 2);
+            my $s = (index(@{$markers}[0], ', ') == -1 ? 0 : 1);
             $chr = undef if $chr eq 'All';
             foreach (@{$markers}) {
                 my @l = split(',');
                 my $c = substr($l[0], 1, -1);
                 next if $chr && $chr ne $c;
-                $self->_write_marker($c, undef, substr($l[4], $s, -1), $l[1], $l[2], $l[5], substr($l[3], $s, -1) == 1 ? '+' : '-', undef, substr($l[6], $s, -1), $fh);
+                $self->_write_marker($c, undef, substr($l[4], $s), $l[1], $l[2], $l[5], substr($l[3], $s) == 1 ? '+' : '-', undef, scalar @l > 6 ? substr($l[6], $s) : undef, $fh);
             }
         }
     }
-    $self->finish();
+	if ($file_path) {
+		$self->render(json => {file_path => $file_path});
+	}
+	else {
+    	$self->finish();
+	}
     if ($fh) {
         close $fh;
         if ($irods_path) {

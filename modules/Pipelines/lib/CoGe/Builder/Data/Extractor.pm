@@ -84,10 +84,8 @@ sub build {
             );
             $input_file = $self->previous_output();
         }
-
         push @input_files, $input_file;
     }
-
     # Add processing tasks
     foreach my $input_file (@input_files) {
         my $done_file = qq[$input_file.done];

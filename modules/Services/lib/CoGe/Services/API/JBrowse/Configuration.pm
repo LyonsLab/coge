@@ -23,7 +23,6 @@ sub refseq_config {
     my $self           = shift;
     my $gid            = $self->param('gid');
     my $SEQ_CHUNK_SIZE = 20000;
-    print STDERR "JBrowse::Configuration::refseq_config gid=$gid\n";
 
     # Authenticate user and connect to the database
     my ($db, $user) = CoGe::Services::Auth::init($self);
