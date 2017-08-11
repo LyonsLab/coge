@@ -495,54 +495,26 @@ sub get_features {
     my $type_id = shift;     # optional feature type
     my $returnArray = shift; # optional flag to return result as raw array ref
 
-    # Test for presence of primary_name
-    my $hasPrimaryName = 0;
     my $query = qq{
-        SELECT count(*)
-        FROM dataset_connector AS dc
-        JOIN feature AS f ON (f.dataset_id=dc.dataset_id)
-        JOIN feature_type AS ft ON (ft.feature_type_id=f.feature_type_id)
-        JOIN feature_name AS fn ON (fn.feature_id=f.feature_id)
-        WHERE fn.primary_name=1
-    };
-    if ($genome_id) {
-        $query .= " AND dc.genome_id=$genome_id";
-    }
-    else {
-        $query .= " AND dc.dataset_id=$dataset_id";
-    }
-    if ($type_id) {
-        $query .= " AND f.feature_type_id=$type_id";
-    }
-    my $sth = $dbh->prepare($query);
-    $sth->execute();
-    ($hasPrimaryName) = $sth->fetchrow_array();
-
-    # Execute query
-    $query = qq{
         SELECT f.feature_id AS id, f.feature_type_id AS type_id, ft.name AS type_name,
             f.start AS start, f.stop AS stop, f.strand AS strand, f.chromosome AS chromosome,
-            fn.name as name
+            (SELECT name FROM feature_name WHERE feature_name.feature_id=f.feature_id ORDER BY primary_name DESC,feature_name_id LIMIT 1) AS name
         FROM dataset_connector AS dc 
         JOIN feature AS f ON (f.dataset_id=dc.dataset_id) 
         JOIN feature_type AS ft ON (ft.feature_type_id=f.feature_type_id)
-        JOIN feature_name AS fn ON (fn.feature_id=f.feature_id)
-        WHERE 1=1
+        WHERE
     };
     if ($genome_id) {
-        $query .= " AND dc.genome_id=$genome_id";
+        $query .= " dc.genome_id=$genome_id";
     }
     else {
-        $query .= " AND dc.dataset_id=$dataset_id";
+        $query .= " dc.dataset_id=$dataset_id";
     }
     if ($type_id) {
         $query .= " AND f.feature_type_id=$type_id";
     }
-    if ($hasPrimaryName) {
-        $query .= " AND fn.primary_name=1";
-    }
 
-    $sth = $dbh->prepare($query);
+    my $sth = $dbh->prepare($query);
     $sth->execute();
     my $results;
     if ($returnArray) {
