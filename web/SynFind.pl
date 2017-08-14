@@ -545,7 +545,7 @@ sub search_lists {   # FIXME this coded is dup'ed in User.pl and NotebookView.pl
     }
     if (!$html) {
         if (!$search_term) {
-            $html = "<option disabled='disabled'>Please enter a search term</option>";
+            $html = "<option disabled='disabled'></option>";
         }
         else {
             $html = "<option disabled='disabled'>No matches</option>";

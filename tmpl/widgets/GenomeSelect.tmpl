@@ -408,7 +408,7 @@ function import_lists() {
                         <span class="ui-icon ui-icon-disk"></span>Save
                     </span>
                     <span id="import" name="import" onClick="search_lists();" class='ui-button ui-button-cornerall coge-button-sm'>
-                        <span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Import List
+                        <span class="ui-icon ui-icon-arrowreturnthick-1-w"></span>Import Notebook
                     </span>
                     <TMPL_IF NAME="SAVE_ORG_LIST">
                     </TMPL_IF>
@@ -423,11 +423,11 @@ function import_lists() {
   </tr>
 </table>
 
-  <div id="import_list_box" class="hidden dialog_box" title="Import List">
+  <div id="import_list_box" class="hidden dialog_box" title="Import Notebook">
     <table class="small">
       <tr>
         <td colspan='2'>
-          <br>Search: <input type="textbox" size="45" id="edit_list_search" onkeyup="wait_to_search(search_lists, this.value);">
+          <br>Notebook: <input type="textbox" size="45" id="edit_list_search" onkeyup="wait_to_search(search_lists, this.value);" placeholder="Start typing the name of a notebook">
           <span class='ui-button ui-corner-all coge-button' onclick="search_lists(<TMPL_VAR NAME=LID>, $('#edit_list_search').attr('value'));"><span class="ui-icon ui-icon-arrowrefresh-1-w"></span></span>
           <img id="wait_list" src="picts/ajax-loader.gif" style="opacity: 0;" />
         </td>
