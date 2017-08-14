@@ -165,7 +165,11 @@ $r->get("/features/search/#term")
 $r->get("/features/:id" => [id => qr/\d+/])
     ->name("features-fetch")
     ->to("feature#fetch", id => undef);
-    
+
+$r->get("/features/:id/fasta/" => [id => qr/\d+/])
+    ->name("features-fasta")
+    ->to("feature#fasta", id => undef);
+
 $r->get("/features/:id/sequence/" => [id => qr/\d+/])
     ->name("features-sequence")
     ->to("feature#sequence", id => undef);
