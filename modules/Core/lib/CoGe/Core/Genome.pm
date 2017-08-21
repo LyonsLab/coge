@@ -54,9 +54,9 @@ sub genomecmp2 {
     my $favea = $favorites ? $favorites->is_favorite($a) : 0;
     my $faveb = $favorites ? $favorites->is_favorite($b) : 0;
 
-    $a->organism->name cmp $b->organism->name
+    $b->certified <=> $a->certified
       || $faveb <=> $favea
-      || $b->certified <=> $a->certified
+      || $a->organism->name cmp $b->organism->name
       || versioncmp( $b->version, $a->version )
       || $typea <=> $typeb
       || $namea cmp $nameb
@@ -105,11 +105,13 @@ sub search_genomes {
     } values %unique;
 
     # Sort
+warn $sort;
     if ($sort) {
         my $favorites;
         $favorites = CoGe::Core::Favorites->new(user => $user) if $user;
         @filtered = sort { genomecmp2($a, $b, $favorites) } @filtered;
     }
+warn $filtered[0]->certified;
     
     return \@filtered;
 }
