@@ -567,13 +567,17 @@ var coge = window.coge = (function(namespace) {
 							self._irods_error('Access denied');
 							return;
 						}
+						if (result.error.message && result.error.message.endsWith('rc=4')) {
+							table.html('<tr><td><span class="alert">Your CyVerse account does not appear to be configured for CoGe.<br>If you have not already done so, please go to <a href="https://user.cyverse.org">https://user.cyverse.org</a> and click "Request Access" in the box for CoGe.<br>Please contact us at <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> if you continue to encounter problems.</span></td></tr>');
+							return;
+						}
 						table
 							.html('<tr><td><span class="alert">'
 							+ 'The following error occurred while accessing the Data Store.<br>'
 							+ coge.utils.objToString(result.error) + '<br>'
 							+ 'We apologize for the inconvenience.  Our support staff have already been notified and will resolve the issue ASAP. '
 							+ 'If you just logged into CoGe for the first time, give the system a few minutes to setup your Data Store connection and try again.  '
-							+ 'Please contact <a href="mailto:<TMPL_VAR NAME=SUPPORT_EMAIL>"><TMPL_VAR NAME=SUPPORT_EMAIL></a> with any questions or comments.'
+							+ 'Please contact <a href="mailto:coge.genome@gmail.com">coge.genome@gmail.com</a> with any questions or comments.'
 							+'</span></td></tr>');
 						return;
 					}
