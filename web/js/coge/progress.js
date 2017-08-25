@@ -137,45 +137,25 @@ var coge = window.coge = (function(namespace) {
 		
 		failed: function(string, error) {
 			delete this.began;
-			var c = this.container;
-			
-			var errorMsg = string + (error ? ': ' + this._errorToString(error) : '');
-			
-			// Show error message
-		    this.log
-		    	.append('<div class="alert">' + (errorMsg ? errorMsg : '') + '</div><br>')
-		    	.append(
-		    		'<div class="alert">' +
-			        'The CoGe Support Team has been notified of this error but please ' +
-			        'feel free to contact us at <a href="mailto:' + this.supportEmail + '">' +
-			        this.supportEmail + '</a> ' +
-			        'and we can help to determine the cause.' +
-			        '</div>'
-		    	);
 
-		    // Show link to log file
-		    var logfile = coge.services.download_url({ wid: this.job_id, attachment: 0 });
-		    $(".logfile a").attr("href", logfile);
-		    $('.logfile').show();
+			this.log.append('<div class="alert">');
+			if (string)
+				this.log.append(string);
+			if (error)
+				this.log.append(': ').append(this._errorToString(error));
+			this.log.append('</div><br><div class="alert">Please contact us at <a href="mailto:' + this.supportEmail + '">' + this.supportEmail + '</a> if you have any questions.</div>');
 
-		    // Update dialog
-		    c.find('.progress-link,.buttons').hide();
+			if (this.job_id) {
+				var logfile = coge.services.download_url({ wid: this.job_id, attachment: 0 });
+				$(".logfile a").attr("href", logfile);
+				$('.logfile').show();
+			}
+
+		    this.container.find('.progress-link,.buttons').hide();
 		    this._set_status('Failed');
-		    c.find('.cancel').show();
+		    this.container.find('.cancel').show();
 
-// FIXME restore email reporting
-//		    if (newLoad) { // mdb added check to prevent redundant emails, 8/14/14 issue 458
-//		        $.ajax({
-//		            data: {
-//		                fname: "send_error_report",
-//		                load_id: load_id,
-//		                job_id: WORKFLOW_ID
-//		            }
-//		        });
-//		    }
-		    
-		    // User callback
-		    if (this.onError)
+			if (this.onError)
 		    	this.onError();
 		},
 

@@ -1293,6 +1293,12 @@ function load(experiment) {
             coge.progress.update(response.id, response.site_url);
 	    })
 	    .fail(function(jqXHR, textStatus, errorThrown) {
+            if (jqHXR.responseJSON) {
+                if (jqHXR.responseJSON.error && jqHXR.responseJSON.error.message) {
+                    coge.progress.failed(jqHXR.responseJSON.error.message);
+                    return;
+                }
+            }
 	    	coge.progress.failed("Couldn't talk to the server: " + textStatus + ': ' + errorThrown);
 	    });
 }
