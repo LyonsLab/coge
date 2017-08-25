@@ -1013,7 +1013,7 @@ sub run {
             }
         }
         next unless $obj;
-        if ( $obj && $obj->sequence && $obj->start ne $obj->stop )
+        if ( $obj->sequence && $obj->start ne $obj->stop )
         { #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
             my $accn  = $obj->accn;
             my $count = 0;
@@ -1037,7 +1037,6 @@ sub run {
               };
         }
         else {
-
             #push @sets, {seq_num=>$i};
         }
     }

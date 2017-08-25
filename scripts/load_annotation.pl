@@ -180,6 +180,7 @@ my @anno_names = (
     "Transcript_evidence",
     "Status",
     "InterPro",
+    "Pfam",
     "Description",
     "Function",
     "Derives_from",

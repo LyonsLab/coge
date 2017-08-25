@@ -105,13 +105,11 @@ sub search_genomes {
     } values %unique;
 
     # Sort
-warn $sort;
     if ($sort) {
         my $favorites;
         $favorites = CoGe::Core::Favorites->new(user => $user) if $user;
         @filtered = sort { genomecmp2($a, $b, $favorites) } @filtered;
     }
-warn $filtered[0]->certified;
     
     return \@filtered;
 }

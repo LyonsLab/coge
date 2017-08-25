@@ -734,7 +734,6 @@ sub remove_self { # TODO move to Utils.pm
 
 sub get_irods_path {
     my ($path, $username) = @_;
-    #print STDERR "irods_get_path: ", $path, "\n";
     
     my $homepath = CoGe::Accessory::Web::get_defaults()->{IRODSDIR};
     return unless $homepath;
@@ -743,7 +742,7 @@ sub get_irods_path {
     return unless $sharedpath;
 
     # Set default path
-    $path = $homepath unless $path;
+    $path = $homepath unless $path && $path ne 'undefined';
     $path = '/' . $path if ($path !~ /^\//);
 
     # Restrict access

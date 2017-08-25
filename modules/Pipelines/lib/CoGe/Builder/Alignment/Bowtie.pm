@@ -81,7 +81,7 @@ sub bowtie2_alignment {
     if ($read_type eq 'paired') {
         my ($m1, $m2) = detect_paired_end(\@$fastq);
         unless (@$m1 and @$m2) {
-            CoGe::Exception::Generic->throw( message => 'Mispaired FASTQ files', details => Dumper { m1 => $m1, m2 => $m2 } );
+            CoGe::Exception::Generic->throw( message => 'Mispaired FASTQ files in Bowtie::bowtie2_alignment', details => Dumper { m1 => $m1, m2 => $m2 } );
         }
         $cmd .= '-1 ' . join(',', sort @$m1) . ' -2 ' . join(',', sort @$m2);
     }

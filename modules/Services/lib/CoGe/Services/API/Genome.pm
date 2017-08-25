@@ -88,10 +88,7 @@ sub fetch {
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $genome = $self->_get_genome($id, 0, $db, $user);
-    unless ($genome) {
-        $self->render(API_STATUS_NOTFOUND);
-        return;
-    }
+    return unless $genome;
 
     # Format metadata
     my @metadata = map {
@@ -184,10 +181,7 @@ sub sequence {
 
     my ($db, $user) = CoGe::Services::Auth::init($self);
     my $genome = $self->_get_genome($gid, 0, $db, $user);
-    unless ($genome) {
-        $self->render(API_STATUS_NOTFOUND);
-        return;
-    }
+    return unless $genome;
 
     # Force browser to download whole genome as attachment
     my $format;

@@ -35,7 +35,7 @@ sub build {
         # Separate files based on last occurrence of _R1 or _R2 in filename
         my ($m1, $m2) = detect_paired_end($fastq);
         unless (@$m1 and @$m2 and @$m1 == @$m2) {
-            CoGe::Exception::Generic->throw(message => 'Mispaired FASTQ files', details => Dumper { m1 => $m1, m2 => $m2 });
+            CoGe::Exception::Generic->throw(message => 'Mispaired FASTQ files in Trimmer::build', details => Dumper { m1 => $m1, m2 => $m2 });
         }
         $fastq1 = $m1;
         $fastq2 = $m2;

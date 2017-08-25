@@ -6,6 +6,7 @@ use CoGeX;
 use CoGe::Accessory::Web;
 use CoGe::Services::Auth;
 use CoGe::Services::Error;
+use Data::Dumper;
 
 sub search {
     my $self = shift;
