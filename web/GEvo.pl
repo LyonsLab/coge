@@ -2828,7 +2828,7 @@ sub get_obj_from_genome_db {
         close IN;
 
     }
-    unless ($seq) {
+    unless ($seq && length($seq) > 1) {
         ($chr) = $ds->get_chromosomes unless defined $chr;
         my $tmp;
         ( $tmp, $seq_file ) = CoGe::Accessory::Web::check_taint($seq_file);
