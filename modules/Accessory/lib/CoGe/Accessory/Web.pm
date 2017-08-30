@@ -89,7 +89,6 @@ sub get_user {
     my ( $user, $uid, $session );
 
     $session = get_cookie_session(cookie_name => $cookie_name);
-#    warn "Web::get_user: session=$session";
 
     if ($session) {
         my ($user_session) = $coge->resultset("UserSession")->find( { session => $session } );
@@ -100,6 +99,15 @@ sub get_user {
         $user = new CoGeX::Result::User;
         $user->user_name("public");
         $user->admin(0);
+    }
+    if ($user->is_admin) {
+        my %cookies = fetch CGI::Cookie;
+        my $user_id = $cookies{'user_id'};
+        if ($user_id) {
+            $user_id = substr($user_id, 8, index($user_id, ';') - 8);
+            my $u = $coge->resultset('User')->find($user_id);
+            $user = $u if $u;
+        }
     }
     return ($user);
 }

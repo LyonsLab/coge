@@ -63,6 +63,13 @@ sub init {
             if ($session) {# && $user && $session->user_id == $user->id) { # mdb changed 3/7/16 for hypnotoad
                 $user = $db->resultset('User')->find($session->user_id); # mdb added 3/7/16 for hypnotoad
 #                print STDERR "CoGe::Services::Auth::init using existing session for user '", $user->name, "'\n";
+    if ($user->is_admin) {
+        my $user_id = $self->cookie('user_id');
+        if ($user_id) {
+            my $u = $db->resultset('User')->find($user_id);
+            $user = $u if $u;
+        }
+    }
                 return ( $db, $user, $conf );
             }
         }
