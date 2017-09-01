@@ -2099,20 +2099,14 @@ sub export_top_hits {
     foreach my $accn ( split( /,/, $accn_list ) ) {
 	my ($hsp_num, $dsgid);
         if ($accn =~ /no$/) {
-		my $accn_with_commas = $accn;
-            $accn_with_commas =~ tr/_/,/;
-            ( $hsp_num, $dsgid ) = $accn_with_commas =~ /(\d+),(\d+),\w*_?\d+,\d+no$/;
+            ( $hsp_num, $dsgid ) = $accn =~ /(\d+)_(\d+)_/;
         }
         else {
 		if ( $accn =~ tr/_/_/ > 2 ) {
-                	my $accn_with_commas = $accn;
-                	$accn_with_commas =~ tr/_/,/;
-                	( $hsp_num, $dsgid ) =
-                  	$accn_with_commas =~
-                  		/(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
+                    ( $hsp_num, $dsgid ) = $accn =~ /(\d+)_(\d+)_/;
             	}
             	else {
-                	( undef, $hsp_num, $dsgid ) = $accn =~ /(\d+)_(\d+)_(\d+)/;
+                    ( undef, $hsp_num, $dsgid ) = $accn =~ /(\d+)_(\d+)_(\d+)/;
             	}
         }
         $sth->execute( $hsp_num . "_" . $dsgid ) || die "unable to execute";
@@ -2172,10 +2166,7 @@ sub export_to_excel {
     );
     foreach my $accn ( split( /,/, $accn_list ) ) {
         if ( $accn =~ /no/ ) {
-            my $accn_with_commas = $accn;
-            $accn_with_commas =~ tr/_/,/;
-            ( $hsp_no, $dsgid, $chr, $pos ) =
-              $accn_with_commas =~ /(\d+),(\d+),(\w*_?\d+),(\d+)no/;
+            ($hsp_no, $dsgid) = $accn =~ /(\d+)_(\d+)_/;
             $sth->execute( $hsp_no . "_" . $dsgid ) || die "unable to execute";
             while ( my $info = $sth->fetchrow_hashref() ) {
                 $eval   = $info->{eval};
@@ -2198,18 +2189,7 @@ sub export_to_excel {
             $worksheet->write( $i, 8, $score );
         }
         else {
-            # there doesn't appear to code that would pass this in
-            # if ( $accn =~ tr/_/_/ > 2 ) {
-            #     my $accn_with_commas = $accn;
-            #     $accn_with_commas =~ tr/_/,/;
-            #     ( $hsp_no, $dsgid, $chr, $pos, $featid, $distance ) =
-            #       $accn_with_commas =~
-            #       /(\d+),(\d+),(\w*_?\d+),(\d+),(\d+),(\d+.?\d*)/;
-            # }
-            # else {
-                ( $featid, $hsp_no, $dsgid, $distance ) = $accn =~ /(\d+)_(\d+)_(\d+)_(.+)/;
-            #     $distance = "overlapping";
-            # }
+            ( $featid, $hsp_no, $dsgid, $distance ) = $accn =~ /(\d+)_(\d+)_(\d+)_(.+)/;
             $sth->execute( $hsp_no . "_" . $dsgid ) || die "unable to execute";
             while ( my $info = $sth->fetchrow_hashref() ) {
                 $eval   = $info->{eval};
