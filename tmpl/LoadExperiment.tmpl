@@ -60,7 +60,7 @@
             <label class="col-md-2">Source:</label>
                 <input id="edit_source" type="search" class="col-md-6" placeholder="Search" size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
                 <div class="col-md-2">
-                    <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open').dialog({'width': '32em'}); activate_on_input(['edit_source_name'], 'create_source_button');" class='coge-button coge-button-sm'>New</span>
+                    <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog({modal: true, autoOpen: true, width: '32em'}); activate_on_input(['edit_source_name'], 'create_source_button');" class='coge-button coge-button-sm'>New</span>
                     &nbsp;<span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
                 </div>
         </div>

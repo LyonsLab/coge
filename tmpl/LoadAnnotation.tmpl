@@ -30,7 +30,7 @@
         <label class="col-md-2">Source:</label>
         <input id="edit_source" type="search" class="col-md-4" placeholder="Search" title="Enter the source for the data for the new experiment. Start typing to select an exisisting source or click 'New' to add a source." size="50" spellcheck="false" onclick='$(this).autocomplete("search");' />
         <div class="col-md-2">
-            <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='coge-button coge-button-sm'>New</span>
+            <span id="new_source_button" title="Add a new source" onClick="$('#create_new_source_dialog').dialog({modal: true, autoOpen: true}); activate_on_input('edit_source_name', 'create_source_button');" class='coge-button coge-button-sm'>New</span>
             <span style="color: red; font-size: 0.75em" class="glyphicon glyphicon-asterisk"></span>
         </div>
     </div>

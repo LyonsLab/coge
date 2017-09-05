@@ -294,15 +294,15 @@ $(function() {
 
     // Set button handlers
     $('#new_organism_button').click(function() {
-        $('#create_new_organism_dialog').dialog('open');
+        $('#create_new_organism_dialog').dialog({modal: true, autoOpen: true});
         activate_on_input(['edit_organism_name'], 'create_organism_button');
     });
     $('#new_source_button').click(function() {
-        $('#create_new_source_dialog').dialog('open');
+        $('#create_new_source_dialog').dialog({modal: true, autoOpen: true});
         activate_on_input(['edit_source_name'], 'create_source_button');
     });
     $('#new_type_button').click(function() {
-        $('#create_new_type_dialog').dialog('open');
+        $('#create_new_type_dialog').dialog({modal: true, autoOpen: true});
         activate_on_input(['edit_type_name'], 'create_type_button');
     });
 

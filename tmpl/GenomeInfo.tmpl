@@ -433,7 +433,7 @@ Are you sure you want to move this genome into your trash?<p>
             <TMPL_IF NAME='DELETED'>
                 <span class='coge-button' onClick="delete_genome();">Undelete</span>
             <TMPL_ELSE>
-                <span class='coge-button coge-button-danger' onClick="$('#genome_delete_box').dialog('open');">Delete</span>
+                <span class='coge-button coge-button-danger' onClick="$('#genome_delete_box').dialog({modal: true, autoOpen: true});">Delete</span>
             </TMPL_IF>
         </TMPL_IF>
         <span class='coge-button' onclick='location.href="GenomeView.pl?embed=<TMPL_VAR NAME=EMBED>&gid=<TMPL_VAR NAME=GID>"'>Browse</span>
@@ -452,7 +452,7 @@ Are you sure you want to move this genome into your trash?<p>
         <td>Organism:</td>
         <td>
           <input id="edit_organism" type="search" onkeyup="debounce_search(search_organisms, this.value);" size="50" value="<TMPL_VAR NAME='ORGANISM'>"/>
-          <!--<span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog('open'); activate_on_input('edit_organism_name', 'create_organism_button');" class='coge-button'>New</span>-->
+          <!--<span id="new_organism_button" onClick="$('#create_new_organism_dialog').dialog({modal: true, autoOpen: true}); activate_on_input('edit_organism_name', 'create_organism_button');" class='coge-button'>New</span>-->
         </td>
       </tr>
       <tr>
@@ -463,14 +463,14 @@ Are you sure you want to move this genome into your trash?<p>
         <td>Type:</td>
         <td>
           <select id="select_type" style="width:230px;" value="<TMPL_VAR NAME='TYPES'>"></select>
-          <!-- <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog('open'); activate_on_input('edit_type_name', 'create_type_button');" class='coge-button'>New</span> -->
+          <!-- <span id="new_type_button" onClick="$('#create_new_type_dialog').dialog({modal: true, autoOpen: true}); activate_on_input('edit_type_name', 'create_type_button');" class='coge-button'>New</span> -->
         </td>
       </tr>
       <tr>
         <td>Source:</td>
         <td>
           <input id="edit_source" type="search" size="50" value="<TMPL_VAR NAME='SOURCE'>"/>
-          <!-- <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog('open'); activate_on_input('edit_source_name', 'create_source_button');" class='coge-button'>New</span> -->
+          <!-- <span id="new_source_button" onClick="$('#create_new_source_dialog').dialog({modal: true, autoOpen: true}); activate_on_input('edit_source_name', 'create_source_button');" class='coge-button'>New</span> -->
         </td>
       </tr>
       <tr>
