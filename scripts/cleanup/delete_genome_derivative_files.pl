@@ -1,68 +1,85 @@
 #!/usr/bin/perl -w
 
 use strict;
+use warnings;
+
+use DBI;
+use File::Spec;
+
+use CoGe::Accessory::Web;
+
+open STDERR, '>', File::Spec->devnull() or die "could not open STDERR: $!\n";
+
+my ($db, $user, $conf) = CoGe::Accessory::Web->init();
+
+my $bed_dir = $conf->{BEDDIR};
+my $blast_dir = $conf->{BLASTDB};
+my $last_dir = $conf->{LASTDB};
+my $cache_dir = $conf->{CACHEDIR} . '/genomes/';
+my $fasta_dir = $conf->{FASTADIR};
+my $diags_dir = $conf->{DIAGSDIR};
 
 my $genome_id = shift;
+if ($genome_id eq 'rm') {
+	$genome_id = shift;
+	if ($genome_id) {
+		rm($genome_id);
+	} else {
+		my $ids = $db->storage->dbh->selectcol_arrayref('SELECT genome_id FROM genome WHERE deleted');
+		for (@$ids) {
+			rm($_);
+		}
+	}
+} else {
+	if ($genome_id) {
+		ls($genome_id);
+	} else {
+		my $ids = $db->storage->dbh->selectcol_arrayref('SELECT genome_id FROM genome WHERE deleted');
+		for (@$ids) {
+			ls($_);
+		}
+	}
+}
 
-unless ($genome_id)
-  {
-    help();
-    exit;
-  }
+sub run {
+	my $cmd = shift;
+	my @results = `$cmd`;
+	if (@results) {
+		print "\n----- ",$cmd,"\n";
+		for (@results) {
+			chomp;
+			print $_,' ';
+		}
+	}
+}
 
-my $bed_dir = "/storage/coge/data/bed";
-my $blast_dir = "/storage/coge/data/blast/db";
-my $last_dir = "/storage/coge/data/last/db";
-my $cache_dir = "/storage/coge/data/cache";
-my $fasta_dir = "/storage/coge/data/fasta";
-my $diags_dir = "/storage/coge/diags";
+sub ls {
+	my $genome_id = shift;
+	run "ls $bed_dir$genome_id.*" if -e "$bed_dir$genome_id.*";
+	run "ls $blast_dir$genome_id" if -e "$blast_dir$genome_id";
+	run "ls $last_dir$genome_id" if -e "$last_dir$genome_id";
+	run "ls $cache_dir$genome_id" if -e "$cache_dir$genome_id";
+	run "ls $fasta_dir$genome_id-*";
+	run "ls $diags_dir$genome_id" if -e "$diags_dir$genome_id";
+	run "ls -d $diags_dir*/$genome_id";
+}
 
-my $cmd;
-$cmd = "rm -f $bed_dir/$genome_id.*;";
-print "$cmd","\n";
+sub rm {
+	my $genome_id = shift;
+	system("rm -f $bed_dir$genome_id.*");
+	system("rm -rf $blast_dir$genome_id");
+	system("rm -f $blast_dir$genome_id-*");
+	system("rm -rf $last_dir$genome_id");
+	system("rm -rf $cache_dir$genome_id");
+	system("rm -f $fasta_dir$genome_id-*");
+	system("rm -rf $diags_dir$genome_id");
+	my @dirs = `ls -d $diags_dir*/$genome_id`;
+	for (@dirs) {
+		print "rm -rf $_";
+	}
+}
 
-$cmd = "rm -rf $blast_dir/$genome_id;";
-print "$cmd","\n";
-
-$cmd = "rm -f $blast_dir/$genome_id-*;";
-print "$cmd","\n";
-
-$cmd = "rm -rf $last_dir/$genome_id;";
-print "$cmd","\n";
-
-$cmd = "rm -f $last_dir/$genome_id-*;";
-print "$cmd","\n";
-
-$cmd = "rm -rf $cache_dir/$genome_id;";
-print "$cmd","\n";
-
-$cmd = "rm -f $fasta_dir/$genome_id-*;";
-print "$cmd","\n";
-
-$cmd = "rm -rf $diags_dir/$genome_id;";
-print "$cmd","\n";
-
-opendir (DIR, $diags_dir) || die "Can't open $diags_dir: $!";
-while (my $dir = readdir (DIR))
-  {
-    next if $dir =~ /^\.\.?$/;
-    next unless -d "$diags_dir/$dir";
-    opendir (DIR2, "$diags_dir/$dir");
-    while (my $id = readdir(DIR2))
-      {
-	if ($id eq $genome_id)
-	  {
-	    $cmd = "rm -rf $diags_dir/$dir/$id;";
-	    print $cmd,"\n";
-	  }
-      }
-  }
-
-
-
-sub help
-  {
-
+sub help {
 print qq{
 This program generates the command to delete all derivative files for a genome in CoGe.  IT DOES NOT ACTUALLY RUN THE COMMANDS.  You will need to copy and paste these to perform the deletes.  This should not delete any primary data (e.g., genomic_sequence).
 
@@ -91,4 +108,4 @@ Files to be deleted:
   All directories need to be crawled to find cases where genome_id_2 exists
   Entire contents of directory need to be deleted
 };
-  }
+}
