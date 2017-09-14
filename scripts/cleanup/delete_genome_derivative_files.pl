@@ -75,7 +75,7 @@ sub rm {
 	system("rm -rf $diags_dir$genome_id");
 	my @dirs = `ls -d $diags_dir*/$genome_id`;
 	for (@dirs) {
-		print "rm -rf $_";
+		system("rm -rf $_");
 	}
 }
 

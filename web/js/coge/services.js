@@ -116,7 +116,7 @@ var coge = window.coge = (function(namespace) {
 			return this._ajax("POST", this.baseUrl + type + 's/' + id, data);
 		},
 		
-		_ajax: function(type, url, data, opts) { //, success, error) {
+		_ajax: function(method, url, data, opts) { //, success, error) {
 			var self = this;
 			
 			// Build param list
@@ -137,7 +137,7 @@ var coge = window.coge = (function(namespace) {
 					console.log(data);
 			}
 		    return $.ajax({
-				    	type: type,
+				    	method: method,
 				    	url: url,
 				    	dataType: "json",
 				        contentType: "application/json",

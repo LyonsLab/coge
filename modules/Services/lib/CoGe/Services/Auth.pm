@@ -53,6 +53,7 @@ sub init {
     }
 
     # Check for existing user session (cookie enabled browser only)
+warn $conf->{COOKIE_NAME};
     my $cookie = $self->cookie($conf->{COOKIE_NAME});
     if ($cookie) {
         my $session_id = unescape($cookie);

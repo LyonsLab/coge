@@ -83,6 +83,7 @@ sub fetch {
 }
 
 sub add {
+warn 'add organism';
     my $self = shift;
     my $payload = $self->req->json;
     
