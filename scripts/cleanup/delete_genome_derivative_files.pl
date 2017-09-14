@@ -78,34 +78,3 @@ sub rm {
 		system("rm -rf $_");
 	}
 }
-
-sub help {
-print qq{
-This program generates the command to delete all derivative files for a genome in CoGe.  IT DOES NOT ACTUALLY RUN THE COMMANDS.  You will need to copy and paste these to perform the deletes.  This should not delete any primary data (e.g., genomic_sequence).
-
-Files to be deleted:
-
-/storage/coge/data/bed/
-  file format: genome_id.bed
-
-/storage/coge/data/blast/db/
-  subdirectory with genome_id needs to be deleted
-  Note: Currently an inconsistency where blastdb files are being deposited in the main directory and not a subdirectory
-
-/storage/coge/data/last/db/
-  subdirectory with genome_id needs to be deleted
-  Note: Currently an inconsistency where blastdb files are being deposited in the main directory and not a subdirectory
-
-/storage/coge/data/cache/
-  subdirectory with genome_id needs to be deleted
-
-/storage/coge/data/fasta/
-  files are created with genome_id as the predicate
-  need to delete: genome_id*
-
-/storage/coge/diags/
-  data are storage in subdirectories: /genome_id_1/genome_id_2/
-  All directories need to be crawled to find cases where genome_id_2 exists
-  Entire contents of directory need to be deleted
-};
-}
