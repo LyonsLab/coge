@@ -170,6 +170,10 @@ $r->get("/features/:id/fasta/" => [id => qr/\d+/])
     ->name("features-fasta")
     ->to("feature#fasta", id => undef);
 
+$r->get("/features/:id/protein/" => [id => qr/\d+/])
+    ->name("features-protein")
+    ->to("feature#protein", id => undef);
+
 $r->get("/features/:id/sequence/" => [id => qr/\d+/])
     ->name("features-sequence")
     ->to("feature#sequence", id => undef);

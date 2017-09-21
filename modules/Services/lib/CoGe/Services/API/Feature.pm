@@ -78,6 +78,39 @@ sub fasta {
     ));
 }
 
+sub protein {
+    my $self = shift;
+    my $id = int($self->stash('id'));
+    
+    # Validate input
+    unless ($id) {
+        $self->render(API_STATUS_MISSING_ID);
+        return;
+    }
+
+    # Authenticate user and connect to the database
+    my ($db, $user) = CoGe::Services::Auth::init($self);
+
+    # Get feature from DB
+    my $feature = $db->resultset('Feature')->find($id);
+    unless (defined $feature) {
+        $self->render(API_STATUS_NOTFOUND);
+        return;
+    }
+
+    # Verify that user has access to a genome associated with this feature
+    unless (get_genome_for_feature(feature => $feature, user => $user)) {
+        $self->render(API_STATUS_UNAUTHORIZED);
+        return;
+    }
+    
+    # Generate response
+    $self->render(text => $feature->fasta(
+        col        => 100,
+        protein    => 1
+    ));
+}
+
 sub sequence {
     my $self = shift;
     my $id = int($self->stash('id'));
