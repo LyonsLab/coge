@@ -88,7 +88,7 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
     export_tbl                 => \&export_tbl,
     export_features            => \&export_features,
     get_genome_info_details    => \&get_genome_info_details,
-    get_features               => \&get_feature_counts,
+    get_features               => \&get_features,
     gen_data                   => \&gen_data,
     get_gc_for_genome          => \&get_gc_for_genome,
     get_gc_for_noncoding       => \&get_gc_for_noncoding,
@@ -202,43 +202,23 @@ sub gen_data {
     return qq{<font class="small alert">$message</font>};
 }
 
-sub get_feature_counts {
+sub get_features {
     my %opts  = @_;
-    my $dsid  = $opts{dsid};
     my $dsgid = $opts{dsgid};
     my $gstid = $opts{gstid};
-    my $chr   = $opts{chr};
     my $query;
     my $name;
-    if ($dsid) {
-        my $ds = $DB->resultset('Dataset')->find($dsid);
-        $name  = "dataset " . $ds->name;
-        $query = qq{
-SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
-  FROM feature
-  JOIN feature_type ft using (feature_type_id)
- WHERE dataset_id = $dsid
-};
-        $query .= qq{AND chromosome = '$chr'} if defined $chr;
-        $query .= qq{
-  GROUP BY ft.name
-};
-        $name .= " chromosome $chr" if defined $chr;
-    }
-    elsif ($dsgid) {
-        my $dsg = $DB->resultset('Genome')->find($dsgid);
-        $name = "dataset group ";
-        $name .= $dsg->name ? $dsg->name : $dsg->organism->name;
-        $query = qq{
+    my $dsg = $DB->resultset('Genome')->find($dsgid);
+    $name = "dataset group ";
+    $name .= $dsg->name ? $dsg->name : $dsg->organism->name;
+    $query = qq{
 SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
   FROM feature
   JOIN feature_type ft using (feature_type_id)
   JOIN dataset_connector dc using (dataset_id)
  WHERE genome_id = $dsgid
   GROUP BY ft.name
-
 };
-    }
 
     my $dbh = $DB->storage->dbh;  #DBI->connect( $connstr, $DBUSER, $DBPASS );
     my $sth = $dbh->prepare($query);
@@ -253,15 +233,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
             name  => $row->[1],
         };
     }
-    my $gc_args;
-    $gc_args = "chr: '$chr'," if defined $chr;
-    $gc_args .= "dsid: $dsid," if $dsid; #set a var so that histograms are only calculated for the dataset and not hte genome
-    $gc_args .= "typeid: ";
-    my $feat_list_string = $dsid ? "dsid=$dsid" : "dsgid=$dsgid";
-    $feat_list_string .= ";chr=$chr" if defined $chr;
-    my $feat_string;
-    $feat_string .= qq{<table style="padding: 2px; margin-bottom: 5px;">};
-
+    my $feat_string = qq{<table style="padding: 2px; margin-bottom: 5px;">};
     foreach my $type ( sort { $a cmp $b } keys %$feats ) {
         $feat_string .= "<tr valign=top>";
         $feat_string .=
@@ -276,63 +248,43 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
 
         $feat_string .= "<td><div id=" . $type . "_type class=\"link small\" onclick=\"\$('#gc_histogram').dialog('option','title', 'Histogram of GC content for "
           . $feats->{$type}{name} . "s');"
-          . "get_feat_gc({$gc_args"
+          . "get_feat_gc({typeid: "
           . $feats->{$type}{id} . "})\">"
           . '%GC Hist</div>';
 
         $feat_string .= "<td>|</td>";
-        $feat_string .= "<td class='small link' onclick=\"window.open('FeatList.pl?$feat_list_string"
+        $feat_string .= "<td class='small link' onclick=\"window.open('FeatList.pl?$dsgid=$dsgid"
           . "&ftid="
           . $feats->{$type}{id}
           . ";gstid=$gstid')\">FeatList";
         $feat_string .= "<td>|</td>";
-        $feat_string .= "<td class='small link' onclick=\"window.open('get_seqs_for_feattype_for_genome.pl?ftid="
-          . $feats->{$type}{id} . ";";
-        $feat_string .= "dsgid=$dsgid;" if $dsgid;
-        $feat_string .= "dsid=$dsid;"   if $dsid;
+        $feat_string .= "<td class='small link' onclick=\"window.open('get_seqs_for_feattype_for_genome.pl?ftid=" . $feats->{$type}{id} . ";";
+        $feat_string .= "dsgid=$dsgid;";
         $feat_string .= "')\">Nuc Seqs</td>";
 
         my $fid = $feats->{$type}{id};
 
-        if ($dsgid) {
-            $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 0);">Export Nuc Seqs</td>};
-        }
-        else {
-            $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsid, $fid, false, 0);">Export Nuc Seqs</td>};
-        }
+        $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 0);">Export Nuc Seqs</td>};
 
         if ( $feats->{$type}{name} eq "CDS" ) {
             $feat_string .= "<td>|</td>";
-            $feat_string .= "<td class='small link' onclick=\"window.open('get_seqs_for_feattype_for_genome.pl?p=1;ftid="
-              . $feats->{$type}{id};
-            $feat_string .= ";dsgid=$dsgid" if $dsgid;
-            $feat_string .= ";dsid=$dsid"   if $dsid;
+            $feat_string .= "<td class='small link' onclick=\"window.open('get_seqs_for_feattype_for_genome.pl?p=1;ftid=" . $feats->{$type}{id};
+            $feat_string .= ";dsgid=$dsgid";
             $feat_string .= "')\">Prot Seqs";
-
-            if ($dsgid) {
-                $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 1);">Export Prot Seqs</td>};
-            }
-            else {
-                $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsid, $fid, false, 1);">Export Prot Seqs</td>};
-            }
+            $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 1);">Export Prot Seqs</td>};
         }
 
     }
 
     if ( $feats->{CDS} ) {
-        my $param = defined $chr ? $chr : "";
-
-        # Wobble codon
-        $feat_string .=qq{<tr><td colspan="13" class="small link" id="wobble_gc" onclick="get_content_dialog('#wobble_gc_histogram', 'get_wobble_gc', '$param');">Histogram of wobble codon GC content</td></tr>};
-
+         # Wobble codon
+        $feat_string .=qq{<tr><td colspan="13" class="small link" id="wobble_gc" onclick="get_content_dialog('#wobble_gc_histogram', 'get_wobble_gc');">Histogram of wobble codon GC content</td></tr>};
         # Diff content
-        $feat_string .= qq{<tr><td colspan="13" class="small link" id="wobble_gc_diff" onclick="get_content_dialog('#wobble_gc_diff_histogram','get_wobble_gc_diff', '$param');">Histogram of diff(CDS GC vs. wobble codon GC) content</td></tr>};
-
+        $feat_string .= qq{<tr><td colspan="13" class="small link" id="wobble_gc_diff" onclick="get_content_dialog('#wobble_gc_diff_histogram','get_wobble_gc_diff');">Histogram of diff(CDS GC vs. wobble codon GC) content</td></tr>};
         #Codon usage tables
-        $feat_string .= qq{<tr><td colspan="13" class="small link" id="codon_usage" onclick="get_content_dialog('#codon_usage_table', 'get_codon_usage', '$param');">Codon usage table</td></tr>};
-
+        $feat_string .= qq{<tr><td colspan="13" class="small link" id="codon_usage" onclick="get_content_dialog('#codon_usage_table', 'get_codon_usage');">Codon usage table</td></tr>};
         #Amino acid usage table
-        $feat_string .= qq{<tr><td colspan="13" class="small link" id="aa_usage" onclick="open_aa_usage_table('$param');">Amino acid usage table</td></tr>};
+        $feat_string .= qq{<tr><td colspan="13" class="small link" id="aa_usage" onclick="open_aa_usage_table();">Amino acid usage table</td></tr>};
     }
 
     $feat_string .= "</table>";

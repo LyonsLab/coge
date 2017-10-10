@@ -41,7 +41,8 @@ unless ($coge) {
 }
 
 $COOKIE_NAME = $P->{COOKIE_NAME};
-my ($cas_ticket) = $FORM->param('ticket');
+my $cas_ticket;
+$cas_ticket = $FORM->param('ticket');
 $USER = undef;
 ($USER) = CoGe::Accessory::Web->login_cas(
     ticket   => $cas_ticket,
@@ -54,12 +55,11 @@ $USER = undef;
 ) unless $USER;
 
 my $dsgid = $FORM->param('dsgid');
-my $dsid  = $FORM->param('dsid');
 my $ftid  = $FORM->param('ftid');
 my $prot  = $FORM->param('p');
-unless ( $dsgid || $dsid ) {
+unless ( $dsgid ) {
     print $FORM->header;
-    print "No genome or dataset id specified.\n";
+    print "No genome id specified.\n";
     exit;
 }
 unless ($ftid) {
@@ -68,14 +68,7 @@ unless ($ftid) {
     exit;
 }
 
-my ( $dsg, $ds );
-($dsg) = $coge->resultset('Genome')->search( { "me.genome_id" => $dsgid } )
-#($dsg) = $coge->resultset('Genome')->search( { "me.genome_id" => $dsgid },
-#    { join => 'genomic_sequences', prefetch => 'genomic_sequences' } )
-  if $dsgid;
-$ds = $coge->resultset('Dataset')->find($dsid) if $dsid;
-
-($dsg) = $ds->genomes if $ds;
+my $dsg = $coge->resultset('Genome')->find($dsgid);
 
 if ( !$USER->has_access_to_genome($dsg) ) {
     print $FORM->header;
@@ -85,8 +78,7 @@ if ( !$USER->has_access_to_genome($dsg) ) {
 
 my $ft = $coge->resultset('FeatureType')->find($ftid);
 my $file_name;
-$file_name .= $dsgid  if $dsgid;
-$file_name .= $dsid   if $dsid;
+$file_name .= $dsgid;
 $file_name .= "-" . $ft->name;
 $file_name .= "-prot" if $prot;
 $file_name .= ".fasta";
@@ -97,14 +89,7 @@ Content-Disposition: attachment; filename="$file_name"
 };
 
 my $count = 1;
-my @feats;
-if ($ds) {
-    @feats = $ds->features( { feature_type_id => $ftid } );
-}
-else {
-    @feats = $dsg->features( { feature_type_id => $ftid } );
-}
-
+my @feats = $dsg->features( { feature_type_id => $ftid } );
 my $org = $dsg->organism->name;
 
 foreach my $feat (@feats) {
@@ -132,20 +117,6 @@ foreach my $feat (@feats) {
                 print '# ', $msg, "\n";
                 next;
             }
-
-# mdb removed 12/9/16 -- print all returned reading frames
-#            if (scalar @seqs > 1) { # couldn't find the single correct reading frame
-#                my $msg = "Skipping feature $name (id=" . $feat->id . ") due to incorrect reading frame";
-#                warn $msg;
-#                print '# ', $msg, "\n";
-#                next;
-#            }
-#            unless ($seqs[0] =~ /[^x]/i) {
-#                my $msg = "Skipping feature $name (id=" . $feat->id . ") due to X's in seq";
-#                warn $msg;
-#                print '# ', $msg, "\n";
-#                next;
-#            }
 
             for (my $i = 0; $i < @seqs; $i++) {
                 print $title, "||frame$i\n", $seqs[$i], "\n";

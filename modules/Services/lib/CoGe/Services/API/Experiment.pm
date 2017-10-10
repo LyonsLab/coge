@@ -72,7 +72,7 @@ sub fetch {
             text => $_->annotation,
             link => $_->link,
             type => $_->type->name,
-            type_group => $_->type->group
+            type_group => $_->type->group ? { name => $_->type->group->name, description => $_->type->group->description } : undef
         }
     } $experiment->annotations;
 
