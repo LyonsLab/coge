@@ -327,8 +327,8 @@ sub gen_dsg_menu {
         
         my $has_cds = has_cds( $dsg->id );
         $name .= " NO CDS ANNOTATIONS - CAN'T BE USED: " unless $has_cds;
-        $name .= " Genome is still being loaded - CAN'T BE USED: " if $dsg->status == LOADING;
-        $name .= " There was an error while loading this genome - CAN'T BE USED: " if $dsg->status == ERROR;
+        $name .= " Genome is still being loaded - CAN'T BE USED: " if $dsg->status && $dsg->status == LOADING;
+        $name .= " There was an error while loading this genome - CAN'T BE USED: " if $dsg->status && $dsg->status == ERROR;
         
         $dsgid = $dsg->id unless $dsgid;
 	    $name .= " (id ". $dsg->id.") ";
