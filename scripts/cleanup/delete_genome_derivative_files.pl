@@ -20,7 +20,7 @@ my $fasta_dir = $conf->{FASTADIR};
 my $diags_dir = $conf->{DIAGSDIR};
 
 my $genome_id = shift;
-if ($genome_id eq 'rm') {
+if ($genome_id && $genome_id eq 'rm') {
 	$genome_id = shift;
 	if ($genome_id) {
 		rm($genome_id);

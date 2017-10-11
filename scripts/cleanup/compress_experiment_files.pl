@@ -15,7 +15,7 @@ use CoGe::Core::Storage qw( get_experiment_path );
 my ($db, $user, $conf) = CoGe::Accessory::Web->init();
 
 my $experiment_id = shift;
-if ($experiment_id eq 'c') {
+if ($experiment_id && $experiment_id eq 'c') {
 	$experiment_id = shift;
 	if ($experiment_id) {
 		compress($experiment_id);
@@ -51,12 +51,15 @@ sub run {
 sub ls {
 	my $experiment_id = shift;
 	my $path = get_experiment_path($experiment_id);
-	run "ls $path";
+	if ($path) {
+		run "ls $path" if -e $path;
+	}
 }
 
 sub compress {
 	my $experiment_id = shift;
 	my $path = get_experiment_path($experiment_id);
-	system('tar czf ' . dirname($path) . '/' . $experiment_id . '.tar.gz ' . $path);
+	return unless $path && -e $path;
+	system('tar czf ' . dirname($path) . '/' . $experiment_id . '.tar.gz --anchored ' . $path);
 	system('rm -rf ' . $path);
 }

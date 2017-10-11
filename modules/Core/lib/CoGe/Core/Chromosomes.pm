@@ -53,7 +53,7 @@ sub new {
 	if ($genome_file) {
 	    my $fh;
 	    if (!open($fh, $genome_file . '.fai')) { # sd added 12/8/2015 COGE-687
-	        warn 'error opening index file in Chromosomes::new()';
+	        #warn 'error opening index file in Chromosomes::new()';
 	        sleep 1;
 	        open($fh, $genome_file . '.fai');
 	    }
@@ -319,7 +319,7 @@ See Also   :
 sub next {
 	my $self = shift;
 	if (!$self->{fh}) {
-		warn caller;
+		#warn caller;
 		return 0;
 	}
 	my $line = readline($self->{fh});
