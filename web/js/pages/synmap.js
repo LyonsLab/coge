@@ -641,8 +641,16 @@ var coge = window.coge = (function(namespace) {
         },
 
         go: function() {
-            coge.progress.begin();
             var params = this.get_params();
+            if (!params['dsgid1']) {
+                coge.utils.alert('Please configure the first genome', 'Genome not configured');
+                return;
+            }
+            if (!params['dsgid2']) {
+                coge.utils.alert('Please configure the second genome', 'Genome not configured');
+                return;
+            }
+            coge.progress.begin();
             params['genome_id1'] = params['dsgid1'];
             delete params['dsgid1'];
             params['genome_id2'] = params['dsgid2'];

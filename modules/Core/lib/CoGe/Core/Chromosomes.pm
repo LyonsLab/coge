@@ -131,10 +131,11 @@ See Also   :
 sub find {
 	my $self = shift;
 	my $name = shift;
+	my $lcl = substr($name, 0, 4) eq 'lcl|';
 	while ($self->next) {
-		if ($name eq $self->name) {
-			return 1;
-		}
+		my $n = $self->name;
+		$n = substr($n, 4) if !$lcl && substr($n, 0, 4) eq 'lcl|';
+		return 1 if $name eq $n;
 	}
 	return 0;
 }
