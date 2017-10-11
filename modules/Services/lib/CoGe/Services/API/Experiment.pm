@@ -97,6 +97,7 @@ sub fetch {
         types => \@types,
         additional_metadata => \@metadata,
         restricted => $experiment->restricted ? Mojo::JSON->true : Mojo::JSON->false,
+		num_items => $experiment->row_count
     });
 }
 
