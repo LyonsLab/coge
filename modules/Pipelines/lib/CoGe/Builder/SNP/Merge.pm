@@ -126,7 +126,7 @@ sub gatk_CombineGVCFs {
         cmd => "ln -sf $input_fasta $input_fasta.fa && " . # GATK expects the filename to end in .fa or .fasta
                "ln -sf $input_fasta.fai $input_fasta.fa.fai && " .
                "ln -sf $input_fasta.dict $input_fasta.fa.dict && " .
-                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T CombineGVCFs],
+                qq[nice java -Xmx$JAVA_MAX_MEM -jar $GATK -T CombineGVCFs],
         args => $args,
         inputs => [
             @$input_vcfs,
@@ -160,7 +160,7 @@ sub gatk_GenotypeGVCFs {
         cmd => "ln -sf $input_fasta $input_fasta.fa && " . # GATK expects the filename to end in .fa or .fasta
                "ln -sf $input_fasta.fai $input_fasta.fa.fai && " .
                "ln -sf $input_fasta.dict $input_fasta.fa.dict && " .
-                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T GenotypeGVCFs],
+                qq[nice java -Xmx$JAVA_MAX_MEM -jar $GATK -T GenotypeGVCFs],
         args => $args,
         inputs => [
             @$input_vcfs,

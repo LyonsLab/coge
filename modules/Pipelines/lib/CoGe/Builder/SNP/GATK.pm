@@ -202,7 +202,7 @@ sub gatk_RealignerTargetCreator {
         cmd => "ln -sf $input_fasta $renamed_fasta && " . # GATK expects the filename to end in .fa or .fasta
                "ln -sf $input_fasta.fai $renamed_fasta.fai && " .
                "ln -sf $input_fasta.dict $fasta_name.dict && " .
-               qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T RealignerTargetCreator $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
+               qq[nice java -Xmx$JAVA_MAX_MEM -jar $GATK -T RealignerTargetCreator $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
         args =>  $args,
         inputs => [
             $input_bam,
@@ -249,7 +249,7 @@ sub gatk_Realign {
         cmd => "ln -sf $input_fasta $renamed_fasta && " . # GATK expects the filename to end in .fa or .fasta
                "ln -sf $input_fasta.fai $renamed_fasta.fai && " .
                "ln -sf $input_fasta.dict $fasta_name.dict && " .
-                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T IndelRealigner $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
+                qq[nice java -Xmx$JAVA_MAX_MEM -jar $GATK -T IndelRealigner $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
         args =>  $args,
         inputs => [
             $input_bam,
@@ -293,7 +293,7 @@ sub gatk_HaplotypeCaller {
         cmd => "ln -sf $input_fasta $input_fasta.fa && " . # GATK expects the filename to end in .fa or .fasta
                "ln -sf $input_fasta.fai $input_fasta.fa.fai && " .
                "ln -sf $input_fasta.dict $input_fasta.fa.dict && " .
-                qq[java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller -nct $NUM_CPUS $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
+                qq[nice java -Xmx$JAVA_MAX_MEM -jar $GATK -T HaplotypeCaller -nct $NUM_CPUS $filter_reads_with_N_cigar $fix_misencoded_quality_scores],
         args => $args,
         inputs => [
             $input_bam,
