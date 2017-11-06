@@ -259,8 +259,8 @@ sub features {
                 #next if ($d->{value1} == 0 and $d->{value2} == 0); # mdb removed 1/15/15 for user Un-Sa - send zero values (for when "Show background" is enabled in JBrowse)
                 my %result = (
                     id     => int($eid),
-                    start  => $d->{start},
-                    end    => $d->{stop},
+                    start  => $d->{start} - 1,
+                    end    => $d->{stop} - 1,
                 );
                 $d->{strand} = -1 if ($d->{strand} == 0);
                 $result{end} = $result{start} + 1 if ( $result{end} == $result{start} ); #FIXME revisit this
@@ -276,8 +276,8 @@ sub features {
                     id    => $eid,
                     name  => $d->{name},
                     type  => $d->{type},
-                    start => $d->{start},
-                    end   => $d->{stop},
+                    start => $d->{start} - 1,
+                    end   => $d->{stop} - 1,
                     ref   => $d->{ref},
                     alt   => $d->{alt},
                     score => $d->{qual},
@@ -298,8 +298,8 @@ sub features {
                 my %result = (
                     uniqueID => $d->{start} . '_' . $d->{stop},
                     type     => $d->{type},
-                    start    => $d->{start},
-                    end      => $d->{stop},
+                    start    => $d->{start} - 1,
+                    end      => $d->{stop} - 1,
                     strand   => $d->{strand},
                     score    => $d->{value1},
                     attr     => $d->{attr},
@@ -332,8 +332,8 @@ sub features {
                             $stop++;
                             push(@results, {
                                 "id"    => $eid,
-                                "start" => $start,
-                                "end"   => $stop,
+                                "start" => $start - 1,
+                                "end"   => $stop - 1,
                                 "score" => $lastCount
                             });
                         }
@@ -346,8 +346,8 @@ sub features {
                     $stop++;
                     push(@results, {
                         "id"    => $eid,
-                        "start" => $start,
-                        "end"   => $stop,
+                        "start" => $start - 1,
+                        "end"   => $stop - 1,
                         "score" => $lastCount
                     });
                 }
@@ -381,8 +381,8 @@ sub features {
                     push(@results, {
                         uniqueID => $qname,
                         "name"     => $qname,
-                        "start"    => $start,
-                        "end"      => $end,
+                        "start"    => $start - 1,
+                        "end"      => $end - 1,
                         "strand"   => $strand,
                         "score"    => $mapq,
                         "seq"      => $seq,
