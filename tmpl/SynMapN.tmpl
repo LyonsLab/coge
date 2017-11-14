@@ -1,0 +1,361 @@
+<tmpl_if name=MAIN>
+<style>
+    div.deleted { display: none; }
+
+    .leftPlot {
+        float: left;
+    }
+
+    .rightPlot {
+        float: right;
+    }
+
+    .plot {
+        width: 48.5%;
+        text-align: center;
+    }
+    .box {
+        float: none !important;
+    }
+</style>
+
+<tmpl_if name=results>
+    <div id="results">
+        <tmpl_var name=results>
+    </div>
+<tmpl_else>
+    <div id="results">
+    </div>
+</tmpl_if>
+
+<aside class="info">
+    <p><a class="bold" href="http://genomevolution.org/wiki/index.php/SynMap2" target="_blank">SynMap</a> generates a syntenic dotplot between
+    two organisms and identifies syntenic regions.
+	    <span class="link" onClick="$(this).remove(); $('#getting_started').fadeIn();">More...</span>
+    </p>
+
+    <div id="getting_started" class="hidden" style="max-width:90%;">
+	    <ol>
+	    	<li>Finds putative genes or regions of homology between two genomes
+	    	<li>Identies collinear sets of genes or regions of sequence similarity to infer synteny
+	    	<li>Generates a dotplot of the results and coloring syntenic pairs.
+	    </ol>
+
+	    	If you choose, synonymous and non-synonymous site mutation data can be calculated for protein coding genes that are identified as syntenic. These genes will then be colored based on those values in the dotplot for rapid identification of different age-classes of syntenic regions.
+
+        <p>
+            <a href="http://genomevolution.org/r/btab" target="_blank">
+                Click here for an example analysis between
+                <em>Arabidopsis thaliana</em> and <em>Arabidopsis lyrata</em>.
+            </a>
+        </p>
+        <p>
+            <a href="http://genomevolution.org/wiki/index.php/Syntenic_comparison_of_Arabidopsis_thaliana_and_Arabidopsis_lyrata" target="_blank">
+                Click here for an explanation of the results.
+            </a>
+        </p>
+    </div>
+</aside>
+
+    <form id="parameters">
+    <fieldset class="ui-widget-content ui-corner-all coge-section">
+        <legend style="color:#009900">Blast Algorithm</legend>
+        <select id="blast" name="blast" onchange="update_blast_option($(this).val())">
+            <option value="6" <tmpl_var name="LAST_SELECT">>Last (fastest)
+            <option value="4" <tmpl_var name="LASTZ_SELECT">>(B)lastZ (fast)
+            <option value="0" <tmpl_var name="MEGA_SELECT">>MegaBlast
+            <option value="1" <tmpl_var name="DCMEGA_SELECT">>Discontinuous MegaBlast
+            <option value="2" <tmpl_var name="BLASTN_SELECT">>BlastN (slow)
+            <option value="3" <tmpl_var name="TBLASTX_SELECT">>TBlastX (very slow)
+            <option value="5" <tmpl_var name="BLASTP_SELECT">>BlastP (slow)
+        </select>
+        <br>
+        <label id="blast_option" style="display:none;">
+            <span></span>
+            <input />
+            <span></span>
+        </label>
+    </fieldset>
+
+    <fieldset class="ui-widget-content ui-corner-all coge-section">
+        <legend style="color:#009900;">DAGChainer Options</legend>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <li>
+                <label>Relative Gene Order</label>
+                <input id="dagchainer_type" name="dagchainer_type" checked="true" type="radio" value="geneorder" <tmpl_var dag_gene_select>  onClick="display_dagchainer_settings()">
+                <label>Nucleotide Distance</label>
+                <input id="dagchainer_type" name="dagchainer_type" type="radio" value="distance"
+                onClick="display_dagchainer_settings();" <TMPL_VAR DAG_DISTANCE_SELECT> >
+                <span class="small">We recommend using "Relative Gene Order"</span>
+            </li>
+
+            <li>
+                <span id="dagchainer_distance">Default distance settings for:
+                    <select id="dagchainer_default" name="dagchainer_defaults" onChange="set_dagchainer_defaults();">
+                        <option value="1">Plant
+                        <option value="2">Microbe
+                    </select>
+                </span>
+            </li>
+            <li>
+                <label>Maximum distance between two matches (-D):</label>
+                <input type="number" size="8" name="D" id="D" value="">
+                <span class=distance_type></span>
+            </li>
+            <li>
+                <label>Minimum number of aligned pairs (-A):</label>
+                <input type="number" size="8" name="A" id="A" value=""> genes
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="ui-widget-content ui-corner-all coge-section">
+        <legend style="color:#009900">Merge Syntenic Blocks</legend>
+            <label>Algorithm:</label>
+            <select id="merge_algo" name="merge_algo" onchange="merge_select_check()">
+                <option VALUE="0"> --None--
+                <option VALUE="1" <tmpl_var name="quota_merge_select">>Quota Align Merge
+                <option VALUE="2" <tmpl_var name="dag_merge_select">>Interative DAGChainer
+            </select>
+            <small>
+                These settings will merge neighboring syntenic blocks.  We recommend "Quota Align".
+            </small>
+
+        <ul style="list-style-type:none;padding:0; margin: 0" id="merge_algo_options">
+            <li id="max_dist_merge">
+                <label>Average distance expected between syntenic blocks (-gm):</td>
+                <input type="text" size="8" name="gm" id="gm" value="">
+                <span class="distance_type"></span>
+            </li>
+            <li id="merge_algo_options">
+                <label>Maximum distance between two blocks (-Dm):</label>
+                <input type="text" size="8" name="Dm" id="Dm" value="">
+                <span class="distance_type"></span>
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="ui-widget-content ui-corner-all coge-section">
+        <legend style="color:#009900">Syntenic Depth</legend>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <li>
+                <label>Algorithm:</label>
+                <select id="depth_algo" name="depth_algo" onchange="depth_algo_check()">
+                    <option value="0"> --None--
+                    <option value="1" <TMPL_VAR NAME="QUOTA_ALIGN_SELECT">>Quota Align
+                </select>
+            </li>
+            <li id="depth_options" style="display:none;">
+                <label>Ratio of coverage depth:</label>
+
+                <span style="color:#009900" name="depth_org_1" id="depth_org_1"></span>
+                <input type="text" size="2" name="depth_org_1_ratio" id="depth_org_1_ratio" value="<tmpl_var name=depth_org_1_ratio>">
+                -to-
+                <input type="text" size="2" name="depth_org_2_ratio" id="depth_org_2_ratio" value="<tmpl_var name=depth_org_2_ratio>">
+                <span style="color:#009900" name="depth_org_2" id=depth_org_2></span><br>
+
+                <label>Overlap distance:</label>
+                <input type="text" size="8" name="depth_overlap" id="depth_overlap" value="<tmpl_var name=depth_overlap>">
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="ui-widget-content ui-corner-all coge-section">
+        <legend style="color:#009900">Fractionation Bias</legend>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <li>
+                <label>Run:</label>
+                <input type="checkbox" id="frac_bias" name="frac_bias" <tmpl_var name=frac_bias> />
+            </li>
+            <li>
+                <label>Window size (genes):</label>
+                <input type="text" id="fb_window_size" name="fb_window_size" value="<tmpl_var name=fb_window_size>" />
+            </li>
+            <li>
+                <label>Restrict maximum number of chromosomes in analysis:</label>
+            </li>
+            <li>
+                <label style="padding-left: 20px">Max query chromosomes:</label>
+                <input type="text" id="fb_numquerychr" name="fb_numquerychr" value="<tmpl_var name=fb_numquerychr>" />
+            </li>
+            <li>
+                <label style="padding-left: 20px">Max target chromosomes:</label>
+                <input type="text" id="fb_numtargetchr" name="fb_numtargetchr" value="<tmpl_var name=fb_numtargetchr>" />
+            </li>
+            <li>
+                <label>Skip Random/Unknown Chromosomes:</label>
+                <input type="checkbox" id="fb_remove_random_unknown" name="fb_remove_random_unknown" <tmpl_var name=fb_remove_random_unknown> />
+            </li>
+            Fractionation bias calculation:
+            <li>
+            	&nbsp<input type="radio" id="fb_all_genes" name="fb_genes" value="all_genes" <tmpl_var name=fb_all_genes> /> Use all genes in target genome<br />
+            	&nbsp<input type="radio" id="fb_target_genes" name="fb_genes" value="target_genes" <tmpl_var name=fb_target_genes> /> Use only syntenic genes in target genome (inceases fractionation signal)
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="ui-widget-content ui-corner-all coge-section">
+        <legend style="color:#009900;">CodeML</legend>
+        <ul style="padding: 0; margin: 0;">
+            <li>
+                <label>Calculate syntenic CDS pairs and color dots:</label>
+                <select name="ks_type" id="ks_type">
+                    <option value="0" <tmpl_var name=ks0>>--None--</option>
+                    <option value="ks" <tmpl_var name=ks1> >Synonymous (Ks)</option>
+                    <option value="kn" <tmpl_var name=ks2> >Non-synonymous (Kn)</option>
+                    <option value="kn_ks" <tmpl_var name=ks3>>Kn/Ks</option>
+                </select> substitution rates <small style="color:red">(SLOW)</small>
+            </li>
+            <li>
+                <label>Color scheme:</label>
+                <select name="color_scheme" id="color_scheme">
+                    <option value ="0" <tmpl_var name="CS0"> >Rainbow 1</option>
+                    <option value ="1" <tmpl_var name="CS1"> >Rainbow 2</option>
+                    <option value ="5" <tmpl_var name="CS5"> >2.1xRainbow</option>
+                    <option value ="7" <tmpl_var name="CS7"> >2.2xRainbow</option>
+                    <option value ="6" <tmpl_var name="CS6"> >3.1xRainbow</option>
+                    <option value ="8" <tmpl_var name="CS8"> >3.2xRainbow</option>
+                    <option value ="2" <tmpl_var name="CS2"> >RYB</option>
+                    <option value ="3" <tmpl_var name="CS3"> >RYBG</option>
+                    <option value ="4" <tmpl_var name="CS4"> >Black-Red</option>
+                    <option value ="9" <tmpl_var name="CS9"> >3xRed-Blue</option>
+                    <option value ="10" <tmpl_var name="CS10"> >3xBlue-Orange</option>
+                </select>
+            </li>
+            <li>
+                <label>Min Val:</label>
+                <input type="text" size="4" name="codeml_min" id="codeml_min" value="<tmpl_var name=codeml_min>">
+
+                <label>Max Val:</label>
+                <input type="text" size="4" name="codeml_max" id="codeml_max" value="<tmpl_var name=codeml_max>">
+
+                <label>Log10 Transform:</label>
+                <input type="checkbox" name="logks" value="true" id="logks" <tmpl_var name=logks> >
+            </li>
+            <li>
+                <small style="color:red">&nbsp;&nbsp;&nbsp;&nbsp; Only applicable to protein coding sequences (CDS vs. CDS)</small>
+            </li>
+        </ul>
+    </fieldset>
+
+    <fieldset class="ui-widget-content ui-corner-all coge-section">
+        <legend style="color:#009900">Advanced Options (
+        <a href="../wiki/index.php/SynMap#Advanced_Options">see page docs</a>)</legend>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+            <li>
+                <label>Tandem duplication distance</label>
+                <input type="number" size="2" id="tdd" name="tdd" value="<tmpl_var name=dupdist>">
+            </li>
+            <li>
+                <label>C-score (filters low quality hits: value [0-1])</label>
+                <input type="range" size="2" id="csco" name="csco" value="<tmpl_var name=cscore>"
+                    min="0" max="1" step="0.01" onchange="cs_display.value=value">
+                <output id="cs_display" for="csco"><tmpl_var name="cscore"></output>
+            </li>
+        </ul>
+    </fieldset>
+        <input type="hidden" name="fname" value="go">
+    </form>
+<div style="padding: 15px 0 5px 0;">
+    <span class="coge-button coge-button-danger coge-button-lg" id="synmap_go" >Generate SynMap</span>
+</div>
+</tmpl_if>
+
+<!-- partials -->
+<div id="dialog" class="dialog_box" title="Preparing download" style="display:none;">
+    <div class="coge-dialog-content ui-widget-content ui-corner-all info">
+        <h4 class="center">Generating Pseudo Assembly</h4>
+        <p class="small">(This may take several hours)</p>
+    </div>
+    <div class="coge-dialog-status">Please wait ... <img src="picts/ajax-loader.gif" /></div>
+</div>
+
+<div id="synmap_dialog" class="dialog_box" title="Running SynMap ..." style="display:none;">
+    <div id="text" class="ui-widget-content ui-corner-all inline" style="overflow-y:auto;width:450px;height:200px;color:dimgray;padding: 5px;">
+    </div>
+
+    <ul id="dialog_error" class="horizontal padded hidden">
+        <li id="error_msg">An error occurred <img src="picts/thumbs_down.png"></li>
+        <li id="dialog_log" class="small"></li>
+        <li id="cancel_button" class="coge-button coge-button-danger r">
+            <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
+                Close
+            </span>
+        </li>
+    </ul>
+
+    <ul id="dialog_success" class="horizontal padded hidden">
+        <li id="finished_msg">
+            <span>Finished!</span>
+            <img src="picts/thumbs_up.png">
+        </li>
+        <li id="ok_button" class="coge-button r">
+            <span onClick="close_dialog($('#synmap_dialog')); load_results();" >
+                OK
+            </span>
+        </li>
+    </ul>
+
+    <ul id="progress" class="padded">
+        <li class="bottom">
+            <span id="loading_msg">Please wait ...</span>
+            <img src="picts/ajax-loader.gif"/>
+        </li>
+    </ul>
+    <div id="synmap_link" class="small" style="color:dimgray; padding-left: 5px;"></div>
+</div>
+
+<!--<TMPL_INCLUDE NAME="widgets/Splash.tmpl">-->
+
+<TMPL_INCLUDE NAME="widgets/Overlay.tmpl">
+<TMPL_INCLUDE NAME="widgets/Progress.tmpl">
+
+<!-- Load scripts last for speed -->
+<script src="js/pages/synmap.js"></script>
+<script src="js/coge/services.js"></script>
+<script src="js/coge/progress.js"></script>
+<script src="js/coge/utils.js"></script>
+<script src="js/coge/colors.js"</script>
+<script src="js/vendor/d3/d3.min.js"></script>
+<script src="js/xhairs.js"></script>
+<script>
+const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+const PAGE_NAME     = '<TMPL_VAR NAME="PAGE_NAME">';
+const SUPPORT_EMAIL = '<TMPL_VAR NAME="SUPPORT_EMAIL">';
+const USER_NAME     = '<TMPL_VAR NAME="USER_NAME">';
+const BLAST_OPTION  = '<TMPL_VAR NAME="BLAST_OPTION">';
+
+$(function() {
+    <TMPL_VAR NAME="display_dagchainer_settings">
+    display_legacy_settings();  //AKB Added 2016-10-18
+
+    // Initialize CoGe web services
+    coge.services.init({
+        baseUrl: API_BASE_URL,
+        userName: USER_NAME,
+        //debug: true
+    });
+    
+    // Intialize progress window
+    coge.progress.init({
+        title: "Running SynMap",
+        baseUrl: API_BASE_URL,
+        userName: USER_NAME,
+        supportEmail: SUPPORT_EMAIL,
+        onError: coge.synmap.onError
+    });
+
+    //FIXME: Remove global state
+    pageObj = {
+        "id1": "<tmpl_var name=fid1>",
+        "id2": "<tmpl_var name=fid2>",
+        "tempdir": "<tmpl_var name=tempdir>",
+        "page": "<tmpl_var name=page_name>",
+        "rootElement": $(".box"),
+        "autostart": Boolean(parseInt("<TMPL_VAR NAME='autogo'>", 10))
+    };
+
+    coge.synmap.setup(pageObj);
+    update_blast_option($('#blast').val());
+});
+</script>

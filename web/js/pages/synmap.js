@@ -12,11 +12,7 @@ function get_organism_chain(type,val,i)
 	$('#dsgid'+i).html('');
 	
     $('#org_list').html('<input type=hidden id = "org_id"+i><font class="loading"></font>');
-  //  if (type == 'name')
-    	get_orgs(['args__search','args__'+val,'args__i','args__'+i], ['org_list'+i]);
-//    else if (type == 'desc') 
-//   	get_orgs(['args__desc','args__'+val,'args__i','args__'+i], ['org_list'+i]);
-    //$('#dsg_info'+i).html('<div class="loading dna_small small">loading. . .</div>');
+    get_orgs(['args__search','args__'+val,'args__i','args__'+i], ['org_list'+i]);
     $('#dsg_info'+i).html('<div class="small note indent">loading... <img src="picts/ajax-loader.gif"/></div>');
     ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"', 'genome_message"+i+"']);");
     ajax_wait("get_genome_info(['args__dsgid','dsgid"+i+"','args__org_num','args__"+i+"'],[handle_dsg_info]);");
@@ -24,9 +20,7 @@ function get_organism_chain(type,val,i)
 
 //TODO: Replace with proper promise chain
 function get_genome_info_chain(i) {
-	//$('#dsg_info'+i).html('<div class=dna_small class=loading class=small>loading. . .</div>');
 	$('#dsg_info'+i).html('<div class="small note indent">loading... <img src="picts/ajax-loader.gif"/></div>');
-    // ajax_wait("gen_dsg_menu(['args__oid','org_id"+i+"', 'args__num','args__"+i+"'],['dsg_menu"+i+"','genome_message"+i+"']);");
     gen_dsg_menu(['args__oid','org_id'+i, 'args__num','args__'+i],['dsg_menu'+i, 'genome_message'+i]);
     $('#depth_org_1').html($('#org_id1 option:selected').html());
     $('#depth_org_2').html($('#org_id2 option:selected').html());
@@ -47,48 +41,6 @@ function load_results() {
     $('#log_text').hide();
     $('#results').fadeIn();
 }
-
-// function update_params(val) {
-//     var cmd;
-//     var params;
-//     var type;
-
-//     if (val) {
-//         params = val.split('_');
-//     } else {
-//         params = $('#prev_params').val()[0].split('_');;
-//     }
-
-//     if ($('#org_id1').val() == params[3]) {
-//         cmd = "$('#feat_type1').attr('value', '"+params[5]+"');$('#feat_type2').attr('value', '"+params[8]+"');";
-//         $('#dsgid1').attr('value',params[4]);
-//         $('#dsgid2').attr('value',params[7]);
-//     } else {
-//         cmd = "$('#feat_type2').attr('value', '"+params[5]+"');$('#feat_type1').attr('value', '"+params[8]+"');";
-//         $('#dsgid2').attr('value',params[4]);
-//         $('#dsgid1').attr('value',params[7]);
-//     }
-
-//     get_genome_info(['args__dsgid','dsgid1','args__org_num','args__1'],[handle_dsg_info]);
-//     get_genome_info(['args__dsgid','dsgid2','args__org_num','args__2'],[handle_dsg_info]);
-//     ajax_wait(cmd);
-
-//     $('#blast').attr('value',params[9]);
-
-//     if (params[10] == 'Distance') {
-//         $("input[name='dagchainer_type']:nth(1)").attr("checked","checked");
-//         type=" bp";
-//     } else {
-//         $("input[name='dagchainer_type']:nth(0)").attr("checked","checked");
-//         type= " genes";
-//     }
-
-//     display_dagchainer_settings([params[1],params[2]],type);
-//     $('#c').val(params[11]);
-//     merge_select_check();
-//     depth_algo_check();
-
-// }
 
 function handle_dsg_info(dsg_html, feat_menu, genome_message, length, org_num, org_name, seq_id) {
     $('#dsg_info'+org_num).html(dsg_html);
@@ -468,8 +420,6 @@ var coge = window.coge = (function(namespace) {
 
             this.populate_page_obj();
 
-            //var org_name1 = pageObj.org_name1;
-            //var org_name2 = pageObj.org_name2;
             var feat_type1  = $('#feat_type1').val();
             var feat_type2  = $('#feat_type2').val();
             var org_length1 = $('#org_length1').html() || pageObj.org_length1;
@@ -480,7 +430,7 @@ var coge = window.coge = (function(namespace) {
             // Block this analysis if the genomes are unmasked, unannotated, and too large
             // feat_type 1 == CDS, 2 == genomic, seq_type == 1 is unmasked
             var max_size = 50 * 1000 * 1000;
-            console.log('Block check: ' + org_length1 + ' ' + feat_type1 + ' ' + seq_type1 + ' ' + org_length2 + ' ' + feat_type2 + ' ' + seq_type2);
+            // console.log('Block check: ' + org_length1 + ' ' + feat_type1 + ' ' + seq_type1 + ' ' + org_length2 + ' ' + feat_type2 + ' ' + seq_type2);
             if (( org_length1 > max_size && feat_type1 == 2 && seq_type1 == 1) &&
                 ( org_length2 > max_size && feat_type2 == 2 && seq_type2 == 1))
             {
@@ -675,7 +625,6 @@ var coge = window.coge = (function(namespace) {
                     }
                     
                     // Start status update
-//                    window.history.pushState({}, "Title", "SynMap.pl" + "?wid=" + response.id); // Add workflow id to browser URL
                     coge.progress.update(response.id, response.site_url);
                     coge.progress.saveOnReset = coge.progress.onReset;
                     coge.progress.onReset = coge.synmap.get_results.bind(coge.synmap);

@@ -3,24 +3,25 @@ package CoGe::Builder::Tools::SynMap;
 use Moose;
 extends 'CoGe::Builder::Buildable';
 
-use CoGe::JEX::Jex;
-#use CoGe::JEX::Workflow;
-use CoGe::Accessory::Web qw(api_url_for url_for get_command_path);
-use CoGe::Accessory::Utils qw(units);
-use CoGe::Builder::CommonTasks qw(create_gff_generation_job);
 use CoGe::Accessory::TDS qw(write);
+use CoGe::Accessory::Utils qw(commify units);
+use CoGe::Accessory::Web qw(api_url_for url_for get_command_path);
+use CoGe::Builder::CommonTasks qw(create_gff_generation_job);
+use CoGe::Core::Favorites;
+use CoGe::Core::Genome qw(genomecmp2);
+use CoGe::Exception::Generic;
+use CoGe::JEX::Jex;
 use Data::Dumper;
-#use File::Path qw(mkpath);
 use File::Spec::Functions;
+use HTML::Template;
 use JSON qw(encode_json);
 use POSIX qw(floor);
-use CoGe::Exception::Generic;
 
 BEGIN {
 	use Exporter 'import';
 	our @EXPORT = qw(
-	   add_jobs check_address_validity defaults gen_org_name
-	   generate_pseudo_assembly get_blast_config get_query_link get_result_path get_log_file_path
+	   add_jobs check_address_validity defaults gen_dsg_menu gen_org_menu gen_org_name
+	   generate_pseudo_assembly get_blast_config get_dsg_gc get_genome_info get_orgs get_query_link get_result_path get_log_file_path get_pair_info
 	);
 }
 
@@ -265,23 +266,6 @@ sub build1x1 {
 	# Generate Fasta files
 	############################################################################
 	my ( $fasta1, $fasta2 );
-
-	#my @dsgs = ([$genome_id1, $feat_type1]);
-	#push @dsgs, [$genome_id2, $feat_type2]
-	#  unless $genome_id1 == $genome_id2 && $feat_type1 eq $feat_type2;
-	#
-	#    foreach my $item (@dsgs) {
-	#        my $genome_id = $item->[0];
-	#        my $feat_type = $item->[1];
-	#
-	#        #TODO: Schedule fasta generation only if feat_type not genomic
-	#        #if ($feat_type eq "genomic") {
-	#        #    my $genome = $coge->resultset('Genome')->find($gid);
-	#        #    $file = $genome->file_path;
-	#        #} else {
-	#        #    $file = $FASTADIR . "/$gid-$feat_type.fasta";
-	#        #}
-	#    }
 	if ( $feat_type1 eq "genomic" ) {
 		$fasta1 = $genome1->file_path;
 
@@ -1380,41 +1364,6 @@ sub gen_org_name {
 	return ( $org_name, $title );
 }
 
-# mdb moved to CoGe::Pipelines::Tools::Pseudoassembly on 2/8/17
-#sub generate_pseudo_assembly {
-#	my ( $config, $input, $output, $flip ) = @_;
-#	$flip = 0 unless $flip;
-#
-#	my $cmd = "synmap/order_contigs_to_chromosome.pl";
-#
-#	my $JEX = CoGe::JEX::Jex->new(
-#		host => $config->{JOBSERVER},
-#		port => $config->{JOBPORT}
-#	);
-#	my $workflow = $JEX->create_workflow( name => "Generate Pseudo Assembly" );
-#
-#	$self->add({
-#		cmd  => catfile( $config->{SCRIPTDIR}, $cmd ),
-#		args => [
-#			[ "-cfg",    $config->{_CONFIG_PATH}, 1 ],
-#			[ "-input",  $input,                  1 ],
-#			[ "-output", $output,                 1 ],
-#			[ "-flip",   $flip,                   1 ],
-#		],
-#		inputs  => [ $input, $config->{_CONFIG_PATH} ],
-#		outputs => [$output],
-#		description => "Generating pseudo assembly"
-#	});
-#
-#	my $response = $JEX->submit_workflow($workflow);
-#
-#	return {
-#		id      => $response->{id},
-#		success => $JEX->is_successful($response),
-#		output  => $output
-#	};
-#}
-
 sub get_name {
 #	return 'SynMap';
 	my $self = shift;
@@ -1641,6 +1590,416 @@ sub get_query_link {
 	my $tiny_link = CoGe::Accessory::Web::get_tiny_link( url => $synmap_link );
 
 	return $tiny_link;
+}
+
+sub gen_dsg_menu {
+	my $db      = shift;
+	my $config  = shift;
+	my $user    = shift;
+	my %opts  = @_;
+	my $oid   	= $opts{oid};
+	my $num   	= $opts{num};
+	my $dsgid 	= $opts{dsgid};
+	my @dsg_menu;
+	my $message;
+	my $org_name;
+
+    my $favorites = CoGe::Core::Favorites->new(user => $user);
+    
+	foreach my $dsg ( sort { genomecmp2($a, $b, $favorites) }
+		$db->resultset('Genome')->search(
+			{ organism_id => $oid },
+			{
+				prefetch => ['genomic_sequence_type'],
+				join     => ['genomic_sequence_type']
+			}
+		)
+	  )
+	{
+		my $name;
+		my $has_cds = 0;
+
+		if ( $dsg->restricted && !$user->has_access_to_genome($dsg) ) {
+			next unless $dsgid && $dsg->id == $dsgid;
+			$name = "Restricted";
+		}
+		elsif ( $dsg->deleted ) {
+			if ( $dsgid && $dsgid == $dsg->id ) {
+				$name =
+				    "DELETED: "
+				  . $dsg->type->name . " (v"
+				  . $dsg->version . ",id"
+				  . $dsg->id . ")";
+			}
+			else {
+				next;
+			}
+		}
+		else {
+		    $name .= "&#11088; " if ($favorites->is_favorite($dsg));
+			$name .= "&#x2705; " if $dsg->certified;
+		    $name .= "&#x1f512; " if $dsg->restricted;
+			$name .= $dsg->name . ": " if $dsg->name;
+			$name .= $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
+			$org_name = $dsg->organism->name unless $org_name;
+			foreach my $ft (
+				$db->resultset('FeatureType')->search(
+					{	genome_id            => $dsg->id,
+						'me.feature_type_id' => 3
+					},
+					{	join =>
+						  { features => { dataset => 'dataset_connectors' } },
+						rows => 1,
+					}
+				))
+			{
+				$has_cds = 1;
+			}
+		}
+
+		push @dsg_menu, [ $dsg->id, $name, $dsg, $has_cds ];
+	}
+
+	return ( qq{<span id="dsgid$num" class="hidden"></span>}, '' )
+	  unless (@dsg_menu);
+
+	my $dsg_menu =
+	    qq{<div class="coge-padded-top inline bottom">}
+	  . qq{<span class="small text">Genomes: </span>}
+	  . qq{<select id="dsgid$num" style="max-width:400px;height:2em;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
+
+	foreach (@dsg_menu) {
+		my ( $numt, $name ) = @$_;
+		my $selected = " selected" if $dsgid && $numt == $dsgid;
+		$selected = " " unless $selected;
+		$numt = 0 if $name eq "Restricted";
+		$dsg_menu .= qq{<OPTION VALUE=$numt $selected>$name</option>};
+	}
+	$dsg_menu .= "</select>";
+	$dsg_menu .= "</div>";
+
+	return ( $dsg_menu, $message );
+}
+
+sub gen_org_menu {
+	my %opts           = @_;
+	my $db             = $opts{db};
+	my $config         = $opts{config};
+	my $user           = $opts{user};
+	my $oid            = $opts{oid};
+	my $num            = $opts{num};
+	my $name           = $opts{name};
+	my $desc           = $opts{desc};
+	my $dsgid          = $opts{dsgid};
+	my $feattype_param = $opts{feattype_param};
+	$feattype_param = 1 unless $feattype_param;
+
+	$name = "Search" unless $name;
+	$desc = "Search" unless $desc;
+	my ($dsg) = $db->resultset('Genome')->find($dsgid);
+
+	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
+	$template->param(
+		ORG_MENU => 1,
+		NUM      => $num,
+		SEARCH   => $name,
+	);
+
+	if ( $dsg and $user->has_access_to_genome($dsg) ) {
+		my $org = $dsg->organism;
+		$oid = $org->id;
+
+		my ( $dsg_info, $feattype_menu, $message, $total_length, undef, undef, $seq_type ) = get_genome_info(
+			$db, $config, $user,
+			dsgid    => $dsgid,
+			org_num  => $num,
+			feattype => $feattype_param
+		);
+
+		$template->param(
+			DSG_INFO       => $dsg_info,
+			FEATTYPE_MENU  => $feattype_menu,
+			GENOME_MESSAGE => $message,
+			 # mdb added 11/3/16 COGE-768 -- set values needed for block check because handle_dsg_info() doesn't get called when gid's passed in URL
+			ORG_LENGTH     => $total_length,
+			SEQ_TYPE       => $seq_type
+		);
+	}
+	else {
+		$oid   = 0;
+		$dsgid = 0;
+	}
+
+	$template->param( 'ORG_LIST' => get_orgs( $db, search => $name, i => $num, oid => $oid ) );
+
+	my ($dsg_menu) = gen_dsg_menu( $db, $config, $user, oid => $oid, dsgid => $dsgid, num => $num );
+	$template->param( DSG_MENU => $dsg_menu );
+
+	return $template->output;
+}
+
+sub get_chr_types {
+	my %opts  = @_;
+	my $db    = $opts{db};
+	my $dsg   = $opts{dsg};
+	my $dsgid = $opts{dsgid};
+	$dsg = $db->resultset('Genome')->find($dsgid) if $dsgid;
+	my $plasmid     = 0;
+	my $contig      = 0;
+	my $scaffold    = 0;
+	my @chromosomes = $dsg->chromosomes;
+	if ( @chromosomes > 100 ) {
+		return ( 0, 1, 0 );
+	}
+	foreach my $chr (@chromosomes) {
+		$plasmid  = 1 if !$plasmid  && $chr =~ /plasmid/i;
+		$contig   = 1 if !$contig   && $chr =~ /contig/i;
+		$scaffold = 1 if !$scaffold && $chr =~ /scaffold/i;
+	}
+	return ( $plasmid, $contig, $scaffold );
+}
+
+sub get_dsg_gc {
+	my $db    = shift;
+	my %opts  = @_;
+	my $dsg   = $opts{dsg};
+	my $dsgid = $opts{dsgid};
+	my $text  = $opts{text};
+	$dsg = $db->resultset('Genome')->find($dsgid) if $dsgid;
+	my ( $gc, $at, $n, $x ) = $dsg->percent_gc;
+	$gc *= 100;
+	$at *= 100;
+	$n  *= 100;
+	$x  *= 100;
+
+	if ($text) {
+		return "GC: $gc%, AT: $at%, N: $n%, X: $x%";
+	}
+	else {
+		return ( $gc, $at, $n, $x );
+	}
+}
+
+sub get_dsg_info {
+	my $db        = shift;
+	my $dsg       = shift;
+	my $length    = 0;
+	my $chr_count = 0;
+
+	$length    = $dsg->length;
+	$chr_count = $dsg->chromosome_count;
+	my ( $gc, $at, $n, $x ) = ( 0, 0, 0, 0 );
+	if ( $chr_count < 100 && $length < 50000000 ) {
+		( $gc, $at, $n, $x ) = get_dsg_gc( $db, dsg => $dsg );
+	}
+	my ( $plasmid, $contig, $scaffold ) = get_chr_types( db => $db, dsg => $dsg );
+	return $gc, $at, $n, $x, $length, $chr_count, $plasmid, $contig, $scaffold;
+}
+
+sub get_genome_info {
+	my $db       = shift;
+	my $config   = shift;
+	my $user     = shift;
+	my %opts     = @_;
+	my $dsgid    = $opts{dsgid};
+	my $org_num  = $opts{org_num};
+	my $feattype = $opts{feattype};
+	$feattype = 1 unless defined $feattype;
+	return ( "<div class='small note indent'>This organism has no publicly available data.</div>",
+		" ", " ", '', $org_num, '', '' )
+	  unless ( $dsgid && $dsgid =~ /\d+/ );
+
+	my $html_dsg_info;
+
+	my ($dsg) = $db->resultset("Genome")->find( { genome_id => $dsgid }, { join => 'organism', prefetch => 'organism' } );
+	return " ", " ", " " unless $dsg;
+	my $org     = $dsg->organism;
+	my $orgname = '<a href="OrganismView.pl?oid=' . $org->id . '" target=_new>' . $org->name . '</a>';
+	my $org_desc;
+	if ( $org->description ) {
+		$org_desc = join(
+			"; ",
+			map {
+				    qq{<span class="link" onclick="}
+				  . qq{search_bar('$_', '#org_name$org_num'); timing('org_name$org_num')">$_</span>}
+			  } split /\s*;\s*/,
+			$org->description
+		);
+	}
+
+	my $i = 0;
+	my (
+		$percent_gc, $percent_at, $percent_n, $percent_x, $chr_length,
+		$chr_count,  $plasmid,    $contig,    $scaffold
+	) = get_dsg_info($db, $dsg);
+	my ($ds) = $dsg->datasets;
+	my $link = $ds->data_source->link;
+	$link = $config->{SERVER} unless $link;
+	$link = "http://" . $link unless $link && $link =~ /^http/;
+	$html_dsg_info .= qq{<table class="xsmall" style="margin-left:1em; border-top:1px solid lightgray;">};
+	$html_dsg_info .= qq{<tr><td>Description:</td><td class="link" onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}
+	  . $dsg->info
+	  . qq{</td></tr>};
+
+    #$html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>}; # redundant
+	$html_dsg_info .= qq{<tr><td>Taxonomy:</td><td>$org_desc</td></tr>};
+	$html_dsg_info .= "<tr><td>Name: <td>" . $dsg->name if $dsg->name;
+	$html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description if $dsg->description;
+	$html_dsg_info .=
+	    "<tr><td>Source:  <td><a href=" 
+	  . $link
+	  . " target=_new>"
+	  . $ds->data_source->name . "</a>";
+	$html_dsg_info .= 
+	    '&nbsp;&nbsp;'
+	  . HTML::Template->new( filename => $config->{TMPLDIR} . 'widgets/Certified.tmpl' )->output if $dsg->certified;
+
+	#$html_dsg_info .= $dsg->chr_info(summary=>1);
+	$html_dsg_info .= "<tr><td>Dataset: <td>" . $ds->name;
+	$html_dsg_info .= ": " . $ds->description if $ds->description;
+	$html_dsg_info .= "<tr><td>Chromosomes: <td>" . commify($chr_count);
+	if ( $percent_gc > 0 ) {
+		$html_dsg_info .= "<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%";
+	}
+	else {
+		$html_dsg_info .= qq{<tr><td>DNA content: <td id='gc_content$org_num' class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
+	}
+	$html_dsg_info .= "<tr><td>Total length: <td>" . commify($chr_length);
+	$html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
+	$html_dsg_info .= "<tr><td>Contains contigs" if $contig;
+	$html_dsg_info .= "<tr><td>Contains scaffolds" if $scaffold;
+	$html_dsg_info .= qq{<tr class="alert"><td>Restricted:</td><td>Yes}
+	  if $dsg->restricted;
+	$html_dsg_info .= "</table>";
+	if ( $dsg->restricted && !$user->has_access_to_genome($dsg) ) {
+		$html_dsg_info = "Restricted";
+	}
+	if ( $dsg->deleted ) {
+		$html_dsg_info = "<span class='alert'>This genome has been deleted and cannot be used in this analysis.</span>  <a href='GenomeInfo.pl?gid=$dsgid' target=_new>More information</a>.";
+	}
+
+	my $message;
+
+	#create feature type menu
+	my $has_cds;
+
+	foreach my $ft (
+		$db->resultset('FeatureType')->search(
+			{
+				genome_id            => $dsg->id,
+				'me.feature_type_id' => 3
+			},
+			{
+				join => { features => { dataset => 'dataset_connectors' } },
+				rows => 1,
+			}
+		)
+	  )
+	{
+		$has_cds = 1;
+	}
+
+	my ( $cds_selected, $genomic_selected ) = ( " ", " " );
+	$cds_selected     = "selected" if $feattype eq 1 || $feattype eq "CDS";
+	$genomic_selected = "selected" if $feattype eq 2 || $feattype eq "genomic";
+
+	my $feattype_menu = qq{<select id="feat_type$org_num" name="feat_type$org_num" style="height:2em;">#};
+	$feattype_menu .= qq{<OPTION VALUE=1 $cds_selected>CDS</option>} if $has_cds;
+	$feattype_menu .= qq{<OPTION VALUE=2 $genomic_selected>genomic</option>};
+	$feattype_menu .= "</select>";
+	$message = "<span class='small alert'>No Coding Sequence in Genome</span>" unless $has_cds;
+	$message = "<span class='small alert'>Genome is still being loaded</span>" if ($dsg->is_loading());
+	$message = "<span class='small alert'>Genome is in invalid state</span>"   if ($dsg->is_error());
+
+	return $html_dsg_info, $feattype_menu, $message, $chr_length, $org_num,
+	  $dsg->organism->name, $dsg->genomic_sequence_type_id;
+}
+
+sub get_orgs {
+	my $db     = shift;
+	my %opts   = @_;
+	my $search = $opts{search};
+	my $oid    = $opts{oid};
+	my $i      = $opts{i};
+
+	#get rid of trailing white-space
+	$search =~ s/^\s+//g if $search;
+	$search =~ s/\s+$//g if $search;
+	$search = ""
+	  if $search && $search =~ /Search/;    #need to clear to get full org count
+
+	my @organisms;
+	my $org_count;
+
+	# Create terms for search
+	my @terms = split /\s+/, $search if defined $search;
+
+	if ( scalar @terms or $oid ) {
+		my @constraints = map {
+			-or => [
+				{ name        => { like => qq{%$_%} } },
+				{ description => { like => qq{%$_%} } }
+			  ]
+		} @terms;
+
+		@organisms = $db->resultset("Organism")->search(
+			{
+				-or => [
+					-and => \@constraints,
+					{ organism_id => $oid },
+				]
+			}
+		);
+	}
+	else {
+		$org_count = $db->resultset("Organism")->count;
+	}
+
+	my @opts;
+	foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms ) {
+		my $option = "<OPTION value=\"" . $item->id . "\"";
+		$option .= " selected" if $oid && $oid == $item->id;
+		$option .= ">" . $item->name . " (id" . $item->id . ")</OPTION>";
+		push @opts, $option;
+	}
+
+	unless ( @opts && @organisms ) {
+		return qq{<span name="org_id$i" id="org_id$i"></span>};
+	}
+
+	$org_count = scalar @opts unless $org_count;
+	my $html =
+	    qq{<span class="small info">Organisms: (}
+	  . $org_count
+	  . qq{)</span>\n<BR>\n};
+	$html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_genome_info_chain($i)" class="coge-fill-width">\n}
+	  . join( "\n", @opts )
+	  . "\n</SELECT>\n";
+	$html =~ s/OPTION/OPTION SELECTED/ unless $oid;
+	return $html;
+}
+
+sub get_pair_info {
+	my $db = shift;
+	my $config = shift;
+	my @anno;
+	foreach my $fid (@_) {
+		unless ( $fid =~ /^\d+$/ ) {
+			push @anno, $fid . "<br>genomic";
+			next;
+		}
+		my $feat = $db->resultset('Feature')->find($fid);
+
+		push @anno, $feat->annotation_pretty_print_html;
+	}
+	return unless @anno;
+	my $output =
+	    "<table class=small valign=top>"
+	  . join( "\n", ( map { "<tr><td>" . $_ . "</td></tr>" } @anno ) )
+	  . "</table>";
+	my $URL = $config->{URL};
+	$output =~ s/window\.open\('(.*?)'\)/window.open('$URL$1')/g;
+	return $output;
 }
 
 __PACKAGE__->meta->make_immutable;
