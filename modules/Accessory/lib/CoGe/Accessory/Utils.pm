@@ -302,7 +302,7 @@ sub detect_paired_end {
 sub directory_size {
     my $path = shift;
     my $size = 0;
-    find(sub { $size += -s if -f $_ }, $path);
+    find({wanted => sub { $size += -s if -f $_ }, follow => 1}, $path);
     return $size;
 }
 
