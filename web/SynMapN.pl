@@ -136,8 +136,8 @@ else {
 sub gen_html {
 	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param(
-		PAGE_TITLE => 'SynMap',
-		TITLE      => 'SynMap: Whole Genome Synteny Analysis',
+		PAGE_TITLE => 'SynMapN',
+		TITLE      => 'SynMapN: Whole Genome Synteny Analysis',
 		PAGE_LINK  => $LINK,
 		SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
 		HEAD       => qq{},
@@ -151,7 +151,7 @@ sub gen_html {
 	$template->param( BODY => $body );
 	$template->param(
 		HOME       => $config->{SERVER},
-		HELP       => 'SynMap',
+		HELP       => 'SynMapN',
 		WIKI_URL   => $config->{WIKI_URL} || '',
 		ADMIN_ONLY => $user->is_admin,
 		CAS_URL    => $config->{CAS_URL} || '',
@@ -161,12 +161,11 @@ sub gen_html {
 }
 
 sub gen_body {
-	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMap.tmpl' );
+	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMapN.tmpl' );
 
 	$template->param(
 		MAIN => 1,
 		API_BASE_URL  => $config->{SERVER} . 'api/v1/', #TODO move into config file or module
-        MWIDTH => $FORM->param('w') || 0,
         SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
         USER_NAME => $user->user_name
     );
@@ -211,16 +210,6 @@ sub gen_body {
 	$template->param( 'DUPDIST' => $dupdist );
 	$template->param( 'CSCORE'  => $cscore );
 	$template->param( 'DISPLAY_DAGCHAINER_SETTINGS' => $display_dagchainer_settings );
-	my $mcs = $FORM->param('mcs');
-	$template->param( 'MIN_CHR_SIZE' => $mcs ) if $mcs;
-
-	# Set Visualizer Option # AKB Added 2016-10-18
-	if ($vis && $vis =~ /legacy/i ) {
-		$template->param( 'LEGACY_SELECT' => 'checked' );
-	}
-    else {
-		$template->param( 'SYNMAP2_SELECT' => 'checked' );
-	}
 
 	#will the program automatically run?
 	my $autogo = $FORM->param('autogo');
@@ -292,63 +281,6 @@ sub gen_body {
 	$logks = 1 unless defined $logks;    #turn on by default if not specified
 	$template->param( 'LOGKS' => "checked" ) if defined $logks && $logks;
 
-	#show non syntenic dots:  on by default
-	my $snsd = 0;
-	$snsd = $FORM->param('snsd') if ( defined $FORM->param('snsd') );
-	$template->param( 'SHOW_NON_SYN_DOTS' => 'checked' ) if $snsd;
-
-	#are the axes flipped?
-	my $flip = 0;
-	$flip = $FORM->param('flip') if ( defined $FORM->param('flip') );
-	$template->param( 'FLIP' => 'checked' ) if $flip;
-
-	#are the chromosomes labeled?
-	my $clabel = 1;
-	$clabel = $FORM->param('cl') if ( defined $FORM->param('cl') );
-	$template->param( 'CHR_LABEL' => 'checked' ) if $clabel;
-
-	#are the chromosomes labeled?
-	my $skip_rand = 1;
-	$skip_rand = $FORM->param('sr') if ( defined $FORM->param('sr') );
-	$template->param( 'SKIP_RAND' => 'checked' ) if $skip_rand;
-
-	#what is the sort for chromosome display?
-	my $chr_sort_order = "S";
-	$chr_sort_order = $FORM->param('cso') if ( defined $FORM->param('cso') );
-	if ( $chr_sort_order =~ /N/i ) {
-		$template->param( 'CHR_SORT_NAME' => 'selected' );
-	}
-	elsif ( $chr_sort_order =~ /S/i ) {
-		$template->param( 'CHR_SORT_SIZE' => 'selected' );
-	}
-
-	#set axis metric for dotplot
-	if ( $FORM->param('ct') ) {
-		if ( $FORM->param('ct') eq "inv" ) {
-			$template->param( 'COLOR_TYPE_INV' => 'selected' );
-		}
-		elsif ( $FORM->param('ct') eq "diag" ) {
-			$template->param( 'COLOR_TYPE_DIAG' => 'selected' );
-		}
-	}
-	else {
-		$template->param( 'COLOR_TYPE_NONE' => 'selected' );
-	}
-	if ( $FORM->param('am') && $FORM->param('am') =~ /g/i ) {
-		$template->param( 'AXIS_METRIC_GENE' => 'selected' );
-	}
-	else {
-		$template->param( 'AXIS_METRIC_NT' => 'selected' );
-	}
-
-	#axis relationship:  will dotplot be forced into a square?
-	if ( $FORM->param('ar') && $FORM->param('ar') =~ /s/i ) {
-		$template->param( 'AXIS_RELATIONSHIP_S' => 'selected' );
-	}
-	else {
-		$template->param( 'AXIS_RELATIONSHIP_R' => 'selected' );
-	}
-
 	#merge diags algorithm
 	if ( $FORM->param('ma') ) {
 		$template->param( QUOTA_MERGE_SELECT => 'selected' )
@@ -395,13 +327,6 @@ sub gen_body {
 	}
 
 	$template->param( 'BOX_DIAGS' => "checked" ) if $FORM->param('bd');
-	my $spa = $FORM->param('sp') if $FORM->param('sp');
-	$template->param( 'SYNTENIC_PATH' => "checked" ) if $spa;
-	$template->param( 'SHOW_NON_SYN' => "checked" ) if $spa && $spa =~ /2/;
-	$template->param( 'SPA_FEW_SELECT'  => "selected" ) if $spa && $spa > 0;
-	$template->param( 'SPA_MORE_SELECT' => "selected" ) if $spa && $spa < 0;
-	$template->param( 'SPA' => "checked" ) if $FORM->param('spa'); # synteny-vis
-
 	my $file = $FORM->param('file');
 	if ($file) {
 		my $results = read_file($file);
@@ -963,14 +888,6 @@ sub get_results {
 		$_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
 	}
 	$results->param( chromosomes2 => encode_json($chromosomes2) );
-
-	# synteny-vis
-	if ($opts{spa} =~ /true/i) {
-		my $spa_path = $final_dagchainer_file . '.spa';
-		return encode_json( { error => "The output $spa_path could not be found." } ) unless (-r $spa_path);
-		$spa_path =~ s/$DIR/$URL/;
-		$results->param( spa_url => $spa_path );
-	};
 
 	# fractionation bias
 	# my $gff_sort_output_file;
