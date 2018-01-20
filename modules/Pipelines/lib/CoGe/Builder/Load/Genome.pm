@@ -37,7 +37,7 @@ sub build {
     my $input_files = $opts{data_files};
     my $input_dir   = $opts{data_dir};
     my $ncbi_accns  = $opts{ncbi_accns};
-    unless (@$input_files || @$input_dir || @$ncbi_accns) {
+    unless ($input_files || $input_dir || $ncbi_accns) {
         CoGe::Exception::MissingField->throw(message => "Missing inputs");
     }
     
