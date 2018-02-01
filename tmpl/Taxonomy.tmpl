@@ -1,0 +1,31 @@
+<script type="text/javascript">
+    //Page constants
+    const API_BASE_URL  = '<TMPL_VAR NAME="API_BASE_URL">';
+    const USER_NAME     = '<TMPL_VAR NAME="USER">';
+</script>
+<script type="text/javascript" src="js/coge/utils.js"></script>
+<script type="text/javascript" src="js/coge/services.js"></script>
+<!--<script src="js/coge/colors.js"</script>-->
+<script type="text/javascript" src="js/pages/admin.js"></script>
+<script type="text/javascript" src="js/vendor/d3/d3.min.js"></script>
+
+<div id="tabs">
+    <div id="tabs-6">
+        <span style="margin-right:20px;">
+            Please wait for the root tree to load below before entering search text.
+        <br />
+        <br />
+            Filter:
+            <td>
+                <input id="tree_filter" type="search" placeholder="Search" onkeyup="wait_to_search(filter_tree, this.value);" size="50" spellcheck="false" />
+            <!--<input id="tree_filter" type="search" placeholder="Search" onkeyup="filter_tree(this.value);" size="50" spellcheck="false" />-->
+            </td>
+            <img id="loading6" src="picts/ajax-loader.gif" width='18' height='18' class="link" style="padding:1px;display:none;" />
+            <p id="not" style="display:none;">No results found</p>
+        </span>
+        <span id="taxonomic_tree"></span>
+    </div>
+</div>
+<script>
+    init_taxon_tree("taxonomic_tree");
+</script>

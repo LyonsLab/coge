@@ -16,7 +16,6 @@ use CoGeDBI;
 use URI::Escape::JavaScript qw(escape unescape);
 use Time::Piece;
 use JSON::XS;
-use CoGe::Accessory::Web;
 use Benchmark;
 no warnings 'redefine';
 
