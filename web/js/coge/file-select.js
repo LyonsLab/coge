@@ -783,9 +783,9 @@ var coge = window.coge = (function(namespace) {
 			let self = this;
 			
 			let url = $('#input_url').val();
-			if (!url.startsWith('ftp://') && !url.startsWith('http://')) {
+			if (!url.startsWith('ftp://') && !url.startsWith('http://') && !url.startsWith('https://')) {
 				$('#error_help_text')
-					.html('URL must begin with ftp:// or http://')
+					.html('URL must begin with ftp:// or http:// or https://')
 					.show()
             		.delay(10*1000)
             		.fadeOut(1500);;
