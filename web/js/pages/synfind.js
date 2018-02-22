@@ -448,8 +448,11 @@ function get_anno_chain(val, dsgid, fid) {
     if ( $('#accn_select').length )
         accn = $('#accn_select').val()[0];
     var type;
-    if ( $('#type_name').length )
-        type = $('#type_name').val()[0];
+    if ( $('#type_name').length ) {
+        var type_name = $('#type_name').val();
+        if (type_name)
+            type = [0];
+    }
 
     $('#anno').html(spinner).show();
 
