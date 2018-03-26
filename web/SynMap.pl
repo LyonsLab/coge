@@ -9,17 +9,19 @@ use CoGeX::Result::Genome qw(ERROR LOADING);
 use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
 use CoGe::Accessory::Utils qw( commify html_escape );
 use CoGe::Builder::Tools::SynMap;
-use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Genome qw(genomecmp genomecmp2);
 use CoGe::Core::Favorites;
 use CoGeDBI qw(get_feature_counts);
 use CGI;
 use CGI::Carp 'fatalsToBrowser';
 use CGI::Ajax;
+#use DBIxProfiler;
 use Data::Dumper;
 use Digest::MD5 qw(md5_hex);
 use HTML::Template;
 use JSON::XS;
 use LWP::UserAgent;
+#use Parallel::ForkManager;
 use GD;
 use File::Path;
 use File::Spec::Functions;
@@ -27,20 +29,22 @@ use Mail::Mailer;
 use Benchmark;
 use DBI;
 use POSIX;
+#use Sort::Versions;
 
 our (
 	$config,        $DIR,
-	$URL,           $SERVER,        $user,
-	$FORM,          $db,          $dbweb,
+	$URL,           $SERVER,        $USER,
+	$FORM,          $coge,          $cogeweb,
 	$PAGE_NAME,     $PAGE_TITLE,
 	$FASTADIR,      $BLASTDBDIR,    $DIAGSDIR,
 	$PYTHON,
 	$TANDEM_FINDER, $RUN_DAGCHAINER,
 	$EVAL_ADJUST,   $FIND_NEARBY,
 	$NWALIGN,       $QUOTA_ALIGN,
-	$CLUSTER_UTILS,
+	$CLUSTER_UTILS, $BASE_URL,
 	$BLAST2BED,     $SYNTENY_SCORE, $TEMPDIR,
 	$TEMPURL,       $get_blast_config,
+#	$GZIP,$GUNZIP,
 	%FUNCTIONS,     $SCRIPTDIR,    $LINK
 );
 
@@ -50,7 +54,7 @@ $FORM       = new CGI;
 $PAGE_TITLE = "SynMap";
 $PAGE_NAME  = "$PAGE_TITLE.pl";
 
-( $db, $user, $config, $LINK ) = CoGe::Accessory::Web->init(
+( $coge, $USER, $config, $LINK ) = CoGe::Accessory::Web->init(
 	cgi        => $FORM,
 	page_title => $PAGE_TITLE,
 );
@@ -64,10 +68,19 @@ $ENV{BLASTDB}    = $config->{BLASTDB};
 $ENV{BLASTMAT}   = $config->{BLASTMATRIX};
 $ENV{PYTHONPATH} = "/opt/apache/CoGe/bin/dagchainer_bp";
 
+$BASE_URL = $config->{SERVER};
 $DIR      = $config->{COGEDIR};
 $URL      = $config->{URL};
 $TEMPDIR  = catdir($config->{TEMPDIR}, 'SynMap');
 $TEMPURL  = $config->{TEMPURL} . "SynMap";
+#$BLAST    = $config->{BLAST} . " -a " . $MAX_PROC . " -K 80 -m 8 -e 0.0001";
+
+# mdb removed 9/20/13 issue 213
+#  . " --dbpath="
+#  . $config->{LASTDB};
+
+#$GZIP          = $config->{GZIP};
+#$GUNZIP        = $config->{GUNZIP};
 
 $DIAGSDIR = $config->{DIAGSDIR};
 $FASTADIR = $config->{FASTADIR};
@@ -97,17 +110,21 @@ my %ajax = CoGe::Accessory::Web::ajax_func();
 %FUNCTIONS = (
 	get_orgs               => \&get_orgs,
 	get_genome_info        => \&get_genome_info,
+#	get_previous_analyses  => \&get_previous_analyses,
 	get_pair_info          => \&get_pair_info,
-	check_address_validity => \&CoGe::Builder::Tools::SynMap::check_address_validity,
+	check_address_validity => \&check_address_validity,
+#	generate_basefile      => \&generate_basefile,
 	get_dotplot            => \&get_dotplot,
 	gen_dsg_menu           => \&gen_dsg_menu,
 	get_dsg_gc             => \&get_dsg_gc,
+#	read_log               => \&CoGe::Accessory::Web::read_log,
 	get_results            => \&get_results,
+#	generate_assembly      => \&generate_assembly,
 	%ajax,
 );
 
-my $jquery_ajax = $FORM->param('jquery_ajax');
-if ( $jquery_ajax ) {
+my $pj = new CGI::Ajax(%FUNCTIONS);
+if ( $FORM->param('jquery_ajax') ) {
 	my %args  = $FORM->Vars;
 	my $fname = $args{fname};
 
@@ -123,7 +140,6 @@ if ( $jquery_ajax ) {
 	}
 }
 else {
-	my $pj = new CGI::Ajax(%FUNCTIONS);
 	$pj->js_encode_function('escape');
 	print $pj->build_html( $FORM, \&gen_html );
 }
@@ -133,6 +149,24 @@ else {
 # Web functions
 ################################################################################
 
+#sub read_log_test {
+#	my %args    = @_;
+#	my $logfile = $args{logfile};
+#	my $prog    = $args{prog};
+#	return unless $logfile;
+#	$logfile .= ".log" unless $logfile =~ /log$/;
+#	$logfile = $TEMPDIR . "/$logfile" unless $logfile =~ /^$TEMPDIR/;
+#	return unless -r $logfile;
+#	my $str;
+#	open( IN, $logfile );
+#
+#	while (<IN>) {
+#		$str .= $_;
+#	}
+#	close IN;
+#	return $str;
+#}
+
 sub gen_html {
 	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
 	$template->param(
@@ -141,11 +175,11 @@ sub gen_html {
 		PAGE_LINK  => $LINK,
 		SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
 		HEAD       => qq{},
-		USER       => $user->display_name || '',
+		USER       => $USER->display_name || '',
 		NO_DOCTYPE => 1
 	);
 
-	$template->param( LOGON => 1 ) unless $user->user_name eq "public";
+	$template->param( LOGON => 1 ) unless $USER->user_name eq "public";
 
     my ($body) = gen_body();
 	$template->param( BODY => $body );
@@ -153,7 +187,7 @@ sub gen_html {
 		HOME       => $config->{SERVER},
 		HELP       => 'SynMap',
 		WIKI_URL   => $config->{WIKI_URL} || '',
-		ADMIN_ONLY => $user->is_admin,
+		ADMIN_ONLY => $USER->is_admin,
 		CAS_URL    => $config->{CAS_URL} || '',
 		COOKIE_NAME => $config->{COOKIE_NAME} || ''
 	);
@@ -168,7 +202,7 @@ sub gen_body {
 		API_BASE_URL  => $config->{SERVER} . 'api/v1/', #TODO move into config file or module
         MWIDTH => $FORM->param('w') || 0,
         SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
-        USER_NAME => $user->user_name
+        USER_NAME => $USER->user_name
     );
 
 	#set search algorithm on web-page
@@ -187,6 +221,8 @@ sub gen_body {
 	$cscore = $FORM->param('csco');
 	$cscore //= 0;    #/
 	$dupdist = $FORM->param('tdd');
+
+#   $cvalue = $FORM->param('c');       #different c value than the one for cytology.  But if you get that, you probably shouldn't be reading this code
 
 	my $display_dagchainer_settings;
 	if ( $D && $A && $dt ) {
@@ -207,6 +243,8 @@ sub gen_body {
 		$display_dagchainer_settings = qq{display_dagchainer_settings();};
 	}
 
+	#   $cvalue = 4 unless defined $cvalue;
+	#   $template->param( 'CVALUE'                      => $cvalue );
 	$dupdist = 10 unless defined $dupdist;
 	$template->param( 'DUPDIST' => $dupdist );
 	$template->param( 'CSCORE'  => $cscore );
@@ -237,10 +275,7 @@ sub gen_body {
 		$dsgid = $FORM->param( 'gid' . $i ) if $FORM->param( 'gid' . $i );      #new method for specifying genome
 		my $feattype_param = $FORM->param( 'ft' . $i ) if $FORM->param( 'ft' . $i );
 		my $name = $FORM->param( 'name' . $i ) if $FORM->param( 'name' . $i );
-		my $org_menu = CoGe::Builder::Tools::SynMap::gen_org_menu(
-			db             => $db,
-			config         => $config,
-			user           => $user,
+		my $org_menu = gen_org_menu(
 			dsgid          => $dsgid,
 			num            => $i,
 			feattype_param => $feattype_param,
@@ -248,8 +283,8 @@ sub gen_body {
 		);
 		$template->param( "ORG_MENU" . $i => $org_menu );
 
-		my ($dsg) = $db->resultset('Genome')->find($dsgid);
-		if ( $dsgid > 0 and !$user->has_access_to_genome($dsg) ) {
+		my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+		if ( $dsgid > 0 and !$USER->has_access_to_genome($dsg) ) {
 			$error = 1;
 		}
 	}
@@ -427,6 +462,146 @@ sub gen_body {
 	return $template->output;
 }
 
+sub gen_org_menu {
+	my %opts           = @_;
+	my $oid            = $opts{oid};
+	my $num            = $opts{num};
+	my $name           = $opts{name};
+	my $desc           = $opts{desc};
+	my $dsgid          = $opts{dsgid};
+	my $feattype_param = $opts{feattype_param};
+	$feattype_param = 1 unless $feattype_param;
+
+	$name = "Search" unless $name;
+	$desc = "Search" unless $desc;
+	my ($dsg) = $coge->resultset('Genome')->find($dsgid);
+
+	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/organism_menu.tmpl' );
+	$template->param(
+		ORG_MENU => 1,
+		NUM      => $num,
+		SEARCH   => $name,
+	);
+
+	if ( $dsg and $USER->has_access_to_genome($dsg) ) {
+		my $org = $dsg->organism;
+		$oid = $org->id;
+
+		my ( $dsg_info, $feattype_menu, $message, $total_length, undef, undef, $seq_type ) = get_genome_info(
+			dsgid    => $dsgid,
+			org_num  => $num,
+			feattype => $feattype_param
+		);
+
+		$template->param(
+			DSG_INFO       => $dsg_info,
+			FEATTYPE_MENU  => $feattype_menu,
+			GENOME_MESSAGE => $message,
+			 # mdb added 11/3/16 COGE-768 -- set values needed for block check because handle_dsg_info() doesn't get called when gid's passed in URL
+			ORG_LENGTH     => $total_length,
+			SEQ_TYPE       => $seq_type
+		);
+	}
+	else {
+		$oid   = 0;
+		$dsgid = 0;
+	}
+
+	$template->param( 'ORG_LIST' => get_orgs( search => $name, i => $num, oid => $oid ) );
+
+	my ($dsg_menu) = gen_dsg_menu( oid => $oid, dsgid => $dsgid, num => $num );
+	$template->param( DSG_MENU => $dsg_menu );
+
+	return $template->output;
+}
+
+sub gen_dsg_menu {
+	my %opts  = @_;
+	my $oid   = $opts{oid};
+	my $num   = $opts{num};
+	my $dsgid = $opts{dsgid};
+	my @dsg_menu;
+	my $message;
+	my $org_name;
+
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
+    
+	foreach my $dsg ( sort { genomecmp2($a, $b, $favorites) }
+		$coge->resultset('Genome')->search(
+			{ organism_id => $oid },
+			{
+				prefetch => ['genomic_sequence_type'],
+				join     => ['genomic_sequence_type']
+			}
+		)
+	  )
+	{
+		my $name;
+		my $has_cds = 0;
+
+		if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
+			next unless $dsgid && $dsg->id == $dsgid;
+			$name = "Restricted";
+		}
+		elsif ( $dsg->deleted ) {
+			if ( $dsgid && $dsgid == $dsg->id ) {
+				$name =
+				    "DELETED: "
+				  . $dsg->type->name . " (v"
+				  . $dsg->version . ",id"
+				  . $dsg->id . ")";
+			}
+			else {
+				next;
+			}
+		}
+		else {
+		    $name .= "&#11088; " if ($favorites->is_favorite($dsg));
+			$name .= "&#x2705; " if $dsg->certified;
+		    $name .= "&#x1f512; " if $dsg->restricted;
+			$name .= $dsg->name . ": " if $dsg->name;
+			$name .= $dsg->type->name . " (v" . $dsg->version . ",id" . $dsg->id . ")";
+			$org_name = $dsg->organism->name unless $org_name;
+			foreach my $ft (
+				$coge->resultset('FeatureType')->search(
+					{	genome_id            => $dsg->id,
+						'me.feature_type_id' => 3
+					},
+					{	join =>
+						  { features => { dataset => 'dataset_connectors' } },
+						rows => 1,
+					}
+				))
+			{
+				$has_cds = 1;
+			}
+		}
+
+		push @dsg_menu, [ $dsg->id, $name, $dsg, $has_cds ];
+	}
+
+	return ( qq{<span id="dsgid$num" class="hidden"></span>}, '' )
+	  unless (@dsg_menu);
+
+    #my $dsg_menu = qq{<select id="dsgid$num" onChange="\$('#dsg_info$num').html('<div class=dna_small class="loading" class="small">loading. . .</div>'); get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
+	my $dsg_menu =
+	    qq{<div class="coge-padded-top inline bottom">}
+	  . qq{<span class="small text">Genomes: </span>}
+	  . qq{<select id="dsgid$num" style="max-width:400px;height:2em;" onChange="get_genome_info(['args__dsgid','dsgid$num','args__org_num','args__$num'],[handle_dsg_info])">};
+
+	foreach (@dsg_menu) {
+		my ( $numt, $name ) = @$_;
+		my $selected = " selected" if $dsgid && $numt == $dsgid;
+		$selected = " " unless $selected;
+		$numt = 0 if $name eq "Restricted";
+		$dsg_menu .= qq{<OPTION VALUE=$numt $selected>$name</option>};
+	}
+	$dsg_menu .= "</select>";
+	$dsg_menu .= "</div>";
+
+	return ( $dsg_menu, $message );
+}
+
 sub read_file {
 	my $file = shift;
 
@@ -439,6 +614,278 @@ sub read_file {
 	return $html;
 }
 
+sub get_orgs {
+	my %opts   = @_;
+	my $search = $opts{search};
+	my $oid    = $opts{oid};
+	my $i      = $opts{i};
+
+	#get rid of trailing white-space
+	$search =~ s/^\s+//g if $search;
+	$search =~ s/\s+$//g if $search;
+	$search = ""
+	  if $search && $search =~ /Search/;    #need to clear to get full org count
+
+	my @organisms;
+	my $org_count;
+
+	# Create terms for search
+	my @terms = split /\s+/, $search if defined $search;
+
+	if ( scalar @terms or $oid ) {
+		my @constraints = map {
+			-or => [
+				{ name        => { like => qq{%$_%} } },
+				{ description => { like => qq{%$_%} } }
+			  ]
+		} @terms;
+
+		@organisms = $coge->resultset("Organism")->search(
+			{
+				-or => [
+					-and => \@constraints,
+					{ organism_id => $oid },
+				]
+			}
+		);
+	}
+	else {
+		$org_count = $coge->resultset("Organism")->count;
+	}
+
+	my @opts;
+	foreach my $item ( sort { uc( $a->name ) cmp uc( $b->name ) } @organisms ) {
+		my $option = "<OPTION value=\"" . $item->id . "\"";
+		$option .= " selected" if $oid && $oid == $item->id;
+		$option .= ">" . $item->name . " (id" . $item->id . ")</OPTION>";
+		push @opts, $option;
+	}
+
+	unless ( @opts && @organisms ) {
+		return qq{<span name="org_id$i" id="org_id$i"></span>};
+	}
+
+	$org_count = scalar @opts unless $org_count;
+	my $html =
+	    qq{<span class="small info">Organisms: (}
+	  . $org_count
+	  . qq{)</span>\n<BR>\n};
+	$html .= qq{<SELECT id="org_id$i" SIZE="5" MULTIPLE onChange="get_genome_info_chain($i)" class="coge-fill-width">\n}
+	  . join( "\n", @opts )
+	  . "\n</SELECT>\n";
+	$html =~ s/OPTION/OPTION SELECTED/ unless $oid;
+	return $html;
+}
+
+sub get_genome_info {
+	my %opts     = @_;
+	my $dsgid    = $opts{dsgid};
+	my $org_num  = $opts{org_num};
+	my $feattype = $opts{feattype};
+	$feattype = 1 unless defined $feattype;
+	return ( "<div class='small note indent'>This organism has no publicly available data.</div>",
+		" ", " ", '', $org_num, '', '' )
+	  unless ( $dsgid && $dsgid =~ /\d+/ );
+
+	my $html_dsg_info;
+
+    #my ($dsg) = $coge->resultset("Genome")->find({genome_id=>$dsgid},{join=>['organism','genomic_sequences'],prefetch=>['organism','genomic_sequences']});
+	my ($dsg) = $coge->resultset("Genome")->find( { genome_id => $dsgid },
+		{ join => 'organism', prefetch => 'organism' } );
+	return " ", " ", " " unless $dsg;
+	my $org     = $dsg->organism;
+	my $orgname = $org->name;
+	$orgname =
+	    "<a href=\"OrganismView.pl?oid="
+	  . $org->id
+	  . "\" target=_new>$orgname</a>";
+	my $org_desc;
+	if ( $org->description ) {
+		$org_desc = join(
+			"; ",
+			map {
+				    qq{<span class="link" onclick="}
+				  . qq{search_bar('$_', '#org_name$org_num'); timing('org_name$org_num')">$_</span>}
+			  } split /\s*;\s*/,
+			$org->description
+		);
+	}
+
+	my $i = 0;
+	my (
+		$percent_gc, $percent_at, $percent_n, $percent_x, $chr_length,
+		$chr_count,  $plasmid,    $contig,    $scaffold
+	) = get_dsg_info($dsg);
+	my ($ds) = $dsg->datasets;
+	my $link = $ds->data_source->link;
+	$link = $BASE_URL unless $link;
+	$link = "http://" . $link unless $link && $link =~ /^http/;
+	$html_dsg_info .= qq{<table class="xsmall" style="margin-left:1em; border-top:1px solid lightgray;">};
+	$html_dsg_info .= qq{<tr><td>Description:</td><td class="link" onclick=window.open('GenomeInfo.pl?gid=$dsgid')>}
+	  . $dsg->info
+	  . qq{</td></tr>};
+
+    #$html_dsg_info .= qq{<tr><td>Organism:</td><td>$orgname</td></tr>}; # redundant
+	$html_dsg_info .= qq{<tr><td>Taxonomy:</td><td>$org_desc</td></tr>};
+	$html_dsg_info .= "<tr><td>Name: <td>" . $dsg->name if $dsg->name;
+	$html_dsg_info .= "<tr><td>Description: <td>" . $dsg->description if $dsg->description;
+	$html_dsg_info .=
+	    "<tr><td>Source:  <td><a href=" 
+	  . $link
+	  . " target=_new>"
+	  . $ds->data_source->name . "</a>";
+	$html_dsg_info .= 
+	    '&nbsp;&nbsp;'
+	  . HTML::Template->new( filename => $config->{TMPLDIR} . 'widgets/Certified.tmpl' )->output if $dsg->certified;
+
+	#$html_dsg_info .= $dsg->chr_info(summary=>1);
+	$html_dsg_info .= "<tr><td>Dataset: <td>" . $ds->name;
+	$html_dsg_info .= ": " . $ds->description if $ds->description;
+	$html_dsg_info .= "<tr><td>Chromosomes: <td>" . commify($chr_count);
+	if ( $percent_gc > 0 ) {
+		$html_dsg_info .= "<tr><td>DNA content: <td>GC: $percent_gc%, AT: $percent_at%, N: $percent_n%, X: $percent_x%";
+	}
+	else {
+		$html_dsg_info .= qq{<tr><td>DNA content: <td id='gc_content$org_num' class='link' onclick="get_gc($dsgid, 'gc_content$org_num')">Click to retrieve};
+	}
+	$html_dsg_info .= "<tr><td>Total length: <td>" . commify($chr_length);
+	$html_dsg_info .= "<tr><td>Contains plasmid" if $plasmid;
+	$html_dsg_info .= "<tr><td>Contains contigs" if $contig;
+	$html_dsg_info .= "<tr><td>Contains scaffolds" if $scaffold;
+	$html_dsg_info .= qq{<tr class="alert"><td>Restricted:</td><td>Yes}
+	  if $dsg->restricted;
+	$html_dsg_info .= "</table>";
+	if ( $dsg->restricted && !$USER->has_access_to_genome($dsg) ) {
+		$html_dsg_info = "Restricted";
+	}
+	if ( $dsg->deleted ) {
+		$html_dsg_info = "<span class='alert'>This genome has been deleted and cannot be used in this analysis.</span>  <a href='GenomeInfo.pl?gid=$dsgid' target=_new>More information</a>.";
+	}
+
+	my $message;
+
+	#create feature type menu
+	my $has_cds;
+
+	foreach my $ft (
+		$coge->resultset('FeatureType')->search(
+			{
+				genome_id            => $dsg->id,
+				'me.feature_type_id' => 3
+			},
+			{
+				join => { features => { dataset => 'dataset_connectors' } },
+				rows => 1,
+			}
+		)
+	  )
+	{
+		$has_cds = 1;
+	}
+
+	my ( $cds_selected, $genomic_selected ) = ( " ", " " );
+	$cds_selected     = "selected" if $feattype eq 1 || $feattype eq "CDS";
+	$genomic_selected = "selected" if $feattype eq 2 || $feattype eq "genomic";
+
+	my $feattype_menu = qq{<select id="feat_type$org_num" name="feat_type$org_num" style="height:2em;">#};
+	$feattype_menu .= qq{<OPTION VALUE=1 $cds_selected>CDS</option>} if $has_cds;
+	$feattype_menu .= qq{<OPTION VALUE=2 $genomic_selected>genomic</option>};
+	$feattype_menu .= "</select>";
+	$message = "<span class='small alert'>No Coding Sequence in Genome</span>" unless $has_cds;
+	$message = "<span class='small alert'>Genome is still being loaded</span>" if ($dsg->is_loading());
+	$message = "<span class='small alert'>Genome is in invalid state</span>"   if ($dsg->is_error());
+
+	return $html_dsg_info, $feattype_menu, $message, $chr_length, $org_num,
+	  $dsg->organism->name, $dsg->genomic_sequence_type_id;
+}
+
+sub get_dsg_info {
+	my $dsg       = shift;
+	my $length    = 0;
+	my $chr_count = 0;
+
+	$length    = $dsg->length;          #$rs->first->get_column('total_length');
+	$chr_count = $dsg->chromosome_count;
+	my ( $gc, $at, $n, $x ) = ( 0, 0, 0, 0 );
+	if ( $chr_count < 100 && $length < 50000000 ) {
+		( $gc, $at, $n, $x ) = get_dsg_gc( dsg => $dsg );
+	}
+	my ( $plasmid, $contig, $scaffold ) = get_chr_types( dsg => $dsg );
+	return $gc, $at, $n, $x, $length, $chr_count, $plasmid, $contig, $scaffold;
+}
+
+sub get_dsg_gc {
+	my %opts  = @_;
+	my $dsg   = $opts{dsg};
+	my $dsgid = $opts{dsgid};
+	my $text  = $opts{text};
+	$dsg = $coge->resultset('Genome')->find($dsgid) if $dsgid;
+	my ( $gc, $at, $n, $x ) = $dsg->percent_gc;
+	$gc *= 100;
+	$at *= 100;
+	$n  *= 100;
+	$x  *= 100;
+
+	if ($text) {
+		return "GC: $gc%, AT: $at%, N: $n%, X: $x%";
+	}
+	else {
+		return ( $gc, $at, $n, $x );
+	}
+}
+
+sub get_chr_types {
+	my %opts  = @_;
+	my $dsg   = $opts{dsg};
+	my $dsgid = $opts{dsgid};
+	$dsg = $coge->resultset('Genome')->find($dsgid) if $dsgid;
+	my $plasmid     = 0;
+	my $contig      = 0;
+	my $scaffold    = 0;
+	my @chromosomes = $dsg->chromosomes;
+	if ( @chromosomes > 100 ) {
+		return ( 0, 1, 0 );
+	}
+	foreach my $chr (@chromosomes) {
+		$plasmid  = 1 if !$plasmid  && $chr =~ /plasmid/i;
+		$contig   = 1 if !$contig   && $chr =~ /contig/i;
+		$scaffold = 1 if !$scaffold && $chr =~ /scaffold/i;
+	}
+	return ( $plasmid, $contig, $scaffold );
+}
+
+sub get_pair_info {
+	my @anno;
+	foreach my $fid (@_) {
+		unless ( $fid =~ /^\d+$/ ) {
+			push @anno, $fid . "<br>genomic";
+			next;
+		}
+		my $feat = $coge->resultset('Feature')->find($fid);
+
+#       my $anno     = "Name: " . join( ", ", map { "<a class=\"data link\" href=\"$URL/FeatView.pl?accn=" . $_ . "\" target=_new>" . $_ . "</a>" } $feat->names );
+#       my $location = "Chr " . $feat->chromosome . " ";
+#       $location .= commify( $feat->start ) . " - " . commify( $feat->stop );
+
+		#   $location .=" (".$feat->strand.")";
+		#       push @anno, $location . "<br>" . $anno;
+		push @anno, $feat->annotation_pretty_print_html;
+	}
+	return unless @anno;
+	my $output =
+	    "<table class=small valign=top>"
+	  . join( "\n", ( map { "<tr><td>" . $_ . "</td></tr>" } @anno ) )
+	  . "</table>";
+	my $URL = $config->{URL};
+	$output =~ s/window\.open\('(.*?)'\)/window.open('$URL$1')/g;
+	return $output;
+}
+
+#sub generate_basefile {
+#	$cogeweb = CoGe::Accessory::Web::initialize_basefile( tempdir => $TEMPDIR );
+#	return $cogeweb->basefilename;
+#}
+
 sub get_results {
 	my %opts = @_;
 	foreach my $k ( keys %opts ) {
@@ -450,8 +897,8 @@ sub get_results {
 
 	return encode_json( { error => "You must select two genomes." } ) unless ( $dsgid1 && $dsgid2 );
 
-	my ($genome1) = $db->resultset('Genome')->find($dsgid1);
-	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
+	my ($genome1) = $coge->resultset('Genome')->find($dsgid1);
+	my ($genome2) = $coge->resultset('Genome')->find($dsgid2);
 
 	return encode_json({
 		error => "Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
@@ -460,7 +907,7 @@ sub get_results {
 	############################################################################
 	# Initialize Job info
 	############################################################################
-	my $tiny_link = get_query_link($config, $db, @_);
+	my $tiny_link = get_query_link($config, $coge, @_);
 
 	say STDERR "tiny_link is required for logging." unless defined($tiny_link);
 
@@ -468,14 +915,14 @@ sub get_results {
 	#    my $workflow_name .= "-$tiny_id";
 
 	my $basename = $opts{basename};
-	$dbweb = CoGe::Accessory::Web::initialize_basefile(
+	$cogeweb = CoGe::Accessory::Web::initialize_basefile(
 		basename => $basename,
 		tempdir  => $TEMPDIR
 	);
 	
 	my $result_path = get_result_path($DIAGSDIR, $dsgid1, $dsgid2);
 	my $log_path = get_log_file_path($result_path, $tiny_link);
-	$dbweb->logfile($log_path);
+	$cogeweb->logfile($log_path);
 
 	############################################################################
 	# Parameters
@@ -553,7 +1000,7 @@ sub get_results {
 	my $logks = $opts{logks};
 	$logks = $logks eq "true" ? 1 : 0;
 
-	my $email = 0 if CoGe::Builder::Tools::SynMap::check_address_validity( $opts{email} ) eq 'invalid';
+	my $email = 0 if check_address_validity( $opts{email} ) eq 'invalid';
 
 	my $feat_type1 = $opts{feat_type1};
 	my $feat_type2 = $opts{feat_type2};
@@ -578,13 +1025,13 @@ sub get_results {
 	# Fetch organism name and title
 	############################################################################
 	my ( $org_name1, $title1 ) = gen_org_name(
-		db		  => $db,
+		db		  => $coge,
 		genome_id     => $dsgid1,
 		feat_type => $feat_type1,
 	);
 
 	my ( $org_name2, $title2 ) = gen_org_name(
-		db		  => $db,
+		db		  => $coge,
 		genome_id     => $dsgid2,
 		feat_type => $feat_type2,
 	);
@@ -593,9 +1040,11 @@ sub get_results {
 	# Generate Fasta files
 	############################################################################
 	my ( $fasta1, $fasta2 );
+#	my $workflow = undef;
+#	my $status   = undef;
 
 	if ( $feat_type1 eq "genomic" ) {
-		my $genome = $db->resultset('Genome')->find($dsgid1);
+		my $genome = $coge->resultset('Genome')->find($dsgid1);
 		$fasta1 = $genome->file_path;
 	}
 	else {
@@ -603,7 +1052,7 @@ sub get_results {
 	}
 
 	if ( $feat_type2 eq "genomic" ) {
-		my $genome = $db->resultset('Genome')->find($dsgid2);
+		my $genome = $coge->resultset('Genome')->find($dsgid2);
 		$fasta2 = $genome->file_path;
 	}
 	else {
@@ -666,6 +1115,16 @@ sub get_results {
 	my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
 	$raw_blastfile .= ".new" if $raw_blastfile =~ /genomic/;
 
+	###########################################################################
+	# Converting blast to bed and finding local duplications
+	###########################################################################
+	#
+	# NOTES: The blast2bed program will take the input rawblast file and
+	# filter it and creating a new rawblast and moving the old to
+	# rawblast.orig
+	#
+#	my $query_bed   = $raw_blastfile . ".q.bed";
+#	my $subject_bed = $raw_blastfile . ".s.bed";
 
 	###########################################################################
 	# Converting blast to raw and finding local duplications
@@ -684,6 +1143,10 @@ sub get_results {
 	############################################################################
 	my $dag_file12       = $filtered_blastfile . ".dag";
 	my $dag_file12_all   = $dag_file12 . ".all";
+#	my $query_dup_file   = $opts{query_dup_files};
+#	my $subject_dup_file = $opts{subject_dup_files};
+#	my $query            = "a" . $dsgid1;
+#	my $subject          = "b" . $dsgid2;
 
 	############################################################################
 	# Convert to gene order
@@ -952,13 +1415,13 @@ sub get_results {
 	$results->param( dsgid1 => $dsgid1 );
 	$results->param( dsgid2 => $dsgid2 );
 	my $chromosomes1 = $genome1->chromosomes_all;
-	my $feature_counts = get_feature_counts($db->storage->dbh, $genome1->id);
+	my $feature_counts = get_feature_counts($coge->storage->dbh, $genome1->id);
 	foreach (@$chromosomes1) {
 		$_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
 	}
 	$results->param( chromosomes1 => encode_json($chromosomes1) );
 	my $chromosomes2 = $genome2->chromosomes_all;
-	$feature_counts = get_feature_counts($db->storage->dbh, $genome2->id);
+	$feature_counts = get_feature_counts($coge->storage->dbh, $genome2->id);
 	foreach (@$chromosomes2) {
 		$_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
 	}
@@ -1001,6 +1464,11 @@ sub get_results {
 			return encode_json( { error => "The fractionation bias data could not be found." } );
 		}
 		$results->param( frac_bias => catfile($output_url, $fb_json_file) );
+		# $gff_sort_output_file = _filename_to_link(
+		# 	file => catfile($result_path, 'gff_sort.txt'),
+		# 	msg  => qq{GFF Sort output file},
+		# 	required => 1
+		# );
 		$synmap_dictionary_output_file = _filename_to_link(
 			file => catfile($result_path, $fb_prefix . '.fractbias-synmap-data.json'),
 			msg  => qq{SynMap dictionary output file},
@@ -1020,13 +1488,46 @@ sub get_results {
 
 	my $qa_file = $merged_dagchainer_file;
 	$qa_file =~ s/\.ma\d$/\.qa/ if $qa_file;
+#		my $qa_merged_file = $qa_file . ".merged" if $qa_file;
+#		my $qa_coverage_tmp = $quota_align_coverage . ".tmp" if $quota_align_coverage;
+#		my $qa_coverage_qa = $quota_align_coverage . ".qa" if $quota_align_coverage;
+
+	########################################################################
+	# Compress Results
+	########################################################################
+
+	#my $file_list = [
+	#    \$raw_blastfile,          \$filtered_blastfile,
+	#    \$query_bed,              \$subject_bed,
+	#    \$org1_localdups,         \$org2_localdups,
+	#    \$dag_file12_all,         \$dag_file12_all_geneorder,
+	#    \$dag_file12,             \$dagchainer_file,
+	#    \$final_dagchainer_file,  \$final_dagchainer_file_condensed,
+	#    \$merged_dagchainer_file, \$qa_file,
+	#    \$qa_merged_file,         \$ks_blocks_file,
+	#    \$quota_align_coverage,   \$qa_coverage_qa
+	#];    #, \$spa_file];
+	#my $pm = new Parallel::ForkManager($MAX_PROC);
+
+	#foreach my $item (@$file_list) {
+	#    $pm->start and next;
+
+	#    #$$item = CoGe::Accessory::Web::gzip($$item);
+	#    $pm->finish;
+	#}
+	#$pm->wait_all_children();
+
+	#foreach my $item (@$file_list) {
+
+	#    #$$item = CoGe::Accessory::Web::gzip($$item);
+	#}
 
 	#######################################################################
 	# General
 	#######################################################################
 
 	my $log_url = _filename_to_link(
-		file     => $dbweb->logfile,
+		file     => $cogeweb->logfile,
 		msg      => qq{Analysis Log},
 		required => 1,
 	);
@@ -1040,6 +1541,15 @@ sub get_results {
 	#######################################################################
 	# Homologs
 	#######################################################################
+	# mdb removed 9/20/13 issue 77
+	#        my $fasta1_url = _filename_to_link(
+	#            file => $fasta1,
+	#            msg  => qq{Fasta file for $org_name1: $feat_type1}
+	#        );
+	#        my $fasta2_url = _filename_to_link(
+	#            file => $fasta2,
+	#            msg  => qq{Fasta file for $org_name2: $feat_type2}
+	#        );
 
 	my $sequence_url1 = api_url_for("genomes/$dsgid1/sequence"); #"api/v1/legacy/sequence; # mdb changed 2/12/16 for hypnotoad
 	my $sequence_url2 = api_url_for("genomes/$dsgid2/sequence");
@@ -1274,7 +1784,7 @@ sub get_results {
 	########################################################################
 	# SynMap3D Link
 	########################################################################
-	my $syn3d = $config->{SERVER} . "SynMap3D.pl";
+	my $syn3d = $BASE_URL . "SynMap3D.pl";
 	my $threedlink = $syn3d . "?x_gid=" . $dsgid1 . ";y_gid=" . $dsgid2;
 	#print STDERR $threedlink . "\n";
 	$results->param( syn3dlink => $threedlink) ;
@@ -1311,7 +1821,19 @@ sub get_results {
 	}
 	$html .= "<br>";
 
-	my $log = $dbweb->logfile;
+	#unless(-r $json_file and -s $json_file ) {
+	#    return encode_json({
+	#        error => "The json file could not be found."
+	#    });
+	#}
+
+	#if($ks_type and -s $hist_json_file == 0) {
+	#    return encode_json({
+	#        error => "The histogram json file could not be found."
+	#    });
+	#}
+
+	my $log = $cogeweb->logfile;
 	$log            =~ s/$DIR/$URL/;
 	$json_file      =~ s/$DIR/$URL/;
 	$all_json_file  =~ s/$DIR/$URL/;
@@ -1320,6 +1842,10 @@ sub get_results {
 	$results->param( error   => $problem ) if $problem;
 	$results->param( warning => $warn )    if $warn;
 	$results->param( log     => $log );
+
+	#$results->param( json     => $json_file );
+	#$results->param( allpairs => $all_json_file );
+	#$results->param( hist     => $hist_json_file );
 
 	##print out all the datafiles created
 	$html .= "<br>";
@@ -1372,6 +1898,13 @@ sub _filename_to_link {
 			$url =~ s/$DIR/$URL/;
 		}
 
+#		$link =
+#		    q{<span class="}
+#		  . $opts{styles} . q{"}
+#		  . q{onclick="window.open('}
+#		  . $url . q{')">}
+#		  . $opts{msg}
+#		  . "</span><br>";
 		$link =
 		    q{<a class="}
 		  . $opts{styles} . q{"}
@@ -1392,6 +1925,58 @@ sub _filename_to_link {
 	}
 	return $link;
 }
+
+################################################################################
+# SynMap workflow
+################################################################################
+
+#sub add_reverse_match {
+#	my %opts   = @_;
+#	my $infile = $opts{infile};
+#	$/ = "\n";
+#	open( IN, $infile );
+#	my $stuff;
+#	my $skip = 0;
+#	while (<IN>) {
+#		chomp;
+#		s/^\s+//;
+#		$skip = 1
+#		  if /GEvo\.pl/
+#		; #GEvo links have been added, this file was generated on a previous run.  Skip!
+#		last if ($skip);
+#		next unless $_;
+#		my @line = split /\s+/;
+#		if (/^#/) {
+#			my $chr1 = $line[2];
+#			my $chr2 = $line[4];
+#			$chr1 =~ s/^a//;
+#			$chr2 =~ s/^b//;
+#			next if $chr1 eq $chr2;
+#			$line[2] = "b" . $chr2;
+#			$line[4] = "a" . $chr1;
+#			$stuff .= join( " ", @line ) . "\n";
+#			next;
+#		}
+#		my $chr1 = $line[0];
+#		my $chr2 = $line[4];
+#		$chr1 =~ s/^a//;
+#		$chr2 =~ s/^b//;
+#		next if $chr1 eq $chr2;
+#		my @tmp1 = @line[ 1 .. 3 ];
+#		my @tmp2 = @line[ 5 .. 7 ];
+#		@line[ 1 .. 3 ] = @tmp2;
+#		@line[ 5 .. 7 ] = @tmp1;
+#		$line[0]        = "a" . $chr2;
+#		$line[4]        = "b" . $chr1;
+#		$stuff .= join( "\t", @line ) . "\n";
+#	}
+#	return if $skip;
+#	close IN;
+#	open( OUT, ">>$infile" );
+#	print OUT $stuff;
+#	close OUT;
+#
+#}
 
 sub get_dotplot {
 	my %opts         = @_;
@@ -1464,21 +2049,64 @@ sub get_dotplot {
 	return $html;
 }
 
-sub gen_dsg_menu {
-	return CoGe::Builder::Tools::SynMap::gen_dsg_menu($db, $config, $user, @_);
-}
-sub get_dsg_gc {
-	return CoGe::Builder::Tools::SynMap::get_dsg_gc($db, @_);
-}
-
-sub get_genome_info {
-	return CoGe::Builder::Tools::SynMap::get_genome_info($db, $config, $user, @_);
-}
-
-sub get_orgs {
-	return CoGe::Builder::Tools::SynMap::get_orgs($db, @_);
-}
-
-sub get_pair_info {
-	return CoGe::Builder::Tools::SynMap::get_pair_info($db, $config, @_);
-}
+# mdb moved to CoGe::Pipelines::Tools::Pseudoassembly on 2/8/17
+#sub generate_assembly {
+#	my %opts = @_;
+#	my $gid1 = $opts{gid1};
+#	my $gid2 = $opts{gid2};
+#	my $flip = $opts{flip};    #reverse the order from default
+#
+#	unless ( $gid1 and $gid2 ) {
+#		return encode_json(
+#			{
+#				success => JSON::false,
+#				error   => "Wrong number of genomes specified"
+#			}
+#		);
+#	}
+#
+#	# Swap order if gid2 < gid1
+#	( $gid1, $gid2 ) = ( $gid2, $gid1 ) if $gid2 lt $gid1;
+#
+#	my $genome1 = $coge->resultset("Genome")->find($gid1);
+#	my $genome2 = $coge->resultset("Genome")->find($gid2);
+#
+#	unless ($USER->has_access_to_genome($genome1)
+#		and $USER->has_access_to_genome($genome2) )
+#	{
+#
+#		return encode_json(
+#			{
+#				success => JSON::false,
+#				error   => "User does not have access to this dataset"
+#			}
+#		);
+#	}
+#
+#	unless ( $opts{input} and -r $opts{input} ) {
+#		return encode_json(
+#			{
+#				success => JSON::false,
+#				error   => "The syntenic path assembly could not be found"
+#			}
+#		);
+#	}
+#
+#	my $filename =
+#	  qq($gid1-$gid2-) . md5_hex( $opts{input} ) . "." . $flip . ".tar.gz";
+#	my $output = catfile( $DIAGSDIR, $gid1, $gid2, "assembly", $filename );
+#
+#	# Submit workflow
+#	my $submission =
+#	  generate_pseudo_assembly( $config, $opts{input}, $output, $flip );
+#	$output =~ s/$DIR/$URL/;
+#
+#	# Fixup success to return true or false
+#	return encode_json(
+#		{
+#			id      => $submission->{id},
+#			output  => $output,
+#			success => $submission->{success} ? JSON::true : JSON::false,
+#		}
+#	);
+#}

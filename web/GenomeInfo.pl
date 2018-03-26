@@ -253,7 +253,7 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
           . '%GC Hist</div>';
 
         $feat_string .= "<td>|</td>";
-        $feat_string .= "<td class='small link' onclick=\"window.open('FeatList.pl?$dsgid=$dsgid"
+        $feat_string .= "<td class='small link' onclick=\"window.open('FeatList.pl?dsgid=$dsgid"
           . "&ftid="
           . $feats->{$type}{id}
           . ";gstid=$gstid')\">FeatList";
