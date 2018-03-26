@@ -1,1401 +1,245 @@
 #! /usr/bin/perl -w
-use v5.10;
-use strict;
-no warnings 'redefine';
-umask(0); # what is this for? (mdb 10/19/16)
 
-use CoGeX;
-use CoGeX::Result::Genome qw(ERROR LOADING);
-use CoGe::Accessory::Web qw(url_for api_url_for get_command_path);
-use CoGe::Accessory::Utils qw( commify html_escape );
-use CoGe::Builder::Tools::SynMap;
-use CoGe::Core::Genome qw(genomecmp);
-use CoGe::Core::Favorites;
-use CoGeDBI qw(get_feature_counts);
+# NOTE: this file shares a lot of code with LoadGenome.pl, replicate changes when applicable.
+
+use strict;
+
 use CGI;
-use CGI::Carp 'fatalsToBrowser';
-use CGI::Ajax;
-use Data::Dumper;
-use Digest::MD5 qw(md5_hex);
 use HTML::Template;
 use JSON::XS;
-use LWP::UserAgent;
-use GD;
-use File::Path;
-use File::Spec::Functions;
-use Mail::Mailer;
-use Benchmark;
-use DBI;
-use POSIX;
+use URI::Escape::JavaScript qw(unescape);
+#use File::Path;
+#use File::Copy;
+#use File::Basename;
+use File::Spec::Functions qw(catdir catfile);
+#use File::Listing qw(parse_dir);
+#use File::Slurp;
+use LWP::Simple;
+use URI;
+use Sort::Versions;
+use Data::Dumper;
 
-our (
-	$config,        $DIR,
-	$URL,           $SERVER,        $user,
-	$FORM,          $db,          $dbweb,
-	$PAGE_NAME,     $PAGE_TITLE,
-	$FASTADIR,      $BLASTDBDIR,    $DIAGSDIR,
-	$PYTHON,
-	$TANDEM_FINDER, $RUN_DAGCHAINER,
-	$EVAL_ADJUST,   $FIND_NEARBY,
-	$NWALIGN,       $QUOTA_ALIGN,
-	$CLUSTER_UTILS,
-	$BLAST2BED,     $SYNTENY_SCORE, $TEMPDIR,
-	$TEMPURL,       $get_blast_config,
-	%FUNCTIONS,     $SCRIPTDIR,    $LINK
+use CoGeX;
+use CoGe::Accessory::Web;
+use CoGe::Accessory::IRODS;
+use CoGe::Accessory::TDS;
+use CoGe::Accessory::Utils;
+use CoGe::Core::Genome qw(genomecmp);
+use CoGe::Core::Storage qw(get_workflow_paths get_upload_path get_irods_file);
+
+no warnings 'redefine';
+
+use vars qw(
+  $CONF $PAGE_TITLE $TEMPDIR $USER $DB $FORM $LINK $EMBED
+  %FUNCTION $LOAD_ID $WORKFLOW_ID
 );
 
-$| = 1;    # turn off buffering
+$PAGE_TITLE = 'SynMapN';
 
-$FORM       = new CGI;
-$PAGE_TITLE = "SynMap";
-$PAGE_NAME  = "$PAGE_TITLE.pl";
-
-( $db, $user, $config, $LINK ) = CoGe::Accessory::Web->init(
-	cgi        => $FORM,
-	page_title => $PAGE_TITLE,
+$FORM = new CGI;
+( $DB, $USER, $CONF, $LINK ) = CoGe::Accessory::Web->init(
+    cgi => $FORM,
+    page_title => $PAGE_TITLE
 );
 
-$ENV{PATH} = join ":",
-  (
-	$config->{COGEDIR}, $config->{BINDIR}, $config->{BINDIR} . "SynMap",
-	"/usr/bin", "/usr/local/bin"
-  );
-$ENV{BLASTDB}    = $config->{BLASTDB};
-$ENV{BLASTMAT}   = $config->{BLASTMATRIX};
-$ENV{PYTHONPATH} = "/opt/apache/CoGe/bin/dagchainer_bp";
+# Get workflow_id and load_id for previous load if specified.  Otherwise
+# generate a new load_id for data upload.
+$WORKFLOW_ID = $FORM->Vars->{'wid'} || $FORM->Vars->{'job_id'}; # wid is new name, job_id is legacy name
+$LOAD_ID = ( defined $FORM->Vars->{'load_id'} ? $FORM->Vars->{'load_id'} : get_unique_id() );
+# AKB TODO $TEMPDIR = get_upload_path($USER->name, $LOAD_ID);
 
-$DIR      = $config->{COGEDIR};
-$URL      = $config->{URL};
-$TEMPDIR  = catdir($config->{TEMPDIR}, 'SynMap');
-$TEMPURL  = $config->{TEMPURL} . "SynMap";
+$EMBED = $FORM->param('embed');
 
-$DIAGSDIR = $config->{DIAGSDIR};
-$FASTADIR = $config->{FASTADIR};
-
-mkpath( $FASTADIR,         0, 0777 );
-mkpath( $DIAGSDIR,         0, 0777 );    # mdb added 7/9/12
-mkpath( $config->{LASTDB}, 0, 0777 );    # mdb added 7/9/12
-$BLASTDBDIR = $config->{BLASTDB};
-
-$PYTHON        = $config->{PYTHON};                    #this was for python2.5
-$TANDEM_FINDER = $config->{TANDEM_FINDER} . " -d 5 -s -r"; #-d option is the distance (in genes) between dups -- not sure if the -s and -r options are needed -- they create dups files based on the input file name
-
-$EVAL_ADJUST    = $config->{EVALUE_ADJUST};
-
-$FIND_NEARBY = $config->{FIND_NEARBY} . " -d 20"; #the parameter here is for nucleotide distances -- will need to make dynamic when gene order is selected -- 5 perhaps?
-
-#programs to run Haibao Tang's quota_align program for merging diagonals and mapping coverage
-$QUOTA_ALIGN = 'nice ' . $config->{QUOTA_ALIGN};    #the program
-$CLUSTER_UTILS = $config->{CLUSTER_UTILS};    #convert dag output to quota_align input
-$SYNTENY_SCORE = $config->{SYNTENY_SCORE};
-
-#$CONVERT_TO_GENE_ORDER = $DIR."/bin/SynMap/convert_to_gene_order.pl";
-$NWALIGN = get_command_path('NWALIGN');
-
-my %ajax = CoGe::Accessory::Web::ajax_func();
-
-%FUNCTIONS = (
-	get_orgs               => \&get_orgs,
-	get_genome_info        => \&get_genome_info,
-	get_pair_info          => \&get_pair_info,
-	check_address_validity => \&CoGe::Builder::Tools::SynMap::check_address_validity,
-	get_dotplot            => \&get_dotplot,
-	gen_dsg_menu           => \&gen_dsg_menu,
-	get_dsg_gc             => \&get_dsg_gc,
-	get_results            => \&get_results,
-	%ajax,
+%FUNCTION = (
+    dotplot_dots        => \&dotplot_dots,
+    send_error_report   => \&send_error_report
 );
 
-my $jquery_ajax = $FORM->param('jquery_ajax');
-if ( $jquery_ajax ) {
-	my %args  = $FORM->Vars;
-	my $fname = $args{fname};
-
-	if ( $fname and defined $FUNCTIONS{$fname} ) {
-	    my $header = $FORM->header;
-		if ( $args{args} ) {
-			my @args_list = split( /,/, $args{args} );
-			print $header, $FUNCTIONS{$fname}->(@args_list);
-		}
-		else {
-			print $header, $FUNCTIONS{$fname}->(%args);
-		}
-	}
-}
-else {
-	my $pj = new CGI::Ajax(%FUNCTIONS);
-	$pj->js_encode_function('escape');
-	print $pj->build_html( $FORM, \&gen_html );
-}
-#CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTIONS, \&gen_html );
-
-################################################################################
-# Web functions
-################################################################################
-
-sub gen_html {
-	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'generic_page.tmpl' );
-	$template->param(
-		PAGE_TITLE => 'SynMapN',
-		TITLE      => 'SynMapN: Whole Genome Synteny Analysis',
-		PAGE_LINK  => $LINK,
-		SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
-		HEAD       => qq{},
-		USER       => $user->display_name || '',
-		NO_DOCTYPE => 1
-	);
-
-	$template->param( LOGON => 1 ) unless $user->user_name eq "public";
-
-    my ($body) = gen_body();
-	$template->param( BODY => $body );
-	$template->param(
-		HOME       => $config->{SERVER},
-		HELP       => 'SynMapN',
-		WIKI_URL   => $config->{WIKI_URL} || '',
-		ADMIN_ONLY => $user->is_admin,
-		CAS_URL    => $config->{CAS_URL} || '',
-		COOKIE_NAME => $config->{COOKIE_NAME} || ''
-	);
-	return $template->output;
-}
-
-sub gen_body {
-	my $template = HTML::Template->new( filename => $config->{TMPLDIR} . 'SynMapN.tmpl' );
-
-	$template->param(
-		MAIN => 1,
-		API_BASE_URL  => $config->{SERVER} . 'api/v1/', #TODO move into config file or module
-        SUPPORT_EMAIL => $config->{SUPPORT_EMAIL},
-        USER_NAME => $user->user_name
-    );
-
-	#set search algorithm on web-page
-	my $b = $FORM->param('b') // 6;
-	$template->param( get_blast_config($config, $b)->{opt} => "selected" );
-	my $bo = $FORM->param('bo');
-	$template->param(BLAST_OPTION => $bo);
-	my ( $D, $A, $Dm, $gm, $dt, $vis, $dupdist, $cscore ); #AKB Added '$vis' 2016-10-18
-	$D  = $FORM->param('D');
-	$A  = $FORM->param('A');
-	$Dm = $FORM->param('Dm');
-	$gm = $FORM->param('gm');
-	$gm //= 40;    #/
-	$dt     = $FORM->param('dt');
-	$vis = $FORM->param('vis');  #AKB Added 2016-10-18
-	$cscore = $FORM->param('csco');
-	$cscore //= 0;    #/
-	$dupdist = $FORM->param('tdd');
-
-	my $display_dagchainer_settings;
-	if ( $D && $A && $dt ) {
-		my $type;
-		if ( $dt =~ /gene/i ) {
-			$type = " genes";
-			$template->param( 'DAG_GENE_SELECT' => 'checked' );
-		}
-		else {
-			$type = " bp";
-			$template->param( 'DAG_DISTANCE_SELECT' => 'checked' );
-		}
-		$display_dagchainer_settings =
-		  qq{display_dagchainer_settings([$D,$A, '$gm', $Dm],'$type');};
-	}
-	else {
-		$template->param( 'DAG_GENE_SELECT' => 'checked' );
-		$display_dagchainer_settings = qq{display_dagchainer_settings();};
-	}
-
-	$dupdist = 10 unless defined $dupdist;
-	$template->param( 'DUPDIST' => $dupdist );
-	$template->param( 'CSCORE'  => $cscore );
-	$template->param( 'DISPLAY_DAGCHAINER_SETTINGS' => $display_dagchainer_settings );
-
-	#will the program automatically run?
-	my $autogo = $FORM->param('autogo');
-	$autogo = 0 unless defined $autogo;
-	$template->param( AUTOGO => $autogo );
-
-    #if the page is loading with genomes, there will be a check for whether the genome is rest
-    #populate organism menus
-	my $error = 0;
-
-	for ( my $i = 1 ; $i <= 2 ; $i++ ) {
-		my $dsgid = 0;
-		$dsgid = $FORM->param( 'dsgid' . $i ) if $FORM->param( 'dsgid' . $i );    #old method for specifying genome
-		$dsgid = $FORM->param( 'gid' . $i ) if $FORM->param( 'gid' . $i );      #new method for specifying genome
-		my $feattype_param = $FORM->param( 'ft' . $i ) if $FORM->param( 'ft' . $i );
-		my $name = $FORM->param( 'name' . $i ) if $FORM->param( 'name' . $i );
-		my $org_menu = CoGe::Builder::Tools::SynMap::gen_org_menu(
-			db             => $db,
-			config         => $config,
-			user           => $user,
-			dsgid          => $dsgid,
-			num            => $i,
-			feattype_param => $feattype_param,
-			name           => $name
-		);
-		$template->param( "ORG_MENU" . $i => $org_menu );
-
-		my ($dsg) = $db->resultset('Genome')->find($dsgid);
-		if ( $dsgid > 0 and !$user->has_access_to_genome($dsg) ) {
-			$error = 1;
-		}
-	}
-
-	if ($error) {
-		$template->param(
-			"error" => 'The genome was not found or is restricted.' );
-	}
-
-	#set ks for coloring syntenic dots
-	if ( $FORM->param('ks') ) {
-		if ( $FORM->param('ks') eq 1 ) {
-			$template->param( KS1 => "selected" );
-		}
-		elsif ( $FORM->param('ks') eq 2 ) {
-			$template->param( KS2 => "selected" );
-		}
-		elsif ( $FORM->param('ks') eq 3 ) {
-			$template->param( KS3 => "selected" );
-		}
-	}
-	else {
-		$template->param( KS0 => "selected" );
-	}
-
-	#set color_scheme
-	my $cs = 1;
-	$cs = $FORM->param('cs') if defined $FORM->param('cs');
-	$template->param( "CS" . $cs => "selected" );
-
-	#set codeml min and max
-	my $codeml_min;
-	$codeml_min = $FORM->param('cmin') if defined $FORM->param('cmin');
-	my $codeml_max;
-	$codeml_max = $FORM->param('cmax') if defined $FORM->param('cmax');
-	$template->param( 'CODEML_MIN' => $codeml_min ) if defined $codeml_min;
-	$template->param( 'CODEML_MAX' => $codeml_max ) if defined $codeml_max;
-	my $logks;
-	$logks = $FORM->param('logks') if defined $FORM->param('logks');
-	$logks = 1 unless defined $logks;    #turn on by default if not specified
-	$template->param( 'LOGKS' => "checked" ) if defined $logks && $logks;
-
-	#merge diags algorithm
-	if ( $FORM->param('ma') ) {
-		$template->param( QUOTA_MERGE_SELECT => 'selected' )
-		  if $FORM->param('ma') eq "1";
-		$template->param( DAG_MERGE_SELECT => 'selected' )
-		  if $FORM->param('ma') eq "2";
-	}
-	if ( $FORM->param('da') ) {
-		if ( $FORM->param('da') eq "1" ) {
-			$template->param( QUOTA_ALIGN_SELECT => 'selected' );
-		}
-	}
-	my $depth_org_1_ratio = 1;
-	$depth_org_1_ratio = $FORM->param('do1') if $FORM->param('do1');
-	$template->param( DEPTH_ORG_1_RATIO => $depth_org_1_ratio );
-	my $depth_org_2_ratio = 1;
-	$depth_org_2_ratio = $FORM->param('do2') if $FORM->param('do2');
-	$template->param( DEPTH_ORG_2_RATIO => $depth_org_2_ratio );
-	my $depth_overlap = 40;
-	$depth_overlap = $FORM->param('do') if $FORM->param('do');
-	$template->param( DEPTH_OVERLAP => $depth_overlap );
-	
-	my $fb = $FORM->param('fb');
-	$template->param( FRAC_BIAS => "checked" ) if (defined $fb && $fb);
-	my $fb_window_size = 100;
-	$fb_window_size = $FORM->param('fb_ws') if $FORM->param('fb_ws');
-	$template->param( FB_WINDOW_SIZE => $fb_window_size );
-	if ($FORM->param('fb_tg')) {
-		$template->param( FB_TARGET_GENES => "checked" );
-	}
-	else {
-		$template->param ( FB_ALL_GENES => "checked" );
-	}
-	my $fb_numquerychr = 25;
-	$fb_numquerychr = $FORM->param('fb_nqc') if $FORM->param('fb_nqc');
-	$template->param( FB_NUMQUERYCHR => $fb_numquerychr );
-	my $fb_numtargetchr = 25;
-	$fb_numtargetchr = $FORM->param('fb_ntc') if $FORM->param('fb_ntc');
-	$template->param( FB_NUMTARGETCHR => $fb_numtargetchr );
-	my $fb_rru = 1;
-	$fb_rru = $FORM->param('fb_rru') if defined $FORM->param('fb_rru');
-	if ($fb_rru) {
-		$template->param( FB_REMOVE_RANDOM_UNKNOWN => "checked" );
-	}
-
-	$template->param( 'BOX_DIAGS' => "checked" ) if $FORM->param('bd');
-	my $file = $FORM->param('file');
-	if ($file) {
-		my $results = read_file($file);
-		$template->param( RESULTS => $results );
-	}
-
-	#place to store fids that are passed into SynMap to highlight that pair in the dotplot (if present)
-	my $fid1 = 0;
-	$fid1 = $FORM->param('fid1') if $FORM->param('fid1');
-
-	$template->param( 'FID1' => $fid1 );
-	my $fid2 = 0;
-	$fid2 = $FORM->param('fid2') if $FORM->param('fid2');
-	$template->param( 'FID2'      => $fid2 );
-	$template->param( 'PAGE_NAME' => $PAGE_NAME );
-	$template->param( 'TEMPDIR'   => $TEMPDIR );
-    # $template->param(
-	# 	PAGE_TITLE         => $PAGE_TITLE,
-	# 	SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
-    #     SPLASH_CONTENTS    => 'This page allows you to compare synteny between two genomes.'
-	# 	HELP_URL           => 'https://genomevolution.org/wiki/index.php/SynMap'
-	# );
-	return $template->output;
-}
-
-sub read_file {
-	my $file = shift;
-
-	my $html;
-	open( IN, $TEMPDIR . $file ) || die "can't open $file for reading: $!";
-	while (<IN>) {
-		$html .= $_;
-	}
-	close IN;
-	return $html;
-}
-
-sub get_results {
-	my %opts = @_;
-	foreach my $k ( keys %opts ) {
-		$opts{$k} =~ s/^\s+//;
-		$opts{$k} =~ s/\s+$//;
-	}
-	my $dsgid1 = $opts{dsgid1};
-	my $dsgid2 = $opts{dsgid2};
-
-	return encode_json( { error => "You must select two genomes." } ) unless ( $dsgid1 && $dsgid2 );
-
-	my ($genome1) = $db->resultset('Genome')->find($dsgid1);
-	my ($genome2) = $db->resultset('Genome')->find($dsgid2);
-
-	return encode_json({
-		error => "Problem generating dataset group objects for ids:  $dsgid1, $dsgid2."
-	}) unless ( $genome1 && $genome2 );
-
-	############################################################################
-	# Initialize Job info
-	############################################################################
-	my $tiny_link = get_query_link($config, $db, @_);
-
-	say STDERR "tiny_link is required for logging." unless defined($tiny_link);
-
-	#    my ($tiny_id) = $tiny_link =~ /\/(\w+)$/;
-	#    my $workflow_name .= "-$tiny_id";
-
-	my $basename = $opts{basename};
-	$dbweb = CoGe::Accessory::Web::initialize_basefile(
-		basename => $basename,
-		tempdir  => $TEMPDIR
-	);
-	
-	my $result_path = get_result_path($DIAGSDIR, $dsgid1, $dsgid2);
-	my $log_path = get_log_file_path($result_path, $tiny_link);
-	$dbweb->logfile($log_path);
-
-	############################################################################
-	# Parameters
-	############################################################################
-
-	# blast options
-	my $blast = $opts{blast};
-
-	# blast2bed options
-
-	# dagchainer options
-	#my $dagchainer_g = $opts{g}; #depreciated -- will be a factor of -D
-	my $dagchainer_D = $opts{D};
-	my $dagchainer_A = $opts{A};
-	my $Dm           = $opts{Dm};
-	my $gm           = $opts{gm};
-	($Dm) = $Dm =~ /(\d+)/;
-	($gm) = $gm =~ /(\d+)/;
-
-	#$dagchainer_type = $dagchainer_type eq "true" ? "geneorder" : "distance";
-
-#   my $repeat_filter_cvalue = $opts{c};              #parameter to be passed to run_adjust_dagchainer_evals
-
-	#c-score for filtering low quality blast hits, fed to blast to raw
-	my $cscore = $opts{csco};
-
-	#tandem duplication distance, fed to blast to raw
-	my $dupdist = defined( $opts{tdd} ) ? $opts{tdd} : 10;
-
-	# dotplot options
-	my $regen             = $opts{regen_images};
-	my $regen_images      = ( $regen and $regen eq "true" ) ? 1 : 0;
-	my $job_title         = $opts{jobtitle};
-	my $width             = $opts{width};
-	my $axis_metric       = $opts{axis_metric};
-	my $axis_relationship = $opts{axis_relationship};
-	my $min_chr_size      = $opts{min_chr_size};
-	my $dagchainer_type   = $opts{dagchainer_type};
-	my $color_type        = $opts{color_type};
-	my $merge_algo = $opts{merge_algo};    #is there a merging function?
-	                                       #will non-syntenic dots be shown?
-	my $snsd      = $opts{show_non_syn_dots} =~ /true/i ? 1 : 0;
-	my $algo_name = get_blast_config($config, $blast)->{displayname};
-
-	#will the axis be flipped?
-	my $flip = $opts{flip} =~ /true/i ? 1 : 0;
-
-	#are axes labeled?
-	my $clabel = $opts{clabel} =~ /true/i ? 1 : 0;
-
-	#are random chr skipped
-	my $skip_rand = $opts{skip_rand} =~ /true/i ? 1 : 0;
-
-	#which color scheme for ks/kn dots?
-	my $color_scheme = $opts{color_scheme};
-
-	#fids that are passed in for highlighting the pair in the dotplot
-	my $fid1 = $opts{fid1};
-	my $fid2 = $opts{fid2};
-
-	#draw a box around identified diagonals?
-	my $box_diags = $opts{box_diags};
-	$box_diags = $box_diags eq "true" ? 1 : 0;
-
-	#how are the chromosomes to be sorted?
-	my $chr_sort_order = $opts{chr_sort_order};
-
-	#codeml min and max calues
-	my $codeml_min = $opts{codeml_min};
-	$codeml_min = undef
-	  unless $codeml_min =~ /\d/ && $codeml_min =~ /^-?\d*.?\d*$/;
-	my $codeml_max = $opts{codeml_max};
-	$codeml_max = undef
-	  unless $codeml_max =~ /\d/ && $codeml_max =~ /^-?\d*.?\d*$/;
-	my $logks = $opts{logks};
-	$logks = $logks eq "true" ? 1 : 0;
-
-	my $email = 0 if CoGe::Builder::Tools::SynMap::check_address_validity( $opts{email} ) eq 'invalid';
-
-	my $feat_type1 = $opts{feat_type1};
-	my $feat_type2 = $opts{feat_type2};
-
-	my $ks_type = $opts{ks_type};
-	my $assemble = $opts{assemble} =~ /true/i ? 1 : 0;
-	$assemble = 2 if $assemble && $opts{show_non_syn} =~ /true/i;
-	$assemble *= -1 if $assemble && $opts{spa_ref_genome} < 0;
-
-	#options for finding syntenic depth coverage by quota align (Bao's algo)
-	my $depth_algo        = $opts{depth_algo};
-	my $depth_org_1_ratio = $opts{depth_org_1_ratio};
-	my $depth_org_2_ratio = $opts{depth_org_2_ratio};
-	my $depth_overlap     = $opts{depth_overlap};
-
-	$feat_type1 = $feat_type1 == 2 ? "genomic" : "CDS";
-	$feat_type2 = $feat_type2 == 2 ? "genomic" : "CDS";
-	$feat_type1 = "protein" if $blast == 5 && $feat_type1 eq "CDS"; #blastp time
-	$feat_type2 = "protein" if $blast == 5 && $feat_type2 eq "CDS"; #blastp time
-
-	############################################################################
-	# Fetch organism name and title
-	############################################################################
-	my ( $org_name1, $title1 ) = gen_org_name(
-		db		  => $db,
-		genome_id     => $dsgid1,
-		feat_type => $feat_type1,
-	);
-
-	my ( $org_name2, $title2 ) = gen_org_name(
-		db		  => $db,
-		genome_id     => $dsgid2,
-		feat_type => $feat_type2,
-	);
-
-	############################################################################
-	# Generate Fasta files
-	############################################################################
-	my ( $fasta1, $fasta2 );
-
-	if ( $feat_type1 eq "genomic" ) {
-		my $genome = $db->resultset('Genome')->find($dsgid1);
-		$fasta1 = $genome->file_path;
-	}
-	else {
-		$fasta1 = $FASTADIR . "/$dsgid1-$feat_type1.fasta";
-	}
-
-	if ( $feat_type2 eq "genomic" ) {
-		my $genome = $db->resultset('Genome')->find($dsgid2);
-		$fasta2 = $genome->file_path;
-	}
-	else {
-		$fasta2 = $FASTADIR . "/$dsgid2-$feat_type2.fasta";
-	}
-
-	# Sort by genome id
-	(
-		$dsgid1,     $genome1,           $org_name1,  $fasta1,
-		$feat_type1, $depth_org_1_ratio, $dsgid2,     $genome2,
-		$org_name2,  $fasta2,            $feat_type2, $depth_org_2_ratio
-	  )
-	  = (
-		$dsgid2,     $genome2,           $org_name2,  $fasta2,
-		$feat_type2, $depth_org_2_ratio, $dsgid1,     $genome1,
-		$org_name1,  $fasta1,            $feat_type1, $depth_org_1_ratio
-	  ) if ( $dsgid2 lt $dsgid1 );
-
-	############################################################################
-	# Generate blastdb files
-	############################################################################
-	my ( $blastdb, @blastdb_files );
-
-	my $blast_config = get_blast_config($config, $blast, $opts{blast_option});
-	if ( $blast_config->{formatdb} ) {
-		my $basename  = "$BLASTDBDIR/$dsgid2-$feat_type2";
-
-		$blastdb = $basename;
-		$basename .= $feat_type2 eq "protein" ? ".p" : ".n";
-	}
-	else {
-		$blastdb = $fasta2;
-	}
-
-	my ( $html, $warn );
-
-	my ( $orgkey1, $orgkey2 ) = ( $title1, $title2 );
-	my %org_dirs = (
-		$orgkey1 . "_"
-		  . $orgkey2 => {
-			fasta    => $fasta1,
-			db       => $blastdb,
-			basename => $dsgid1 . "_" 
-			  . $dsgid2
-			  . ".$feat_type1-$feat_type2."
-			  . $blast_config->{filename},
-			dir => $result_path
-		  }
-	);
-
-	foreach my $org_dir ( keys %org_dirs ) {
-		my $outfile = $org_dirs{$org_dir}{dir};
-		$outfile .= "/" . $org_dirs{$org_dir}{basename};
-		$org_dirs{$org_dir}{blastfile} = $outfile;    #.".blast";
-	}
-
-	############################################################################
-	# Run Blast
-	############################################################################
-	my $raw_blastfile = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{blastfile};
-	$raw_blastfile .= ".new" if $raw_blastfile =~ /genomic/;
-
-
-	###########################################################################
-	# Converting blast to raw and finding local duplications
-	###########################################################################
-	my $filtered_blastfile = $raw_blastfile;
-	$filtered_blastfile .= ".tdd$dupdist";
-	$filtered_blastfile .= ".cs$cscore" if $cscore < 1;
-	$filtered_blastfile .= ".filtered";
-
-	if ( $cscore == 1 ) {
-		$warn = 'Please choose a cscore less than 1 (cscore defaulted to 0).';
-	}
-
-	############################################################################
-	# Run dag tools - Prepares DAG for syntenic analysis.
-	############################################################################
-	my $dag_file12       = $filtered_blastfile . ".dag";
-	my $dag_file12_all   = $dag_file12 . ".all";
-
-	############################################################################
-	# Convert to gene order
-	############################################################################
-	my $dag_file12_all_geneorder = "$dag_file12_all.go";
-	my $all_file;
-
-	if ( $dagchainer_type eq "geneorder" ) {
-		$all_file = $dag_file12_all_geneorder;
-		$dag_file12 .= ".go";
-	}
-	else {
-		$all_file = $dag_file12_all;
-	}
-
-	#FIXME: This is currently the output produced from the go function.
-	$dag_file12 = $all_file;
-
-	############################################################################
-	# Run dagchainer
-	############################################################################
-	my ( $dagchainer_file, $merged_dagchainer_file );
-
-	#this is for using dagchainer's merge function
-	my $dag_merge_enabled = ( $merge_algo == 2 ) ? 1 : 0;
-
-	#length of a gap (average distance expected between two syntenic genes)
-	my $gap = defined( $opts{g} ) ? $opts{g} : floor( $dagchainer_D / 2 );
-	$gap = 1 if $gap < 1;
-
-	$dagchainer_file = $dag_file12;
-	$dagchainer_file .= "_D$dagchainer_D" if defined $dagchainer_D;
-	$dagchainer_file .= "_g$gap"          if defined $gap;
-	$dagchainer_file .= "_A$dagchainer_A" if defined $dagchainer_A;
-	$dagchainer_file .= "_Dm$Dm"          if $dag_merge_enabled;
-	$dagchainer_file .= "_gm$gm"          if $dag_merge_enabled;
-	$dagchainer_file .= ".aligncoords";
-	$dagchainer_file .= ".ma2.dag"        if $dag_merge_enabled;
-
-	my $post_dagchainer_file;
-
-	if ($dag_merge_enabled) {
-		$merged_dagchainer_file = "$dagchainer_file.merged";
-		$post_dagchainer_file   = $merged_dagchainer_file;
-	}
-	else {
-		$post_dagchainer_file = $dagchainer_file;
-	}
-
-	############################################################################
-	# Run quota align merge
-	############################################################################
-
-	#id 1 is to specify quota align as a merge algo
-	if ( $merge_algo == 1 ) {
-		$merged_dagchainer_file = "$dagchainer_file.Dm$Dm.ma1";
-		$post_dagchainer_file   = $merged_dagchainer_file;
-	}
-
-	my $post_dagchainer_file_w_nearby = $post_dagchainer_file;
-	$post_dagchainer_file_w_nearby =~ s/aligncoords/all\.aligncoords/;
-
-	#add pairs that were skipped by dagchainer
-	$post_dagchainer_file_w_nearby = $post_dagchainer_file;
-
-	############################################################################
-	# Run quota align coverage
-	############################################################################
-	my ( $quota_align_coverage, $grimm_stuff, $final_dagchainer_file );
-
-	if ( $depth_algo == 1 )    #id 1 is to specify quota align
-	{
-		$quota_align_coverage = $post_dagchainer_file_w_nearby;
-		$quota_align_coverage .= ".qac" . $depth_org_1_ratio . ".";
-		$quota_align_coverage .= $depth_org_2_ratio . "." . $depth_overlap;
-		$final_dagchainer_file = $quota_align_coverage;
-	}
-	else {
-		$final_dagchainer_file = $post_dagchainer_file_w_nearby;
-	}
-
-	if ( $dagchainer_type eq "geneorder" ) {
-		$final_dagchainer_file = $final_dagchainer_file . ".gcoords";
-	}
-
-	#generate dotplot images
-	unless ($width) {
-		my $chr1_count = $genome1->chromosome_count;
-		my $chr2_count = $genome2->chromosome_count;
-		my $max_chr    = $chr1_count;
-		$max_chr = $chr2_count if $chr2_count > $chr1_count;
-		$width   = int( $max_chr * 100 );
-		$width   = 1000 if $width > 1000;
-		$width   = 500 if $width < 500;
-	}
-
-	############################################################################
-	# Create html output directory
-	############################################################################
-	my ( $qlead, $slead ) = ( "a", "b" );
-	my $out = $org_dirs{ $orgkey1 . "_" . $orgkey2 }{dir} . "/html/";
-	mkpath( $out, 0, 0777 ) unless -d $out;
-	$out .= "master_";
-	my ($base) = $final_dagchainer_file =~ /([^\/]*$)/;
-	$out .= $base;
-	my $json_basename = "$out";
-
-	$out .= "_ct$color_type" if defined $color_type;
-	$out .= ".w$width";
-
-	############################################################################
-	# KS Calculations (Slow and needs to be optimized)
-	############################################################################
-	my ( $ks_db, $ks_blocks_file, $svg_file );
-
-	if ($ks_type) {
-		my $check_ks = $final_dagchainer_file =~ /^(.*?CDS-CDS)/;
-		$check_ks = $final_dagchainer_file =~ /^(.*?protein-protein)/
-		  unless $check_ks;
-
-		if ($check_ks) {
-			$ks_db          = "$final_dagchainer_file.sqlite";
-			$ks_blocks_file = "$final_dagchainer_file.ks";
-			$svg_file       = $ks_blocks_file . ".svg";
-		}
-		else {
-			$warn = "Unable to calculate Ks or Kn values due to at least"
-			  . " one genome lacking CDS features.";
-			$ks_type = undef;
-		}
-	}
-	else {
-		$svg_file = "$final_dagchainer_file.svg";
-	}
-
-	############################################################################
-	# Generate dot plot
-	############################################################################
-	($basename) = $final_dagchainer_file =~ /([^\/]*aligncoords.*)/;    #.all.aligncoords/;
-	$width = 1000 unless defined($width);
-
-	my $dotfile = "$out";
-	$dotfile .= ".spa$assemble"       if $assemble;
-	$dotfile .= ".gene"               if $axis_metric =~ /gene/i;
-	$dotfile .= ".s"                  if $axis_relationship =~ /s/i;
-	$dotfile .= ".mcs$min_chr_size"   if $min_chr_size;
-	$dotfile .= ".$fid1"              if $fid1;
-	$dotfile .= ".$fid2"              if $fid2;
-	$dotfile .= ".$ks_type"           if $ks_type;
-	$dotfile .= ".box"                if $box_diags;
-	$dotfile .= ".flip"               if $flip;
-	$dotfile .= ".c0"                 if $clabel eq 0;
-	$dotfile .= ".sr"                 if $skip_rand;
-	$dotfile .= ".cs$color_scheme"    if defined $color_scheme;
-	$dotfile .= ".cso$chr_sort_order" if defined $chr_sort_order;
-	$dotfile .= ".min$codeml_min"     if defined $codeml_min;
-	$dotfile .= ".max$codeml_max"     if defined $codeml_max;
-	$dotfile .= ".log"                if $logks;
-
-	#no syntenic dots, yes, nomicalture is confusing.
-	$dotfile .= ".nsd" unless $snsd;
-
-	my $hist = $dotfile . ".hist.png";
-
-	# this would be generated by the DOTPLOT program is Syntenic path assembly
-	# was requested
-	my $spa_file       = $dotfile . ".spa_info.txt";
-	my $json_file      = "$json_basename.json";
-	my $all_json_file  = "$json_basename.all.json";
-	my $hist_json_file = "$json_basename.datasets.json";
-
-	$out = $dotfile;
-
-	############################################################################
-	# Generate html
-	############################################################################
-	my $results = HTML::Template->new( filename => $config->{TMPLDIR} . 'partials/synmap_results.tmpl' );
-
-	my ( $x_label, $y_label );
-
-	if ($clabel) {
-		$y_label = "$out.y.png";
-		$x_label = "$out.x.png";
-		$warn .= qq{Unable to display the y-axis.} unless -r $y_label;
-		$warn .= qq{Unable to display the x-axis.} unless -r $x_label;
-	}
-
-	my $final_dagchainer_file_gevolinks = $final_dagchainer_file . ".gevolinks"; # mdb added 12/2/16 COGE-794
-	my $final_dagchainer_file_condensed = $final_dagchainer_file_gevolinks . ".condensed";
-
-	my $problem;
-	return encode_json( { error => "The output $out.html could not be found." } ) unless (-r $out . '.html');
-	return encode_json( { error => "The output $final_dagchainer_file could not be found." } ) unless (-r $final_dagchainer_file);
-	return encode_json( { error => "The output $final_dagchainer_file_gevolinks could not be found." } ) unless (-r $final_dagchainer_file_gevolinks);
-	return encode_json( { error => "The output $final_dagchainer_file_condensed could not be found." } ) unless (-r $final_dagchainer_file_condensed);
-	#Dotplot
-	$/ = "\n";
-	open( IN, "$out.html" )
-		|| warn "problem opening $out.html for reading\n";
-	$axis_metric = $axis_metric =~ /g/ ? "genes" : "nucleotides";
-	$html .=
-		"<span class='small'>Axis metrics are in $axis_metric</span><br>";
-
-	#add version of genome to organism names
-	$org_name1 .= " (v" . $genome1->version . ")";
-	$org_name2 .= " (v" . $genome2->version . ")";
-
-	my $out_url = $out;
-	$out_url =~ s/$DIR/$URL/;
-	$y_label =~ s/$DIR/$URL/;
-	$x_label =~ s/$DIR/$URL/;
-
-	$/ = "\n";
-	my $tmp;
-	while (<IN>) {
-		next if /<\/?html>/;
-		$tmp .= $_;
-	}
-	close IN;
-	$tmp =~ s/master.*\.png/$out_url.png/;
-	warn "$out_url.html did not parse correctly\n" unless $tmp =~ /map/i;
-	$html .= $tmp;
-
-	#Synteny Zoom
-	$results->param( codeml_min  => $codeml_min );
-	$results->param( codeml_max  => $codeml_max );
-	$results->param( axis_metric => $axis_metric );
-	$results->param( ylabel      => $y_label );
-	$results->param( xlabel      => $x_label );
-
-	if ($flip) {
-		$results->param( yorg_name => html_escape($org_name1) );
-		$results->param( xorg_name => html_escape($org_name2) );
-	}
-	else {
-		$results->param( yorg_name => html_escape($org_name2) );
-		$results->param( xorg_name => html_escape($org_name1) );
-	}
-
-	$results->param( dotplot   => $tmp );
-	$results->param( algorithm => $algo_name );
-
-	if ( $hist and $ks_type ) {
-		if ( -r $hist and -s $hist ) {
-			$results->param( histogram => $out_url . '.hist.png' );
-			$results->param( ks_type   => $ks_type );
-		}
-		else {
-			$warn =
-				qq{The histogram was not generated no ks or kn data found.};
-			warn "problem reading $hist or is empty";
-		}
-	}
-
-	# dotplot
-	if ($ks_type) {
-		my $ks_blocks_file_url = $ks_blocks_file;
-		$ks_blocks_file_url =~ s/$DIR/$URL/;
-		$results->param( file_url => $ks_blocks_file_url );
-	}
-	else {
-		my $final_dagchainer_url = $final_dagchainer_file;
-		$final_dagchainer_url =~ s/$DIR/$URL/;
-		$results->param( file_url => $final_dagchainer_url );
-	}
-	$results->param( dsgid1 => $dsgid1 );
-	$results->param( dsgid2 => $dsgid2 );
-	my $chromosomes1 = $genome1->chromosomes_all;
-	my $feature_counts = get_feature_counts($db->storage->dbh, $genome1->id);
-	foreach (@$chromosomes1) {
-		$_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
-	}
-	$results->param( chromosomes1 => encode_json($chromosomes1) );
-	my $chromosomes2 = $genome2->chromosomes_all;
-	$feature_counts = get_feature_counts($db->storage->dbh, $genome2->id);
-	foreach (@$chromosomes2) {
-		$_->{gene_count} = $feature_counts->{$_->{name}}{1}{count} ? int($feature_counts->{$_->{name}}{1}{count}) : 0;
-	}
-	$results->param( chromosomes2 => encode_json($chromosomes2) );
-
-	# fractionation bias
-	# my $gff_sort_output_file;
-	my $synmap_dictionary_output_file;
-	my $fract_bias_raw_output_file;
-	my $fract_bias_results_file;
-	if ( $opts{frac_bias} =~ /true/i ) {
-		my $output_url = $result_path;
-		$output_url =~ s/$DIR/$URL/;
-		my $query_id;
-		my $target_id;
-		if ( $depth_org_1_ratio < $depth_org_2_ratio ) {
-			$query_id      = $dsgid2;
-			$target_id     = $dsgid1;
-			$results -> param( target_genome => html_escape($org_name1))
-		}
-		else {
-			$query_id      = $dsgid1;
-			$target_id     = $dsgid2;
-			$results -> param( target_genome => html_escape($org_name2))
-		}
-		my $all_genes = ($opts{fb_target_genes} eq 'true') ? 'False' : 'True';
-		my $rru = $opts{fb_remove_random_unknown} ? 'True' : 'False';
-		my $syn_depth = $depth_org_1_ratio . 'to' . $depth_org_2_ratio;
-		my $fb_prefix = substr($final_dagchainer_file, length($result_path)) . '_tc' . $opts{fb_numtargetchr} . '_qc' . $opts{fb_numquerychr} . '_sd' . $syn_depth . '_ag' . $all_genes . '_rr' . $rru . '_ws' . $opts{fb_window_size};
-		my $fb_json_file = $fb_prefix . '.fractbias-fig.json';
-		if (! -r catfile($result_path, $fb_json_file)) {
-			return encode_json( { error => "The fractionation bias data could not be found." } );
-		}
-		$results->param( frac_bias => catfile($output_url, $fb_json_file) );
-		$synmap_dictionary_output_file = _filename_to_link(
-			file => catfile($result_path, $fb_prefix . '.fractbias-synmap-data.json'),
-			msg  => qq{SynMap dictionary output file},
-			required => 1
-		);
-		$fract_bias_raw_output_file = _filename_to_link(
-			file => catfile($result_path, $fb_prefix . '.fractbias-genes.csv'),
-			msg  => qq{Fractionation Bias synteny report},
-			required => 1
-		);
-		$fract_bias_results_file = _filename_to_link(
-			file => catfile($result_path, $fb_prefix . '.fractbias-results.csv'),
-			msg  => qq{Fractionation Bias sliding window results},
-			required => 1
-		);
-	}
-
-	my $qa_file = $merged_dagchainer_file;
-	$qa_file =~ s/\.ma\d$/\.qa/ if $qa_file;
-
-	#######################################################################
-	# General
-	#######################################################################
-
-	my $log_url = _filename_to_link(
-		file     => $dbweb->logfile,
-		msg      => qq{Analysis Log},
-		required => 1,
-	);
-
-	my $image_url = _filename_to_link(
-		file     => "$out.png",
-		msg      => qq{Image File},
-		required => 1,
-	);
-
-	#######################################################################
-	# Homologs
-	#######################################################################
-
-	my $sequence_url1 = api_url_for("genomes/$dsgid1/sequence"); #"api/v1/legacy/sequence; # mdb changed 2/12/16 for hypnotoad
-	my $sequence_url2 = api_url_for("genomes/$dsgid2/sequence");
-
-	my $fasta1_url = _filename_to_link(
-		url =>
-			( $feat_type1 eq "genomic" ? $sequence_url1 : undef ),
-		file => (
-			$feat_type1 eq "genomic"
-			? undef
-			: $FASTADIR . "/$dsgid1-$feat_type1.fasta"
-		),
-		msg => qq{Fasta file for $org_name1: $feat_type1}
-	);
-	my $fasta2_url = _filename_to_link(
-		url =>
-			( $feat_type2 eq "genomic" ? $sequence_url2 : undef ),
-		file => (
-			$feat_type2 eq "genomic"
-			? undef
-			: $FASTADIR . "/$dsgid2-$feat_type2.fasta"
-		),
-		msg => qq{Fasta file for $org_name2: $feat_type2}
-	);
-
-	my $raw_blast_url = _filename_to_link(
-		file => $raw_blastfile,
-		msg  => qq{Unfiltered $algo_name results}
-	);
-
-	my $filtered_blast_url = _filename_to_link(
-		file => $filtered_blastfile,
-		msg  => qq{Filtered $algo_name results (no tandem duplicates)}
-		),
-
-		my $tandem_dups1_url = _filename_to_link(
-		file => $raw_blastfile . '.q.tandems',
-		msg  => qq{Tandem Duplicates for $org_name1},
-		);
-
-	my $tandem_dups2_url = _filename_to_link(
-		file => $raw_blastfile . '.s.tandems',
-		msg  => qq{Tandem Duplicates for $org_name2},
-	);
-
-	#######################################################################
-	# Diagonals
-	#######################################################################
-	my $dagchainer_input_url = _filename_to_link(
-		file => $dag_file12_all,
-		msg  => qq{DAGChainer Initial Input file}
-	);
-
-	my $geneorder_url = _filename_to_link(
-		file => $dag_file12_all_geneorder,
-		msg  => qq{DAGChainer Input file converted to gene order}
-	);
-
-	my $dagchainer12_url = _filename_to_link(
-		file => $dag_file12,
-		msg  => qq{DAGChainer Input file post repetitve matches filtered}
-	);
-
-	#######################################################################
-	# Results
-	#######################################################################
-	my $dagchainer_url = _filename_to_link(
-		file => $dagchainer_file,
-		msg  => qq{DAGChainer Output}
-	);
-
-	my $merged_dag_url = _filename_to_link(
-		file => $merged_dagchainer_file,
-		msg  => qq{Merged DAGChainer output}
-	);
-
-	#merged dagchainer output is not specified in results.  This hack gets it there.
-	if ( $merged_dagchainer_file and -r $merged_dagchainer_file ) {
-		$dagchainer_url .= $merged_dag_url;
-	}
-
-	my $quota_align_coverage_url = _filename_to_link(
-		file => $quota_align_coverage,
-		msg  => qq{Quota Alignment Results}
-	);
-
-	my $final_result_url = _filename_to_link(
-		file => $final_dagchainer_file,
-		msg  => qq{DAGChainer output in genomic coordinates}
-	);
-
-	my $ks_blocks_url = _filename_to_link(
-		file     => $ks_blocks_file,
-		msg      => qq{Results with synonymous/non-synonymous rate values},
-		required => $ks_type
-	);
-
-	my $final_url = _filename_to_link(
-		file => $final_dagchainer_file_gevolinks,
-		msg  => qq{Final syntenic gene-set output with GEvo links}
-	);
-
-	my $final_condensed_url = _filename_to_link(
-		file => $final_dagchainer_file_condensed,
-		msg  => qq{Condensed syntelog file with GEvo links}
-	);
-
-	my $svg_url = _filename_to_link(
-		file => $svg_file,
-		msg  => qq{SVG Version of Syntenic Dotplot},
-	);
-
-	my $spa_url = _filename_to_link(
-		file => $spa_file,
-		msg  => qq{Syntenic Path Assembly mapping},
-	);
-
-	$spa_url = "" unless $spa_url;
-
-	my $spa_result = "";
-
-	if ( $spa_url and $assemble ) {
-		#added by EHL: 6/17/15
-		#fixing problem where
-		my $genome1_chr_count = $genome1->chromosome_count();
-		my $genome2_chr_count = $genome2->chromosome_count();
-		my $flip              = 0;
-		if ( $genome1_chr_count <= $genome2_chr_count && $assemble < 0 ) {
-			$flip = 1;
-		}
-		$spa_result =
-			$spa_url
-			. qq{<a href="#" onclick="coge.synmap.submit_assembly(window.event, '$dagchainer_file', '$dsgid1', '$dsgid2', '$flip');">}
-			. qq{Generate Pseudo-Assembled Genomic Sequence}
-			. qq{</a>};
-	}
-
-	my $json_url = _filename_to_link(
-		file => $json_file,
-		msg  => qq{Dotplot JSON},
-	);
-
-	$dagchainer_file =~ s/^$URL/$DIR/;
-
-	my $rows = [
-		{
-			general  => 'General',
-			homolog  => 'Homolog search',
-			diagonal => 'Diagonals',
-			result   => 'Results',
-		},
-		{
-			general  => $log_url,
-			homolog  => $fasta1_url,
-			diagonal => $dagchainer_input_url,
-			result   => $dagchainer_url,
-		},
-		{
-			general  => $image_url,
-			homolog  => $fasta2_url,
-			diagonal => $geneorder_url,
-			result   => $final_result_url,
-		},
-		{
-			general  => undef,
-			homolog  => $raw_blast_url,
-			diagonal => $dagchainer12_url,
-			result   => $final_url,
-		},
-		{
-			general  => undef,
-			homolog  => $filtered_blast_url,
-			diagonal => undef,
-			result   => $final_condensed_url,
-		},
-		{
-			general  => undef,
-			homolog  => $tandem_dups1_url,
-			diagonal => undef,
-			result   => $quota_align_coverage_url,
-		},
-		{
-			general  => undef,
-			homolog  => $tandem_dups2_url,
-			diagonal => undef,
-			result   => $ks_blocks_url,
-		},
-		{
-			general  => undef,
-			homolog  => undef,
-			diagonal => undef,
-			result   => $spa_result,
-		},
-		{
-			general  => undef,
-			homolog  => undef,
-			diagonal => undef,
-			result   => $svg_url,
-		},
-		{
-			general  => undef,
-			homolog  => undef,
-			diagonal => undef,
-			result   => $json_url,
-		},
-	];
-	if ( $opts{frac_bias} =~ /true/i ) {
-		push @$rows,
-			{
-			general  => undef,
-			homolog  => undef,
-			diagonal => undef,
-			result   => $synmap_dictionary_output_file
-			};
-		push @$rows,
-			{
-			general  => undef,
-			homolog  => undef, #$gff_sort_output_file,
-			diagonal => undef,
-			result   => $fract_bias_raw_output_file
-			};
-		push @$rows,
-			{
-			general  => undef,
-			homolog  => undef,
-			diagonal => undef,
-			result   => $fract_bias_results_file
-			};
-	}
-	$results->param( files => $rows );
-
-	########################################################################
-	# SynMap3D Link
-	########################################################################
-	my $syn3d = $config->{SERVER} . "SynMap3D.pl";
-	my $threedlink = $syn3d . "?x_gid=" . $dsgid1 . ";y_gid=" . $dsgid2;
-	#print STDERR $threedlink . "\n";
-	$results->param( syn3dlink => $threedlink) ;
-
-
-	########################################################################
-	# Regenerate Analysis Link - HTML
-	########################################################################
-
-	$results->param( link => $tiny_link );
-	if ($ks_type) {
-		my ($ks_file) = $ks_db =~ /([^\/]*)$/;
-		my $link = "SynSub.pl?dsgid1=$dsgid1;dsgid2=$dsgid2;file=$ks_file";
-		$results->param( synsub => $link );
-	}
-
-	if ($grimm_stuff) {
-		my $seq1 = ">$org_name1||" . $grimm_stuff->[0];
-		$seq1 =~ s/\n/\|\|/g;
-		my $seq2 = ">$org_name2||" . $grimm_stuff->[1];
-		$seq2 =~ s/\n/\|\|/g;
-		$html .= qq{
-		<br>
-		<span class="coge-button" id = "grimm_link" onclick="post_to_grimm('$seq1','$seq2')" > Rearrangement Analysis</span> <a class="small" href=http://grimm.ucsd.edu/GRIMM/index.html target=_new>(Powered by GRIMM!)</a>
-		};
-
-		my $grimm_data = {
-			seq1       => $seq1,
-			seq2       => $seq2,
-			grimm_link => qq{http://grimm.ucsd.edu/GRIMM/index.html},
-		};
-
-		$results->param( grimm => $grimm_data );
-	}
-	$html .= "<br>";
-
-	my $log = $dbweb->logfile;
-	$log            =~ s/$DIR/$URL/;
-	$json_file      =~ s/$DIR/$URL/;
-	$all_json_file  =~ s/$DIR/$URL/;
-	$hist_json_file =~ s/$DIR/$URL/;
-
-	$results->param( error   => $problem ) if $problem;
-	$results->param( warning => $warn )    if $warn;
-	$results->param( log     => $log );
-
-	##print out all the datafiles created
-	$html .= "<br>";
-	$html .= qq{<span id="clear" style="font-size: 0.8em" class="coge-button" onClick="\$('#results').hide(); \$(this).hide(); \$('#intro').fadeIn();" >Hide Results</span>};
-	$html .= qq{</div>};
-	$warn = qq{There was a problem running your analysis.}
-	  . qq{ Please check the log file for details};
-
-	############################################################################
-	# Email results, output benchmark and return results
-	############################################################################
-
-	email_results(
-		email    => $email,
-		html     => $html,
-		org1     => $org_name1,
-		org2     => $org_name2,
-		jobtitle => $job_title,
-		link     => $tiny_link
-	) if $email;
-
-	# Need to remove this from the output from dotplot
-	# -- otherwise it over-loads the stuff in the web-page already.
-	# -- This can mess up other loaded js such as tablesoter
-	my $output = $results->output;
-
-	# erb 5/19/2014 - older version of dotplot would generate javascript inline
-	# Remove jquery and xhairs from generated html
-	$output =~ s/<script src="\/CoGe\/js\/jquery-1.3.2.js"><\/script>//g;
-	$output =~ s/<script src="\/CoGe\/js\/xhairs.js"><\/script>//g;
-
-	#FIXME Return the json representation of the data instead of html
-	return encode_json( { html => $output } );
-}
-
-sub _filename_to_link {
-	my %opts = (
-		styles   => "link",
-		required => 0,
-		@_,
-	);
-	my $file = $opts{file};
-	my $url  = $opts{url};
-	return unless ( $file or $url );
-
-	my $link;
-	if ( -r $file or $url ) {
-		if ( !$url ) {
-			$url = $opts{file};
-			$url =~ s/$DIR/$URL/;
-		}
-
-		$link =
-		    q{<a class="}
-		  . $opts{styles} . q{"}
-		  . q{target="_blank" href="}
-		  . $url . q{">}
-		  . $opts{msg}
-		  . "</a><br>";
-	}
-	elsif ( $opts{required} ) {
-		$link = q{<span class="alert">} . $opts{msg} . q{ (missing)} . q{</span};
-		warn "missing file: $file";
-		my ($package, $filename, $line) = caller;
-		warn 'called from line: ' . $line;
-	}
-	else {
-
-	 #        $link = q{<span style="color:dimgray;">} . $opts{msg} . q{</span};
-	}
-	return $link;
-}
-
-sub get_dotplot {
-	my %opts         = @_;
-	my $url          = $opts{url};
-	my $loc          = $opts{loc};
-	my $flip         = $opts{flip} eq "true" ? 1 : 0;
-	my $regen        = $opts{regen_images} eq "true" ? 1 : 0;
-	my $width        = $opts{width};
-	my $ksdb         = $opts{ksdb};
-	my $kstype       = $opts{kstype};
-	my $metric       = $opts{am};                             #axis metrix
-	my $relationship = $opts{ar};                             #axis relationship
-	my $max          = $opts{max};
-	my $min          = $opts{min};
-	my $color_type   = $opts{ct};
-	my $box_diags    = $opts{bd};
-	my $color_scheme = $opts{color_scheme};
-	my $fid1         = $opts{fid1};
-	my $fid2         = $opts{fid2};
-	my %params;
-
-	#print STDERR Dumper \%opts;
-	$box_diags = $box_diags eq "true" ? 1 : 0;
-
-	# base=8_8.CDS-CDS.blastn.dag_geneorder_D60_g30_A5;
-
-	$params{flip}   = $flip         if $flip;
-	$params{regen}  = $regen        if $regen;
-	$params{width}  = $width        if $width;
-	$params{ksdb}   = $ksdb         if $ksdb;
-	$params{kstype} = $kstype       if $kstype;
-	$params{log}    = 1             if $kstype;
-	$params{min}    = $min          if $min;
-	$params{max}    = $max          if $max;
-	$params{am}     = $metric       if defined $metric;
-	$params{ar}     = $relationship if defined $relationship;
-	$params{ct}     = $color_type   if $color_type;
-	$params{bd}     = $box_diags    if $box_diags;
-	$params{cs}     = $color_scheme if defined $color_scheme;
-	$params{fid1}   = $fid1         if defined $fid1 && $fid1 =~ /^\d+$/;
-	$params{fid2}   = $fid2         if defined $fid2 && $fid2 =~ /^\d+$/;
-
-	$url = url_for( "run_dotplot.pl", %params ) . "&" . $url;
-	my $ua = LWP::UserAgent->new;
-	$ua->timeout(10);
-	my $response = $ua->get($url);
-	unless ( $response->is_success ) {
-		return "Unable to get image for dotplot (failed): $url";
-	}
-
-	my $content = $response->decoded_content;
-	unless ( $content ) {
-        return "Unable to get image for dotplot (no content): $url";
+CoGe::Accessory::Web->dispatch( $FORM, \%FUNCTION, \&generate_html );
+
+sub generate_html {
+   
+    my $template;
+    
+    $EMBED = $FORM->param('embed');
+    if ($EMBED) {
+        $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'embedded_page.tmpl' );
+    }
+    else {
+        $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . 'generic_page.tmpl' );
+        $template->param(
+            PAGE_TITLE   => $PAGE_TITLE,
+            TITLE        => "SynMapN",
+            PAGE_LINK    => $LINK,
+            HOME         => $CONF->{SERVER},
+            HELP         => 'SynMapN',
+            WIKI_URL     => $CONF->{WIKI_URL} || '',
+
+            ADMIN_ONLY   => $USER->is_admin,
+            USER         => $USER->display_name || '',
+            CAS_URL      => $CONF->{CAS_URL} || '',
+            COOKIE_NAME  => $CONF->{COOKIE_NAME} || ''
+        );
+        $template->param( LOGON      => 1 ) unless $USER->is_public;
     }
 
-	($url) = $content =~ /url=(.*?)"/is;
-	my $png = $url;
-	$png =~ s/html$/png/;
-	$png =~ s/$URL/$DIR/;
-	my $img = GD::Image->new($png);
-	my ( $w, $h ) = $img->getBounds();
-	$w += 600;
-	$h += 250;
-
-	if ($loc) {
-		return ( $url, $loc, $w, $h );
-	}
-	
-	my $html = qq{<iframe src=$url frameborder=0 width=$w height=$h scrolling=no></iframe>};
-	return $html;
+    $template->param( BODY => generate_body() );
+    return $template->output;
 }
 
-sub gen_dsg_menu {
-	return CoGe::Builder::Tools::SynMap::gen_dsg_menu($db, $config, $user, @_);
-}
-sub get_dsg_gc {
-	return CoGe::Builder::Tools::SynMap::get_dsg_gc($db, @_);
+sub generate_body {
+    my $template = HTML::Template->new( filename => $CONF->{TMPLDIR} . $PAGE_TITLE . '.tmpl' );
+    $template->param( 
+            PAGE_NAME => "$PAGE_TITLE.pl",
+            API_BASE_URL => 'api/v1/'
+    );
+    
+#    # Force login
+#    if ( $USER->is_public ) {
+#        $template->param( LOGIN => 1 );
+#        return $template->output;
+#    }
+    
+    # Set genome IDs if specified.
+    my $gids = $FORM->param('gids');
+    if ($gids) {
+        my @ids;
+        my @names;
+        for my $gid (split(',', $gids)) {
+            my $genome = $DB->resultset('Genome')->find($gid);
+            if ($genome && $USER->has_access_to_genome($genome)) {
+                push(@names, $genome->info);
+                push(@ids, $gid);
+            }
+        }
+        $template->param(
+            GENOME_NAMES => join(',', @names),
+            GENOME_IDS   => join(',', @ids)
+        );
+    }
+
+    # Set options if specified.
+    my $sort= $FORM->param('sort');
+    # if (($sort eq 'name') || ($sort eq 'length')) {
+    #     $template->param(
+    #         SORTBY => $sort
+    #     );
+    # }
+
+    my $min_syn = $FORM->param('min_syn');
+    if ($min_syn) {
+        $template->param(
+            MIN_SYN => $min_syn
+        );
+    }
+
+    my $min_len = $FORM->param('min_len');
+    if ($min_len) {
+        $template->param(
+            MIN_LEN => $min_len
+        );
+    }
+
+    my $ratio = $FORM->param('ratio');
+    if ($ratio) {
+        my @r_opts = split /,/, $ratio;
+        $template->param(
+            RATIO => $r_opts[0],
+            R_BY => $r_opts[1],
+            R_MIN => $r_opts[2],
+            R_MAX => $r_opts[3]
+        )
+    }
+
+    my $cluster = $FORM->param('cluster');
+    if ($cluster) {
+        my @c_opts = split /,/,  $cluster;
+        $template->param(
+            C_EPS => $c_opts[0],
+            C_MIN => $c_opts[1]
+        )
+    }
+
+    my $vr = $FORM->param('vr');
+    if ($vr) {
+        $template->param(
+            VR => 1 #$vr
+        )
+    }
+
+    $template->param(
+        MAIN          => 1,
+        PAGE_TITLE    => $PAGE_TITLE,
+        EMBED         => $EMBED,
+    	LOAD_ID       => $LOAD_ID,
+    	WORKFLOW_ID   => $WORKFLOW_ID,
+        API_BASE_URL  => $CONF->{SERVER} . 'api/v1/', #TODO move into config file or module
+        SERVER_URL    => $CONF->{SERVER},
+        #DATA_LOC      => $CONF->{SYN3DIR},
+        DATA_LOC      => catdir($CONF->{URL}, "data", "syn3d"),
+        HELP_URL      => 'https://genomevolution.org/wiki/index.php/SynMapN',
+        SUPPORT_EMAIL => $CONF->{SUPPORT_EMAIL},
+        DEFAULT_TAB              => 0,
+        USER                     => $USER->user_name
+    );
+    $template->param( SPLASH_COOKIE_NAME => $PAGE_TITLE . '_splash_disabled',
+                      SPLASH_CONTENTS    => 'This page allows you to compare synteny between N genomes.' );
+    $template->param( ADMIN_AREA => 1 ) if $USER->is_admin;
+
+    return $template->output;
 }
 
-sub get_genome_info {
-	return CoGe::Builder::Tools::SynMap::get_genome_info($db, $config, $user, @_);
+sub get_debug_log {
+    my %opts         = @_;
+    my $workflow_id = $opts{workflow_id};
+    return unless $workflow_id;
+    #TODO authenticate user access to workflow
+
+    my (undef, $results_path) = get_workflow_paths($USER->name, $workflow_id);
+    return unless (-r $results_path);
+
+    my $result_file = catfile($results_path, 'debug.log');
+    return unless (-r $result_file);
+
+    my $result = read_file($result_file);
+    return $result;
 }
 
-sub get_orgs {
-	return CoGe::Builder::Tools::SynMap::get_orgs($db, @_);
-}
+sub send_error_report {
+    my %opts = @_;
+    my $load_id = $opts{load_id};
+    my $job_id = $opts{job_id};
+    unless ($load_id and $job_id) {
+        print STDERR "LoadExp+::send_error_report: missing required params\n";
+        return;
+    }
 
-sub get_pair_info {
-	return CoGe::Builder::Tools::SynMap::get_pair_info($db, $config, @_);
+    # Get the staging directory
+    my ($staging_dir, $result_dir) = get_workflow_paths($USER->name, $job_id);
+
+    my $url = $CONF->{SERVER} . "$PAGE_TITLE.pl?";
+    $url .= "job_id=$job_id;" if $job_id;
+    $url .= "load_id=$load_id";
+
+    my $email = $CONF->{SUPPORT_EMAIL};
+
+    my $body =
+        "Load failed\n\n"
+        . 'For user: '
+        . $USER->name . ' id='
+        . $USER->id . ' '
+        . $USER->date . "\n\n"
+        . "staging_directory: $staging_dir\n\n"
+        . "result_directory: $result_dir\n\n"
+        . "tiny link: $url\n\n";
+
+    my $log = get_debug_log(workflow_id => $job_id);
+    $body .= $log if $log;
+
+    CoGe::Accessory::Web::send_email(
+        from    => $email,
+        to      => $email,
+        subject => "Load error notification from $PAGE_TITLE",
+        body    => $body
+    );
 }
