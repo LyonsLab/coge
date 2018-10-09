@@ -59,10 +59,16 @@ sub _annotations {
     my $sth = $db->storage->dbh->prepare('SELECT name,annotation FROM ' . $type . '_annotation JOIN annotation_type ON annotation_type.annotation_type_id=' . $type . '_annotation.annotation_type_id WHERE ' . $type . '_id=' . $eid . ' ORDER BY name');
     $sth->execute();
     my $annotations;
+    my $jbrowse_config;
     while (my $row = $sth->fetch) {
-        $annotations .= "\n" . $row->[0] . ': ' . $row->[1];
+        if ($row->[0] eq 'jbrowse_config') {
+            $jbrowse_config = $row->[1];
+        }
+        else {
+            $annotations .= "\n" . $row->[0] . ': ' . $row->[1];
+        }
     }
-    return $annotations;
+    return $annotations, $jbrowse_config;
 }
 
 sub track_config {
@@ -368,6 +374,7 @@ sub track_config {
         };
         $style->{showMismatches} = JSON::true if $e->{data_type} == 3;
 
+        my ($annotations, $jbrowse_config) = _annotations('experiment', $eid, $db);
         my $coge = {
             id          => $eid,
             type        => 'experiment',
@@ -377,7 +384,7 @@ sub track_config {
             description => $e->{description},
             notebooks   => ( @notebooks ? \@notebooks : undef ),
             onClick     => "ExperimentView.pl?embed=1&eid=$eid",
-            annotations => _annotations('experiment', $eid, $db)
+            annotations => $annotations
         };
         $coge->{editable} = 1 if (($user && $user->is_admin) || ($role && ($role == 2 || $role == 3)));
         $coge->{restricted} = 1 if $e->{restricted};
@@ -395,6 +402,11 @@ sub track_config {
             style => $style,
             coge => $coge
         };
+        if ($jbrowse_config) {
+            foreach my $fmtDetailValue (decode_json($jbrowse_config)) {
+                $config->{$fmtDetailValue->{name}} = $fmtDetailValue->{function};
+            }
+        }
         push @tracks, $config;
     }
 
@@ -430,6 +442,7 @@ sub track_config {
         my $nid = $n->{list_id};
         my $role = $connectors->{1}{$nid} if $connectors;
         $role = $role->{role_id} if $role;
+        my ($annotations, $jbrowse_config) = _annotations('list', $nid, $db);
         my $coge = {
             id      => $nid,
             type    => 'notebook',
@@ -438,12 +451,12 @@ sub track_config {
             description => $n->{description},
             experiments => ( @{ $expByNotebook{$nid} } ? $expByNotebook{$nid} : undef ),
             onClick     => "NotebookView.pl?embed=1&lid=$nid",
-            annotations => _annotations('list', $nid, $db)
+            annotations => $annotations
         };
         $coge->{editable} = 1 if (($user && $user->is_admin) || ($role && ($role == 2 || $role == 3)));
         $coge->{restricted} = 1 if $n->{restricted};
         $coge->{role} = $role if $role;
-        push @tracks, {
+        my $config = {
             key     => ( $n->{restricted} ? '🔒 ' : '' ) . $n->{name},
             baseUrl => "$JBROWSE_API/experiment/genome/$gid/notebook/$nid",
             autocomplete => "all",
@@ -455,6 +468,12 @@ sub track_config {
             showHoverScores => 1,
             coge            => $coge
         };
+        if ($jbrowse_config) {
+            foreach my $fmtDetailValue (decode_json($jbrowse_config)) {
+                $config->{$fmtDetailValue->{name}} = $fmtDetailValue->{function};
+            }
+        }
+        push @tracks, $config;
     }
 
     print STDERR 'time4: ' . (time - $start_time) . "\n" if $DEBUG_PERFORMANCE;
