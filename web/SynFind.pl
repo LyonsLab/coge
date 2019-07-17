@@ -2120,12 +2120,12 @@ sub get_master_syn_sets {
       join(
         "\t", "COUNTS",
         (
-            map { "ORG: " . $_->organism->name." (".$_->id.")" } (
+            map { "ORG: " . $_->organism->name." (v".$_->version." gid:".$_->id.")" } (
                 $qdsg, sort { $a->organism->name cmp $b->organism->name } @dsgs
             )
         ),
         (
-            map { "CHR: " . $_->organism->name } (
+            map { "CHR: " . $_->organism->name." (v".$_->version." gid:".$_->id.")" } (
                 $qdsg, sort { $a->organism->name cmp $b->organism->name } @dsgs
             )
         )
