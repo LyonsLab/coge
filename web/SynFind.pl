@@ -794,7 +794,7 @@ sub source_search {
     my $blank = qq{<input type="hidden" id="dsid">------------};
     return $blank unless $accn;
     my @feats = $coge->resultset('Feature')->search(
-        { 'feature_names.name' => $accn },
+        { 'feature_type_id' => 3, 'feature_names.name' => $accn },
         {
             join       => 'feature_names',
             'prefetch' => {
@@ -2120,7 +2120,7 @@ sub get_master_syn_sets {
       join(
         "\t", "COUNTS",
         (
-            map { "ORG: " . $_->organism->name } (
+            map { "ORG: " . $_->organism->name." (".$_->id.")" } (
                 $qdsg, sort { $a->organism->name cmp $b->organism->name } @dsgs
             )
         ),
