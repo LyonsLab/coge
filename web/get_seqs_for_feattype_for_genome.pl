@@ -11,10 +11,17 @@ use File::Path;
 
 $|++;
 
-use vars qw($FORM $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $coge $FASTADIR $URL $DIR $USER $COOKIE_NAME);
+use vars qw($FORM $P $DBNAME $DBHOST $DBPORT $DBUSER $DBPASS $connstr $coge $FASTADIR $URL $DIR $USER $COOKIE_NAME $DB $USER $config $LINK);
 
 $FORM = new CGI;
 $P    = CoGe::Accessory::Web::get_defaults();
+
+# EHL added 8.16.19
+( $DB, $USER, $config, $LINK ) = CoGe::Accessory::Web->init(
+    cgi => $FORM,
+    page_title => "get_seqs_for_feattype_for_genome"
+);
+#end add
 
 $FASTADIR = $P->{FASTADIR};
 $DIR      = $P->{COGEDIR};
@@ -40,19 +47,19 @@ unless ($coge) {
 	exit;
 }
 
-$COOKIE_NAME = $P->{COOKIE_NAME};
-my $cas_ticket;
-$cas_ticket = $FORM->param('ticket');
-$USER = undef;
-($USER) = CoGe::Accessory::Web->login_cas(
-    ticket   => $cas_ticket,
-    coge     => $coge,
-    this_url => $FORM->url()
-) if ($cas_ticket);
-($USER) = CoGe::Accessory::Web->get_user(
-    cookie_name => $COOKIE_NAME,
-    coge        => $coge
-) unless $USER;
+#$COOKIE_NAME = $P->{COOKIE_NAME};
+#my $cas_ticket;
+#$cas_ticket = $FORM->param('ticket');
+#$USER = undef;
+#($USER) = CoGe::Accessory::Web->login_cas(
+#    ticket   => $cas_ticket,
+#    coge     => $coge,
+#    this_url => $FORM->url()
+#) if ($cas_ticket);
+#($USER) = CoGe::Accessory::Web->get_user(
+#    cookie_name => $COOKIE_NAME,
+#    coge        => $coge
+#) unless $USER;
 
 my $dsgid = $FORM->param('dsgid');
 my $ftid  = $FORM->param('ftid');
@@ -72,6 +79,7 @@ my $dsg = $coge->resultset('Genome')->find($dsgid);
 
 if ( !$USER->has_access_to_genome($dsg) ) {
     print $FORM->header;
+    print $USER->name,"\n";    
     print "Permission denied";
     exit;
 }
