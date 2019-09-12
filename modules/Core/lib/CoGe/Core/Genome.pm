@@ -447,8 +447,6 @@ sub fix_chromosome_id {
     $chr =~ s/^gi\|//;            # remove leading 'gi|'
     $chr =~ s/chromosome//i;      # remove 'chromosome'
     $chr =~ s/^chr//i;            # remove leading 'chr'
-    $chr = "0" if $chr =~ /^0+$/; # handle chromosome name '00' (or something like that) (EL added 2/13/14)
-    $chr =~ s/^0+// unless $chr eq '0'; # remove leading 0s
     $chr =~ s/^_+//;              # remove underscores
     $chr =~ s/\s+/ /g;            # collapse whitespace to single space
     $chr =~ s/^\s//;              # remove leading whitespace
@@ -459,6 +457,8 @@ sub fix_chromosome_id {
     $chr =~ s/\(/_/g;             # replace '(' with '_' (mdb added 2/11/15 COGE-587)
     $chr =~ s/\)/_/g;             # replace ')' with '_' (mdb added 2/11/15 COGE-587)
     $chr =~ s/_+/_/g;             # convert multiple underscores to single underscore (mdb added 8/13/15)
+    $chr = "0" if $chr =~ /^0+$/; # handle chromosome name '00' (or something like that) (EL added 2/13/14)
+    $chr =~ s/^0+// unless $chr eq '0'; # remove leading 0s
     return if ($chr eq '');
 
     # Convert 'chloroplast' and 'mitochondia' to 'C' and 'M' if needed
