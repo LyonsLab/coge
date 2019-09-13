@@ -104,7 +104,7 @@ $ENV{'DIALIGN2_DIR'} = $P->{DIALIGN2_DIR};
 $DEBUG     = 0;
 $BENCHMARK = 1;
 $NUM_SEQS  = 2;         #SHABARI EDIT
-$MAX_SEQS  = 25;
+$MAX_SEQS  = 30;
 $|         = 1;         # turn off buffering
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
@@ -802,6 +802,7 @@ sub run {
     my $html;
     my $t1 = new Benchmark;
 
+    my $random_stuff;
     for ( my $i = 1 ; $i <= $num_seqs ; $i++ ) {
         my $display_order = $opts{"display_order$i"};
         ($display_order) = $display_order =~ /(\d+)/ if $display_order;
@@ -908,6 +909,7 @@ sub run {
                 start  => $dirstart,
                 length => $dirlength
             );
+		$random_stuff .= Dumper $obj;
             $dirlength = length( $obj->sequence ) - $dirstart + 1
               unless $dirlength;
             if ($obj) {
@@ -1082,7 +1084,7 @@ sub run {
       if defined $hsp_size_limit;
     unless ( @sets > 1 ) {
         $message .=
-"Problem retrieving information, please check submissions.  At least 2 sequences should be specified.\n";
+"Problem retrieving information, please check submissions.  At least 2 sequences should be specified.\n".$random_stuff;
         return '', '', '', '', 0, '', '', $message;
     }
 
@@ -2682,9 +2684,7 @@ sub generate_obj_from_seq {
     my $filename =
       $TEMPDIR . "/" . md5_hex( $sequence . $start . $length ) . ".faa";
     $obj->srcfile($filename);
-
     if ( $sequence =~ /^LOCUS/ ) {
-
         #genbank sequence
         $obj->parse_genbank( $sequence, $rc );
     }
@@ -3588,12 +3588,13 @@ sub write_fasta {
     my $force    = $opts{force};
     my $fullname = $gbobj->srcfile;
     my ($seq)    = uc( $gbobj->sequence() );
-    if ( -r $fullname && !$force ) {
-        CoGe::Accessory::Web::write_log(
-            "sequence file $fullname already exists.",
-            $cogeweb->logfile );
-        return $fullname;
-    }
+# EHL 5/6/19:  Removing the check for the cached sequence file due to problems generating bad sequences.
+#    if ( -r $fullname && !$force ) {
+#        CoGe::Accessory::Web::write_log(
+#            "sequence file $fullname already exists.",
+#            $cogeweb->logfile );
+#        return $fullname;
+#    }
     my $hdr = $gbobj->get_headerfasta();
     $start = 1 if $start < 1;
     my $stop = $length ? $start + $length - 1 : length($seq);
