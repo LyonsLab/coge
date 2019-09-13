@@ -204,11 +204,11 @@ $(function() {
         var fid = "<tmpl_var name=FID>",
             targets = "<tmpl_var name=TARGETS>";
 
-        schedule(fid, targets);
+        schedule(null, fid, targets);
     }
 });
 
-function schedule(fid, targets) {
+function schedule(event, fid, targets) {
     var feat = $('#feat_dsgid').val();
     if (!feat) {
         alert('Please search and select a feature for this analysis.')
