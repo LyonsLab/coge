@@ -260,7 +260,7 @@ sub get_annotations {
     foreach my $a ( $object->annotations ) {
         my $group = ( $a->type->group ? $a->type->group->name : '');
         my $type = $a->type->name;
-        if ($type ne 'jbrowse_config') {
+        #if ($type ne 'jbrowse_config') {
             push @{ $groups{$group}{$type} }, {
                 annotation => $a->info,
                 bisque_id => $a->bisque_id,
@@ -269,7 +269,7 @@ sub get_annotations {
                 link => $a->link,
                 locked => $for_api ? ($a->locked ? Mojo::JSON->true : Mojo::JSON->false) : $a->locked
             };
-        }
+        #}
     }
     return \%groups;
 }
