@@ -41,7 +41,7 @@ use vars qw($P $PAGE_NAME $TEMPDIR $TEMPURL $DATADIR $FASTADIR
 $PAGE_TITLE = "CoGeBlast";
 $PAGE_NAME  = $PAGE_TITLE . ".pl";
 
-$RESULTSLIMIT       = 100;
+$RESULTSLIMIT       = 20;
 $MAX_SEARCH_RESULTS = 1000;
 
 $FORM = new CGI;
@@ -157,7 +157,6 @@ sub gen_body {
         coge => $db
     );
     $prefs = {} unless $prefs;
-
     $template->param(
         MAIN       => 1,
         UPSTREAM   => $upstream,
@@ -1700,6 +1699,7 @@ qname = "$qname" AND
 org = "$org" AND
 schr = "$schr"
 };
+    #print STDERR $statement,"n";
     $sth = $dbh->prepare($statement);
     $sth->execute;
 
