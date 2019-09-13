@@ -451,7 +451,11 @@ function get_anno_chain(val, dsgid, fid) {
     if ( $('#type_name').length ) {
         var type_name = $('#type_name').val();
         if (type_name)
-            type = [0];
+            type = type_name[0];
+        else {
+            alert('The selected genome doesn\'t have any CDS features. Please select a different genome.');
+            return;
+		}
     }
 
     $('#anno').html(spinner).show();
@@ -466,10 +470,12 @@ function get_anno_chain(val, dsgid, fid) {
             dsgid:  dsgid
         },
         success : function(data) {
-            var obj = jQuery.parseJSON(data);
-            if (obj) {
-                show_anno(obj.anno, obj.fid);
-            }
+			if (data) {
+            	var obj = jQuery.parseJSON(data);
+            	if (obj)
+                	show_anno(obj.anno, obj.fid);
+            } else
+				$('#anno').html('');
         },
     });
 }
