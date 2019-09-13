@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON;
 use URI::Escape qw(uri_escape);
 use Data::Dumper;
+use JSON qw( decode_json );
 use Sort::Versions;
 use Time::HiRes qw(time);
 
@@ -403,7 +404,8 @@ sub track_config {
             coge => $coge
         };
         if ($jbrowse_config) {
-            foreach my $fmtDetailValue (decode_json($jbrowse_config)) {
+			my $fmtDetailValues = decode_json($jbrowse_config);
+            foreach my $fmtDetailValue (@$fmtDetailValues) {
                 $config->{$fmtDetailValue->{name}} = $fmtDetailValue->{function};
             }
         }
