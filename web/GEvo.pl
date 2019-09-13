@@ -802,7 +802,6 @@ sub run {
     my $html;
     my $t1 = new Benchmark;
 
-    my $random_stuff;
     for ( my $i = 1 ; $i <= $num_seqs ; $i++ ) {
         my $display_order = $opts{"display_order$i"};
         ($display_order) = $display_order =~ /(\d+)/ if $display_order;
@@ -909,7 +908,6 @@ sub run {
                 start  => $dirstart,
                 length => $dirlength
             );
-		$random_stuff .= Dumper $obj;
             $dirlength = length( $obj->sequence ) - $dirstart + 1
               unless $dirlength;
             if ($obj) {
@@ -1084,7 +1082,7 @@ sub run {
       if defined $hsp_size_limit;
     unless ( @sets > 1 ) {
         $message .=
-"Problem retrieving information, please check submissions.  At least 2 sequences should be specified.\n".$random_stuff;
+"Problem retrieving information, please check submissions.  At least 2 sequences should be specified.\n";
         return '', '', '', '', 0, '', '', $message;
     }
 
@@ -2685,8 +2683,7 @@ sub generate_obj_from_seq {
       $TEMPDIR . "/" . md5_hex( $sequence . $start . $length ) . ".faa";
     $obj->srcfile($filename);
     if ( $sequence =~ /^LOCUS/ ) {
-        #genbank sequence
-        $obj->parse_genbank( $sequence, $rc );
+        $obj->parse_genbank( content=>$sequence, rev=>$rc );
     }
     else {
         my $seq;
