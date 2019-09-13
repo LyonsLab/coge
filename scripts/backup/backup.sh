@@ -43,7 +43,7 @@ $ICMD/iput -bfr $LOCAL_MYSQL $REMOTE
 echo `date` "Deleting old LOCAL database backups"
 #LOCAL_DELETIONS=`find $LOCAL/mysql_* -maxdepth 1 -type d -mtime +$DAYS_UNTIL_DELETE`
 
-COUNT=$MAX_REMOTE_BACKUPS;
+COUNT=$MAX_LOCAL_BACKUPS;
 for d in `ls -td $LOCAL/*/ | grep 'mysql_'`
 do
    echo $COUNT
