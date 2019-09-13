@@ -260,7 +260,7 @@ sub load_genome_from_NCBI {
         args => $args,
         inputs => [],
         outputs => [
-            [$output_path, '1'],
+#            [$output_path, '1'],
             catfile($output_path, "log.done"),
 #            $result_file
         ],
