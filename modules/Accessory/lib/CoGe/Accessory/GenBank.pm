@@ -527,8 +527,18 @@ sub parse_genbank {
 				$date = $temp[2];
 			}
 			else {
-				warn "  GBFile::Locus regexp - Problems with input entry\n";
-				return 0;
+				if ( exists ($moltype_list { $temp[0] } ) ) {
+					$moltype = $temp[0];
+					$division = "?";
+					$date = "?";
+				}
+				else {
+					$moltype = "?";
+					$division = "?";
+					$date = "?";
+				}
+				#warn "  GBFile::Locus regexp - Problems with input entry\n";
+				#return 0;
 			}
 		}
 		elsif ( $line =~ /^DEFINITION\s+(.*)/ ) {
