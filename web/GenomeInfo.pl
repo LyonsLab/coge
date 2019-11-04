@@ -114,7 +114,8 @@ sub get_genome_info_details {
     my $dsg = $DB->resultset("Genome")->find($dsgid);
     return "Unable to get genome object for id: $dsgid" unless $dsg;
     my $html;
-
+    unless (-r get_genome_file($dsg->id)) { return "Genome file is missing for Genome ID: $dsgid";}
+    
     #TABLE
     $html .= qq{<div class="left coge-table-header">Statistics</div>};
     $html .= qq{<table style="padding: 2px; margin-bottom: 5px;" class="border-top">};
