@@ -271,7 +271,20 @@ sub get_genome_seq {
         my $region = $chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
         my $samtools = CoGe::Accessory::Web::get_command_path('SAMTOOLS');
         my $cmd = "$samtools faidx $file_path '$region'";
+	#print STDERR $cmd,"\n";
         $seq = qx{$cmd};
+	unless ($seq) {
+		my $tmpregion = "lcl|".$chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
+		$cmd = "$samtools faidx $file_path '$region'";
+        	#print STDERR $cmd,"\n";
+        	$seq = qx{$cmd};
+	}
+	unless ($seq) {
+		my $tmpregion = "gi|".$chr . ( defined $start && defined $stop ? ":$start-$stop" : '' );
+		$cmd = "$samtools faidx $file_path '$region'";
+        	#print STDERR $cmd,"\n";
+        	$seq = qx{$cmd};
+	}
         # samtools returns heading line but no sequence if chr is not found, try again with characters prepended
         my $nl = index($seq, "\n");
         if ($nl == length($seq) - 1) {
