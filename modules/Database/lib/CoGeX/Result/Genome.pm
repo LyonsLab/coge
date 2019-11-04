@@ -351,7 +351,7 @@ sub get_chromosome {
 	if ($c->find($name)) {
 		return (chromosome=>$c->name, sequence_length=>$c->length);
 	}
-	print STDERR "CoGeX::Result::Genome::get_chromosome ERROR, chromosome '$name' not found\n";
+	warn "CoGeX::Result::Genome::get_chromosome ERROR, chromosome '$name' not found\n";
 	return 0;
 }
 
@@ -375,10 +375,12 @@ See Also   :
 sub get_chromosome_length {
     my $self = shift;
     my $name = shift;
-	my $c = CoGe::Core::Chromosomes->new($self->id);
-	return $c->length if $c->find($name);
-	warn "CoGeX::Result::Genome::get_chromosome_length ERROR, chromosome '$name' not found for genome ", $self->id;
-	return 0;
+    my $c = CoGe::Core::Chromosomes->new($self->id);
+    #warn Dumper ($c);
+    #warn Dumper [$c->names];
+    return $c->length if $c->find($name);
+    warn "CoGeX::Result::Genome::get_chromosome_length ERROR, chromosome '$name' not found for genome ", $self->id;
+    return 0;
 }
 
 ################################################
