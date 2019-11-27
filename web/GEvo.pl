@@ -1015,9 +1015,9 @@ sub run {
 	#print STDERR Dumper $obj;
         next unless $obj;
         my $fullname = $obj->srcfile;
-        $fullname =~ s/\.faa$//;
-        $fullname = $fullname."-".int(rand(100000)).".faa";
-        $obj->srcfile($fullname);
+        #$fullname =~ s/\.faa$//;
+        #$fullname = $fullname."-".int(rand(100000)).".faa";
+        #$obj->srcfile($fullname);
         if ( $obj->sequence && $obj->start ne $obj->stop )
         { #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
             my $accn  = $obj->accn;
@@ -2819,17 +2819,17 @@ sub get_obj_from_genome_db {
     return ( "", "unable able to find dataset for id $dsid" ) unless $ds;
     $accn = $dsg->name if !$accn && $dsg;
     $accn = $ds->name  if !$accn && $ds;
-    if ( -r $seq_file ) {
-        $/ = "\n";
-        open( IN, $seq_file );
-        while (<IN>) {
-            chomp;
-            next if /^>/;    #skip header;
-            $seq .= $_;
-        }
-        close IN;
-
-    }
+    #if ( -r $seq_file ) {
+    #    $/ = "\n";
+    #    open( IN, $seq_file );
+    #    while (<IN>) {
+    #        chomp;
+    #        next if /^>/;    #skip header;
+    #        $seq .= $_;
+    #    }
+    #    close IN;
+    #
+    #}
     unless ($seq && length($seq) > 1) {
         ($chr) = $ds->get_chromosomes unless defined $chr;
         my $tmp;
