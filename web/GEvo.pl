@@ -2849,8 +2849,8 @@ sub get_obj_from_genome_db {
             print STDERR "Error retrieving sequence: "
               . join( "\t", $dsg->name, $start, $stop, $chr, $gstid ), "\n";
         }
-        $seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
     }
+    $seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
     if ( $stop - $start + 1 > length($seq) ) {
         my $len = length($seq);
         $stop = $start + $len - 1;
@@ -2896,85 +2896,85 @@ sub get_obj_from_genome_db {
     #print STDERR join ("\t", $start, $stop, $chr, $dsid),"\n";
     $feats{ $feat->id } = $feat if $feat;
 
-    my $t5 = new Benchmark;
-    my $prot_sequence;
-    foreach my $f ( values %feats ) {
-        my $name;
-        my @names = $f->names;
-        next if $f->type->name =~ /misc_feat/;
-        next if $f->type->name eq "chromosome";
-	#new changes to deal with GD failures:  EHL 4/30/15
-	next if $f->start == $f->stop;
-
-        #	next if $f->type->name eq "contig";
-        foreach my $tmp (@names) {
-            $name = $tmp;
-            last if ( $tmp =~ /^$accn.+/i );
-        }
-        unless (@names) {
-
-            #	    next;
-            push @names, "No Name Feature: " . $f->type->name, "\n";
-
-#	    print STDERR "Feature has no Name.  Db Id: ",$f->id,"\n" unless $f->type->name =~ /misc/;
-
-        }
-        $name = $accn unless $name;
-	    print STDERR "\n" if $DEBUG;
-        print STDERR $name, " ID: ",$f->id,"\n" if $DEBUG;
-        print STDERR "\t", $f->genbank_location_string(), "\n" if $DEBUG;
-        print STDERR "\t", $f->genbank_location_string( recalibrate => $start ) if $DEBUG;
-        $new_seq = 1;
-        if ( !$seq ) {
-            print STDERR "Error retrieving sequence: "
-              . join( "\t", $dsg->name, $start, $stop, $chr, $gstid ), "\n";
-        }
-        $seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
-    }
-    if ( $stop - $start + 1 > length($seq) ) {
-        my $len = length($seq);
-        $stop = $start + $len - 1;
-    }
-    my $t3       = new Benchmark;
-    my $gst      = $coge->resultset('GenomicSequenceType')->find($gstid);
-    my $org_name = $ds->organism->name();
-    $org_name .= ": " . $dsg->description if $dsg && $dsg->description;
-    $org_name .= " ("
-      . $ds->data_source->name . " v"
-      . $ds->version . ", "
-      . $gst->name . ")";
-    my $obj = new CoGe::Accessory::GenBank(
-        {
-            accn                     => $accn,
-            locus                    => $accn,
-            version                  => $ds->version(),
-            data_source              => $ds->data_source->name(),
-            dataset                  => $dsid,
-            chromosome               => $chr,
-            start                    => $start,
-            stop                     => $stop,
-            organism                 => $org_name,
-            seq_length               => length($seq),
-            genomic_sequence_type_id => $gstid,
-            srcfile                  => $seq_file,
-        }
-    );
-
-    my %used_names;
-    $used_names{$accn} = 1;
-    my $t4 = new Benchmark;
-
-    #print STDERR "Region: $chr: $start-$stop\n";# if $DEBUG;
-    my %feats = map { $_->id, $_ } $coge->get_features_in_region(
-        start      => $start,
-        stop       => $stop,
-        chr        => $chr,
-        dataset_id => $dsid,
-        gid        => $dsgid
-    );
-
-    #print STDERR join ("\t", $start, $stop, $chr, $dsid),"\n";
-    $feats{ $feat->id } = $feat if $feat;
+#    my $t5 = new Benchmark;
+#    my $prot_sequence;
+#    foreach my $f ( values %feats ) {
+#        my $name;
+#        my @names = $f->names;
+#        next if $f->type->name =~ /misc_feat/;
+#        next if $f->type->name eq "chromosome";
+#	#new changes to deal with GD failures:  EHL 4/30/15
+#	next if $f->start == $f->stop;
+#
+#        #	next if $f->type->name eq "contig";
+#        foreach my $tmp (@names) {
+#            $name = $tmp;
+#            last if ( $tmp =~ /^$accn.+/i );
+#        }
+#        unless (@names) {
+#
+#            #	    next;
+#            push @names, "No Name Feature: " . $f->type->name, "\n";
+#
+##	    print STDERR "Feature has no Name.  Db Id: ",$f->id,"\n" unless $f->type->name =~ /misc/;
+#
+#        }
+#        $name = $accn unless $name;
+#	    print STDERR "\n" if $DEBUG;
+#        print STDERR $name, " ID: ",$f->id,"\n" if $DEBUG;
+#        print STDERR "\t", $f->genbank_location_string(), "\n" if $DEBUG;
+#        print STDERR "\t", $f->genbank_location_string( recalibrate => $start ) if $DEBUG;
+#        $new_seq = 1;
+#        if ( !$seq ) {
+#            print STDERR "Error retrieving sequence: "
+#              . join( "\t", $dsg->name, $start, $stop, $chr, $gstid ), "\n";
+#        }
+#        $seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
+#    }
+#    if ( $stop - $start + 1 > length($seq) ) {
+#        my $len = length($seq);
+#        $stop = $start + $len - 1;
+#    }
+#    my $t3       = new Benchmark;
+#    my $gst      = $coge->resultset('GenomicSequenceType')->find($gstid);
+#    my $org_name = $ds->organism->name();
+#    $org_name .= ": " . $dsg->description if $dsg && $dsg->description;
+#    $org_name .= " ("
+#      . $ds->data_source->name . " v"
+#      . $ds->version . ", "
+#      . $gst->name . ")";
+#    my $obj = new CoGe::Accessory::GenBank(
+#        {
+#            accn                     => $accn,
+#            locus                    => $accn,
+#            version                  => $ds->version(),
+#            data_source              => $ds->data_source->name(),
+#            dataset                  => $dsid,
+#            chromosome               => $chr,
+#            start                    => $start,
+#            stop                     => $stop,
+#            organism                 => $org_name,
+#            seq_length               => length($seq),
+#            genomic_sequence_type_id => $gstid,
+#            srcfile                  => $seq_file,
+#        }
+#    );
+#
+#    my %used_names;
+#    $used_names{$accn} = 1;
+#    my $t4 = new Benchmark;
+#
+#    #print STDERR "Region: $chr: $start-$stop\n";# if $DEBUG;
+#    my %feats = map { $_->id, $_ } $coge->get_features_in_region(
+#        start      => $start,
+#        stop       => $stop,
+#        chr        => $chr,
+#        dataset_id => $dsid,
+#        gid        => $dsgid
+#    );
+#
+#    #print STDERR join ("\t", $start, $stop, $chr, $dsid),"\n";
+#    $feats{ $feat->id } = $feat if $feat;
 
     my $t5 = new Benchmark;
     my $prot_sequence;
