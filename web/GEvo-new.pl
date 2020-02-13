@@ -17,7 +17,6 @@ use File::Path;
 use CoGeX;
 use CoGeX::Result::Feature;
 use CoGe::Accessory::GenBank;
-use CoGe::Accessory::LogUser;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
 use CoGe::Accessory::bl2seq_report;
@@ -79,7 +78,7 @@ $ENV{PATH} = $P->{COGEDIR};
 
 #print Dumper $P;
 $BL2SEQ     = $P->{BL2SEQ};
-$BLASTZ     = $P->{LASTZ};
+$BLASTZ     = get_command_path('LASTZ');
 $BLASTZ     .= " --ambiguous=iupac";
 $LAGAN          = $P->{LAGAN};
 $CHAOS          = $P->{CHAOS};
@@ -105,7 +104,7 @@ $ENV{'DIALIGN2_DIR'} = $P->{DIALIGN2_DIR};
 $DEBUG     = 0;
 $BENCHMARK = 1;
 $NUM_SEQS  = 2;         #SHABARI EDIT
-$MAX_SEQS  = 25;
+$MAX_SEQS  = 30;
 $|         = 1;         # turn off buffering
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
@@ -178,6 +177,7 @@ sub gen_html {
     $template->param( TITLE      => 'GEvo: Genome Evolution Analysis',
     				  PAGE_TITLE => 'GEvo',
     				  PAGE_LINK  => $LINK,
+    				  SUPPORT_EMAIL => $P->{SUPPORT_EMAIL},
     				  HOME       => $P->{SERVER},
                       HELP       => 'GEvo',
                       WIKI_URL   => $P->{WIKI_URL} || '' );
@@ -185,8 +185,9 @@ sub gen_html {
     $template->param( LOGON  => 1 ) unless $USER->user_name eq "public";
     $template->param( NO_BOX => 1 );
     $template->param( BODY   => gen_body() );
-    $template->param( ADMIN_ONLY => $USER->is_admin );
-    $template->param( CAS_URL    => $P->{CAS_URL} || '' );
+    $template->param( ADMIN_ONLY => $USER->is_admin,
+                      CAS_URL    => $P->{CAS_URL} || '',
+                      COOKIE_NAME => $P->{COOKIE_NAME} || '' );
     my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX     => $prebox->output );
@@ -232,12 +233,13 @@ sub gen_body {
         $display_order = $index unless $display_order;
         $draccn = $form->param( "accn" . $i ) if $form->param( "accn" . $i );
         $pos    = $form->param( "x" . $i )    if $form->param( "x" . $i );
-        $chr = $form->param( "chr" . $i ) if defined $form->param( "chr" . $i );
-        $fid = $form->param( "fid" . $i ) if $form->param( "fid" . $i );
+        $chr = $form->param( "chr" . $i )     if defined $form->param( "chr" . $i );
+        $fid = $form->param( "fid" . $i )     if $form->param( "fid" . $i );
         $dsid  = $form->param( 'dsid' . $i )  if $form->param( 'dsid' . $i );
         $dsgid = $form->param( 'dsgid' . $i ) if $form->param( 'dsgid' . $i );
+        $dsgid = $form->param( 'gid' . $i )   if $form->param( 'gid' . $i );
         $gstid = $form->param( 'gstid' . $i ) if $form->param( 'gstid' . $i );
-        $mask = $form->param( 'mask' . $i ) if ( $form->param( 'mask' . $i ) );
+        $mask = $form->param( 'mask' . $i )   if ( $form->param( 'mask' . $i ) );
         $mask = undef if $mask && $mask eq "--None--";
         $mask = "non-cds"
           if $form->param( 'maskncs' . $i );    #backwards compatibility
@@ -1010,8 +1012,13 @@ sub run {
                 $message .= "No GenBank entry found for $gbaccn\n";
             }
         }
+	#print STDERR Dumper $obj;
         next unless $obj;
-        if ( $obj && $obj->sequence && $obj->start ne $obj->stop )
+        my $fullname = $obj->srcfile;
+        $fullname =~ s/\.faa$//;
+        $fullname = $fullname."-".int(rand(100000)).".faa";
+        $obj->srcfile($fullname);
+        if ( $obj->sequence && $obj->start ne $obj->stop )
         { #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
             my $accn  = $obj->accn;
             my $count = 0;
@@ -1035,7 +1042,6 @@ sub run {
               };
         }
         else {
-
             #push @sets, {seq_num=>$i};
         }
     }
@@ -1265,17 +1271,17 @@ sub run {
     my $gobe_buttons = qq@
 <table>
 <tr>
-<td><span class='ui-button ui-corner-all coge-button-sm' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
+<td><span class='coge-button coge-button-sm' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
 
-<td><span class='ui-button ui-corner-all coge-button-sm drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line');set_connector('line');">Set connector as Lines</span>
+<td><span class='coge-button coge-button-sm drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line');set_connector('line');">Set connector as Lines</span>
 
-<span style="display: none" class='ui-button ui-corner-all coge-button-sm lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge');set_connector('wedge');">Set connector as Wedges</span>
+<span style="display: none" class='coge-button coge-button-sm lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge');set_connector('wedge');">Set connector as Wedges</span>
 
 <td><div class=lineopt style="float: left; display: none">
- <span class='ui-button ui-corner-all coge-button-sm' id="">Line Width</span>
+ <span class='coge-button coge-button-sm' id="">Line Width</span>
  <input type=textbox size=2 class="backbox line_width" id=line_width_val value=3 readonly>
- <span class='ui-button ui-corner-all coge-button-sm' id="" onclick="update_line_width(1)">+</span>
- <span class='ui-button ui-corner-all coge-button-sm' id="" onclick="update_line_width(-1)">-</span>
+ <span class='coge-button coge-button-sm' id="" onclick="update_line_width(1)">+</span>
+ <span class='coge-button coge-button-sm' id="" onclick="update_line_width(-1)">-</span>
 </div>
 </td></tr></table>
 @;
@@ -1301,7 +1307,6 @@ sub run {
     }
     $html .= '<svg id="svg" style="position:absolute;top:0;left:0;width:100%;height:100%;" onclick="svg_click(event)" onmousedown="svg_mousedown(event)" onmousemove="svg_mousemove(event)" onmouseleave="svg_mouseleave(event)"></svg></div><script>var basename=\'' . basename($cogeweb->basefile) . '\';var num_img=' . (scalar @sets) . ';images_loaded();</script>';
     $html .=
-#qq{<a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" class="small" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
 qq{<a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" class="small" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.</a>.};
     $html .= $gobe_buttons;
     $html .= qq{<table class=small>};
@@ -2697,11 +2702,8 @@ sub generate_obj_from_seq {
     my $filename =
       $TEMPDIR . "/" . md5_hex( $sequence . $start . $length ) . ".faa";
     $obj->srcfile($filename);
-
     if ( $sequence =~ /^LOCUS/ ) {
-
-        #genbank sequence
-        $obj->parse_genbank( $sequence, $rc );
+        $obj->parse_genbank( content=>$sequence, rev=>$rc );
     }
     else {
         my $seq;
@@ -2843,12 +2845,15 @@ sub get_obj_from_genome_db {
         close IN;
 
     }
-    unless ($seq) {
+    unless ($seq && length($seq) > 1) {
         ($chr) = $ds->get_chromosomes unless defined $chr;
         my $tmp;
         ( $tmp, $seq_file ) = CoGe::Accessory::Web::check_taint($seq_file);
         unlink($seq_file);
-        $seq = $ds->get_genomic_sequence(
+        ##Eric changes 11/1/19
+	#$seq = $ds->get_genomic_sequence(
+        $seq = $dsg->get_genomic_sequence(
+	###
             start => $start,
             stop  => $stop,
             chr   => $chr,
@@ -2857,10 +2862,10 @@ sub get_obj_from_genome_db {
         $new_seq = 1;
         if ( !$seq ) {
             print STDERR "Error retrieving sequence: "
-              . join( "\t", $ds->name, $start, $stop, $chr, $gstid ), "\n";
+              . join( "\t", $dsg->name, $start, $stop, $chr, $gstid ), "\n";
         }
-        $seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
     }
+    $seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
     if ( $stop - $start + 1 > length($seq) ) {
         my $len = length($seq);
         $stop = $start + $len - 1;
@@ -2905,6 +2910,86 @@ sub get_obj_from_genome_db {
 
     #print STDERR join ("\t", $start, $stop, $chr, $dsid),"\n";
     $feats{ $feat->id } = $feat if $feat;
+
+#    my $t5 = new Benchmark;
+#    my $prot_sequence;
+#    foreach my $f ( values %feats ) {
+#        my $name;
+#        my @names = $f->names;
+#        next if $f->type->name =~ /misc_feat/;
+#        next if $f->type->name eq "chromosome";
+#	#new changes to deal with GD failures:  EHL 4/30/15
+#	next if $f->start == $f->stop;
+#
+#        #	next if $f->type->name eq "contig";
+#        foreach my $tmp (@names) {
+#            $name = $tmp;
+#            last if ( $tmp =~ /^$accn.+/i );
+#        }
+#        unless (@names) {
+#
+#            #	    next;
+#            push @names, "No Name Feature: " . $f->type->name, "\n";
+#
+##	    print STDERR "Feature has no Name.  Db Id: ",$f->id,"\n" unless $f->type->name =~ /misc/;
+#
+#        }
+#        $name = $accn unless $name;
+#	    print STDERR "\n" if $DEBUG;
+#        print STDERR $name, " ID: ",$f->id,"\n" if $DEBUG;
+#        print STDERR "\t", $f->genbank_location_string(), "\n" if $DEBUG;
+#        print STDERR "\t", $f->genbank_location_string( recalibrate => $start ) if $DEBUG;
+#        $new_seq = 1;
+#        if ( !$seq ) {
+#            print STDERR "Error retrieving sequence: "
+#              . join( "\t", $dsg->name, $start, $stop, $chr, $gstid ), "\n";
+#        }
+#        $seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
+#    }
+#    if ( $stop - $start + 1 > length($seq) ) {
+#        my $len = length($seq);
+#        $stop = $start + $len - 1;
+#    }
+#    my $t3       = new Benchmark;
+#    my $gst      = $coge->resultset('GenomicSequenceType')->find($gstid);
+#    my $org_name = $ds->organism->name();
+#    $org_name .= ": " . $dsg->description if $dsg && $dsg->description;
+#    $org_name .= " ("
+#      . $ds->data_source->name . " v"
+#      . $ds->version . ", "
+#      . $gst->name . ")";
+#    my $obj = new CoGe::Accessory::GenBank(
+#        {
+#            accn                     => $accn,
+#            locus                    => $accn,
+#            version                  => $ds->version(),
+#            data_source              => $ds->data_source->name(),
+#            dataset                  => $dsid,
+#            chromosome               => $chr,
+#            start                    => $start,
+#            stop                     => $stop,
+#            organism                 => $org_name,
+#            seq_length               => length($seq),
+#            genomic_sequence_type_id => $gstid,
+#            srcfile                  => $seq_file,
+#        }
+#    );
+#
+#    my %used_names;
+#    $used_names{$accn} = 1;
+#    my $t4 = new Benchmark;
+#
+#    #print STDERR "Region: $chr: $start-$stop\n";# if $DEBUG;
+#    my %feats = map { $_->id, $_ } $coge->get_features_in_region(
+#        start      => $start,
+#        stop       => $stop,
+#        chr        => $chr,
+#        dataset_id => $dsid,
+#        gid        => $dsgid
+#    );
+#
+#    #print STDERR join ("\t", $start, $stop, $chr, $dsid),"\n";
+#    $feats{ $feat->id } = $feat if $feat;
 
     my $t5 = new Benchmark;
     my $prot_sequence;
@@ -3602,13 +3687,17 @@ sub write_fasta {
     my $length   = $opts{length};
     my $force    = $opts{force};
     my $fullname = $gbobj->srcfile;
+    #$fullname =~ s/\.faa$//;
+    #$fullname = $fullname."-".int(rand(100000)).".faa";
+    #$gbobj->srcfile($fullname);
     my ($seq)    = uc( $gbobj->sequence() );
-    if ( -r $fullname && !$force ) {
-        CoGe::Accessory::Web::write_log(
-            "sequence file $fullname already exists.",
-            $cogeweb->logfile );
-        return $fullname;
-    }
+# EHL 5/6/19:  Removing the check for the cached sequence file due to problems generating bad sequences.
+#    if ( -r $fullname && !$force ) {
+#        CoGe::Accessory::Web::write_log(
+#            "sequence file $fullname already exists.",
+#            $cogeweb->logfile );
+#        return $fullname;
+#    }
     my $hdr = $gbobj->get_headerfasta();
     $start = 1 if $start < 1;
     my $stop = $length ? $start + $length - 1 : length($seq);
@@ -3632,7 +3721,7 @@ sub write_fasta {
     print OUT $seq, "\n";
     close(OUT);
     system "/bin/chmod +rw '$fullname'";
-    CoGe::Accessory::Web::write_log( "Created sequence file $fullname",
+    CoGe::Accessory::Web::write_log( "Created sequence file for ".$gbobj->organism." $fullname",
         $cogeweb->logfile );
     return ($fullname);
 }
@@ -4465,7 +4554,7 @@ sub dataset_search {
         #next if $ds->deleted;  #This function hasn't been pushed out yet
         foreach my $item ( $ds->genomes ) {
             next if $USER->is_admin;
-            $skip = 1 if (!$USER->has_access_to_genome($item));
+            $skip = 1 if ($item->deleted || !$USER->has_access_to_genome($item));
         }
         next if $skip;
         my $ver     = $ds->version;
@@ -4553,6 +4642,7 @@ qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','
         } $ds->genomes
       )
     {
+        next if $dsg->deleted;
         my $dsgid_tmp = $dsg->id;
         my $title     = $dsg->name;
         $title = $dsg->organism->name unless $title;
@@ -4580,7 +4670,6 @@ qq{<SELECT name="dsgid$num" id="dsgid$num" onChange="feat_search(['args__accn','
 sub save_settings_gevo {
     my %opts = @_;
     my $opts = Dumper \%opts;
-    print STDERR $opts;
     my $item = CoGe::Accessory::Web::save_settings(
         opts => $opts,
         user => $USER,
