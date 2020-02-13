@@ -1,0 +1,1838 @@
+<TMPL_IF NAME=SEQ_RETRIEVAL>
+
+<link rel="stylesheet" type="text/css" href="./css/colorpicker.css" />
+<script type="text/javascript" src="js/colorpicker.js"></script>
+<!--<script src="https://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>-->
+<script src="./gobe/static/gobe-new.js" ></script>
+<style type="text/css">
+	#red, #green, #blue {
+		float: left;
+		clear: left;
+		width: 300px;
+		margin: 15px;
+	}
+	#swatch {
+		width: 120px;
+		height: 100px;
+		margin-top: 18px;
+		margin-left: 350px;
+		background-image: none;
+	}
+	#red .ui-slider-range { background: #ef2929; }
+	#red .ui-slider-handle { border-color: #ef2929; }
+	#green .ui-slider-range { background: #8ae234; }
+	#green .ui-slider-handle { border-color: #8ae234; }
+	#blue .ui-slider-range { background: #729fcf; }
+	#blue .ui-slider-handle { border-color: #729fcf; }
+
+	.portlet { margin: 0 1em 1em 0; float: left}
+	.portlet-header { margin: 0.3em; padding-bottom: 4px; padding-left: 0.2em; cursor:move;}
+	.ui-sortable-placeholder { placeholder: ".portlet"; border: 1px dotted black; visibility: visible !important; width: 200px !important; }
+.set_title {
+    background: #f4f4f4;
+    border: solid 1px #cccccc;
+    font-size: 9pt;
+    margin-left: 15px;
+    padding: 2px;
+}
+</style>
+<script language="JavaScript">
+function animate_section(name, style, speedy, show) {
+  if (show) {alert (name+"::"+style)}
+  if (speedy == undefined) speedy = pageObj.speed;
+  // alert('speedy is '+speedy);
+  if (!style) style = "toggle";
+  if (!speedy) {
+    if ((style == "show") || style == "slideDown" || style == "fadeIn") {jQuery(name).show();}
+    else if ((style == "hide") || style == "slideUp" || style == "fadeOut") {jQuery(name).hide();}
+    else {jQuery(name).toggle();}
+   }
+  else if (style == "toggle") {jQuery(name).toggle(speedy);}
+  else if (style == "hide") {jQuery(name).hide(speedy);}
+  else if (style == "show") {jQuery(name).show(speedy);}
+  else if (style == "slideToggle") {jQuery(name).slideToggle(speedy);}
+  else if (style == "slideUp") {jQuery(name).slideUp(speedy);}
+  else if (style == "slideDown") {jQuery(name).slideDown(speedy);}
+  else if (style == "fadeIn") {jQuery(name).fadeIn(speedy);}
+  else if (style == "fadeOut") {jQuery(name).fadeOut(speedy);}
+  return speedy;
+ }
+
+function set_up_tabs() {
+ $(function(){
+   $('#tabs').tabs({selected: 0}).show();
+ });
+}
+
+function set_up_sort() {
+	$(function() {
+		$("#sorter").sortable({
+			update: set_display_order,
+		});
+
+		$(".portlet").addClass("ui-widget ui-widget-content ui-helper-clearfix ui-corner-all")
+			.find(".portlet-header")
+				.end()
+			.find(".portlet-content");
+	});
+}
+
+// set display order of sequence submission boxes
+
+function set_display_order () {
+    var i = 1;
+    $('.display_order').each(function(){
+        $(this).val(i++);
+    });
+}
+
+// Color Chooser js
+	function refreshSwatch() {
+		var red = $("#red").slider("value")
+			,green = $("#green").slider("value")
+			,blue = $("#blue").slider("value")
+		$("#swatch").css("background-color", "rgb("+red+","+green+","+blue+")");
+	}
+	$(function() {
+		$("#red, #green, #blue").slider({
+			orientation: 'horizontal',
+			range: "min",
+			max: 255,
+			value: 127,
+			slide: refreshSwatch,
+			change: refreshSwatch
+		});
+		$("#red").slider("value", 255);
+		$("#green").slider("value", 140);
+		$("#blue").slider("value", 60);
+	});
+
+// set up the jquery ui
+$(function() {
+	     // initialize dialog box
+	     $("#color_dialog").dialog({autoOpen: false,
+	     				height: 260,
+					width: 502,
+	});
+	     // button effects on events
+	     $('.color_chooser').click(function() {
+					color_dialog_setter(this);
+			});
+
+});
+
+function color_dialog_setter(me) {
+	 var rgb = $(me).css("backgroundColor");
+	 rgb = rgb.replace(/^rgb\((.+)\)$/,'$1')
+	 var myArray = new Array;
+	 myArray=rgb.split(",");
+	 $("#swatch").css("background-color", "rgb("+myArray[0]+","+myArray[1]+","+myArray[2]+")");
+	 $("#red").slider("value", myArray[0]);
+         $("#green").slider("value", myArray[1]);
+         $("#blue").slider("value", myArray[2]);
+	 var color_id = $(me).attr("id");
+	 var html = "<button class='ui-button ui-corner-all' onClick=update_color_picker('"+color_id+"');$('#color_dialog').dialog('close');>OK</button> <button class='ui-button ui-corner-all' onClick=$('#color_dialog').dialog('close');>Cancel</button><br><button class='ui-button ui-corner-all' onClick=update_color_picker('"+color_id+"',1);>Update All</button> ";
+	 $('#hsp_buttons').html(html);
+	 $('#color_dialog').dialog('open');
+}
+
+function update_color_picker(color_id, all) {
+	 var setcolor = $("#swatch").css("backgroundColor");
+	 $('#'+color_id).css("background-color", ""+setcolor);
+	 if (all) {
+	  $('.color_chooser').each(function(){
+	   $(this).css("background-color", ""+setcolor);
+	   });
+	 }
+}
+
+if(window.console == undefined){ console = {}; console.debug = function(){}}
+
+// function set_genespace(updown, idx, value, length, anchorlength){
+
+Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
+// console.log(updown, idx, value, length, anchorlength);
+/* e.g. ('up', 1, 330) becomes: byId('drup1').value = 330; */
+/* so up is the 'left', down is the 'right' bar. */
+    value = parseFloat(value);
+    value = Math.min(value, updown == 'up' ? lefts[idx - 1] : rights[idx - 1]);
+    var eid = 'dr' + updown + idx;
+    $('#'+eid).val(value);
+    value = value*-1;
+    if (value < 1) {value = 1;}
+    if (updown == "up")
+     {
+      var orig_gbstart = parseFloat($('#gbstart'+idx).val());
+      var orig_dirstart = parseFloat($('#dirstart'+idx).val());
+      $('#gbstart'+idx).val(value);
+      $('#dirstart'+idx).val(value);
+      // adjust length
+
+       var gblength = $('#gblength'+idx).val();
+       if (gblength == undefined || gblength == ""){gblength=length;}
+       gblength = gblength-($('#gbstart'+idx).val()-orig_gbstart);
+       $('#gblength'+idx).val(gblength);
+
+       var dirlength = $('#dirlength'+idx).val();
+       if (dirlength == undefined || dirlength == ""){dirlength=length;}
+       dirlength = dirlength-($('#dirstart'+idx).val()-orig_dirstart);
+       $('#dirlength'+idx).val(dirlength);
+     }
+    else if (updown == "down")
+     {
+
+       gblength = length-value-($('#gbstart'+idx).val()-pageObj.orig_gbstarts[idx]);
+       $('#gblength'+idx).val(gblength);
+
+       var tmp = (anchorlength-value+1)-parseFloat($('#dirstart'+idx).val());
+       dirlength = length-value-($('#dirstart'+idx).val()-pageObj.orig_dirstarts[idx]);
+       $('#dirlength'+idx).val(dirlength);
+     }
+};
+
+function return_image_info (id) {
+  // this function is not used. Here to test using jquery.ajax calls
+  pos="test";
+  $.ajax({
+    data: {
+           async: false,
+    	   jquery_ajax: 1,
+	   fname: 'get_image_info',
+           id: id,
+           basename: pageObj.basefile
+	  },
+    success: function (pos) {
+// console.log(pos);
+       }
+  });
+ }
+
+Gobe.handle_html= function (html) {
+  html = "<span class='ui-button ui-corner-all coge-button-sm' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
+  $('#results_info').html(html);
+
+  if ( !$('#results_info').dialog('isOpen') && html && !html.match(/multiple hits/) ) {
+   // $('#results_info').dialog('option', 'position', 'right');
+   var xpos = $(document).width - 500;
+   $('#results_info').dialog('option', 'position', ['right', 100]);
+   $('#results_info').dialog('open');
+  }
+};
+
+function open_all_sequence_option_menus(open) {
+   if (open)
+    { $('.ui-button-toggle:not(.ui-state-active)').click();
+      $('#open_all_sequence_open_menus').hide();
+      $('#close_all_sequence_open_menus').show();
+    }
+   else
+    { $('.ui-button-toggle.ui-state-active').click();
+      $('#open_all_sequence_open_menus').show();
+      $('#close_all_sequence_open_menus').hide();
+    }
+}
+
+$(document).ready(function(){
+    check_seq_submit();
+    autodistance_setup();
+    autosearch_coge_names();
+    check_alignment_program();
+    check_dialign_anchor_program();
+
+    $.ajaxSetup({
+        type: "GET",
+        url: "GEvo.pl",
+        cache: false,
+    });
+
+    set_up_tabs();
+    set_up_sort();
+    pageObj.nolog = 0;
+    pageObj.waittime = 1000;
+    pageObj.tempdir="<TMPL_VAR NAME=TEMPDIR>";
+    pageObj.error = Boolean(parseInt("<TMPL_VAR NAME=ERROR>", 10));
+
+    if (pageObj.error) {
+        $("#error-box").removeClass("hidden");
+    }
+
+    // track analysis
+    $("#go").on("click", function() {
+        ga('send', 'event', 'gevo', 'run');
+    });
+
+    // close the dialog box when the run a new analysis.
+    jQuery('.go_run').click(function(){
+        $('#results_info').dialog('close');
+        jQuery('html, body').animate({scrollTop: 0}, 2000);
+    });
+
+    if(window.location.toString().indexOf('autogo') != -1){
+        jQuery('#go').trigger('click');
+    }
+ });
+
+function populate_page_obj(basefile)
+ {
+  if (!basefile) {basefile = rand()}
+  pageObj.basefile = basefile;
+  pageObj.nolog = 0;
+  pageObj.waittime = 1000;
+ }
+
+function autodistance_setup(){
+ $("#apply_all").keyup(function(){
+        var self = this;
+        $('.location').filter('input[id^=dr]').val(self.value)
+});
+  if ($("#apply_all").val()) {$('#apply_all').keyup();}
+
+}
+
+function autosearch_coge_names (seqs){
+ var num_seqs = $('#num_seqs').val();
+ if (!seqs) {seqs = 1;}
+ for (var i =seqs; i <= num_seqs; i++)
+  {
+    // dataset_search(['args__accn','accn'+i,'args__num', 'args__'+i,
+	// 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid',
+	// 'gstid'+i, 'args__featid', 'featid'+i],[genome_search_chain]);
+	accn = encodeURIComponent(document.getElementById('accn'+i).value);
+	dataset_search(['args__accn','args__'+accn,'args__num', 'args__'+i, 'args__dsid', 'dsid'+i, 'args__dsgid', 'dsgid'+i, 'args__gstid', 'gstid'+i, 'args__featid', 'featid'+i],[genome_search_chain]);
+  }
+}
+
+function walk (direction) {
+ // direction 1 == left -1 == right
+
+ var num_seqs = $('#num_seqs').val();
+ for (var i =1; i <= num_seqs; i++)
+  {
+    up = $('#drup'+i).val()*1;
+    down = $('#drdown'+i).val()*1;
+    dist = up + down;
+    if (direction == 1)
+     {
+       $('#drup'+i).val(up+dist)
+       $('#drdown'+i).val(down-dist)
+     }
+    else
+     {
+       $('#drup'+i).val(up-dist)
+       $('#drdown'+i).val(down+dist)
+     }
+  }
+}
+
+// Following 2 js functions take care of emailing GEvo results to user
+
+function toggle_email_field(){
+	if ($('#check_email')[0].checked)
+	{
+		$('#email_box').show(0);
+	}
+	else{
+		$('#email_box').hide(0);
+		$('#email').val('');
+		$('#email_error').hide(0);
+	}
+}
+
+function address_validity_check(validity){
+	if (validity)
+	{
+		if(validity == 'invalid'){
+		$('#email_error').show(0);
+		}
+		else{
+		$('#email_error').hide(0);
+		}
+	}
+	else{
+	check_address_validity(['email'],[address_validity_check]);
+	}
+}
+
+function rset () {
+ var num_seqs = $("#num_seqs").val();
+ $("#results").html(" ");
+
+ for (var i =1; i<= num_seqs; i++)
+  {
+
+    $('#accn'+i).val("");
+    $('#drup'+i).val("10000");
+    $('#drdown'+i).val("10000");
+
+    // dataset_search(['args__accn','accn'+i,'args__num',
+	// 'args__'+i],[genome_search_chain]);
+    accn = encodeURIComponent(document.getElementById('accn'+i).value);
+    dataset_search(['args__accn','args__'+accn,'args__num', 'args__'+i],[genome_search_chain]);
+
+    $('#gbaccn'+i).val("");
+    $('#gbstart'+i).val("1");
+    $('#gblength'+i).val("");
+    $('#dirseq'+i).val("");
+    $('#dirstart'+i).val("1");
+    $('#dirlength'+i).val("");
+
+  }
+
+}
+
+function check_spike(tblastx) {
+  var spike_val = $('#spike').val();
+  if (spike_val == 0 || tblastx == 1)
+  {
+    $('#blast_eval').css({ background: "#F7FFF7", color: "#000099" }).removeAttr("readonly");
+  }
+  else
+  {
+    $('#blast_eval').css({ background: "#F5F5F5", color: "#808080" }).attr("readonly","readonly").val(10);
+  }
+}
+
+function genome_search_chain(stuff, num, featid) {
+  if (stuff) {
+  $("#dataset"+num).html(stuff);
+  genome_search(['args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num,'args__gstid', 'gstid'+num,'args__num', 'args__'+num, 'args__featid','args__'+featid],[feat_search_chain]);
+ }
+ else if (!($("#pos"+num).val()))
+  {
+    $("#dataset"+num).html("<hidden id=dsid"+num+">");
+    $("#genome"+num).html("<hidden id=dsgid"+num+">");
+    $("#feat"+num).html("<hidden id=featid"+num+">");
+  }
+}
+
+function feat_search_chain(stuff, num, featid) {
+ if (stuff) {
+  $("#genome"+num).html(stuff);
+   // feat_search(['args__accn', 'accn'+num,'args__dsid', 'dsid'+num,
+	// 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num,
+	// 'args__featid','args__'+featid],['feat'+num]);
+   accn = encodeURIComponent(document.getElementById('accn'+num).value);
+   feat_search(['args__accn', 'args__'+accn,'args__dsid', 'dsid'+num, 'args__dsgid', 'dsgid'+num, 'args__num', 'args__'+num, 'args__featid','args__'+featid],['feat'+num]);
+ }
+}
+
+// this func switching the "left" and "right" sequence values when reverse
+// region display is selected
+function rev_locs (val) {
+  up = $('#'+'drup'+val).val();
+  down = $('#'+'drdown'+val).val();
+  $('#'+'drup'+val).val(down);
+  $('#'+'drdown'+val).val(up);
+
+}
+
+function check_dialign_anchor_program (){
+
+if ($('#dialign_use_anchor').val() == 0) {
+animate_section(".anchor", "fadeOut");
+return;
+}
+var dialign_anchor_program = $('#dialign_anchor_program').val();
+if (dialign_anchor_program == 'CHAOS'){
+  var info = "Word size = "+$('#chaos_word_length').val()+"&#10;Score cutoff = "+$('#chaos_score_cutoff').val()+"&#10;Rescore cutoff = "+$('#chaos_rescore_cutoff').val()+"&#10;Lookback distance = "+$('#chaos_lookback').val()+"&#10;Maximum gap = "+$('#chaos_gap_length').val()+"&#10;Gap start penalty = "+$('#chaos_gap_start').val()+"&#10;Gap extend penalty = "+$('#chaos_gap_extension').val()+"&#10;Other CHAOS parameters = "+$('#chaos_params').val();}
+else if (dialign_anchor_program == 'bl2seq'){
+  var info = "Match Score = "+$('#blast_match').val()+"&#10;Mismatch Penalty = "+$('#blast_mismatch').val()+"&#10;Gap Open Penalty = "+$('#blast_gapopen').val()+"&#10;Gap Extension Penalty = "+$('#blast_gapextend').val()+"&#10;Word Size = "+$('#blast_wordsize').val()+"&#10;Filter query sequence = "+$('#blast_filter').val()+"&#10;Expect value = "+$('#blast_eval').val()+"&#10;Other Blast Parameters = "+$('#blastparams').val();}
+else{
+  var info = "Word size = "+$('#blastz_wordsize').val()+"&#10;Gap start penalty = "+$('#blastz_gap_start').val()+"&#10;Gap extend penalty = "+$('#blastz_gap_extension').val()+"&#10;Chaining = "+$('#blastz_chaining').val()+"&#10;Score threshold = "+$('#blastz_threshold').val()+"&#10;Mask threshold = "+$('#blastz_mask').val()+"&#10;Other blastz parameters = "+$('#blastz_params').val();}
+var html = 'You are running '+dialign_anchor_program+' with the following options:<br/><textarea readonly rows=8 cols=24 name="anchor_info" id="anchor_info" tabindex="1">'+info+'</textarea><br/><i>If you wish to alter these options, please do so by selecting '+dialign_anchor_program+' from the drop-down menu to the left, and changing these options.</i>';
+$('#anchor_options').html(html);
+animate_section(".anchor", "fadeIn");
+
+}
+
+function check_alignment_program (){
+
+ var alignment = $("#alignment_program").val();
+
+ animate_section('.algo_options', 'hide',0);
+
+  if ((alignment == "blastn")||(alignment == "tblastx")){
+    var help_path = "\"http://www.ncbi.nlm.nih.gov/BLAST/Blast.cgi?CMD=Web&PAGE_TYPE=BlastDocs\"";}
+  else{
+    var help_path = "\"/CoGe/docs/alignment_help_files/README."+alignment+"\"";
+}
+  var help = '<a href='+help_path+' target="_new">Help File for '+alignment+'</a>';
+  $('.help').html(help);
+  var spike = $("#spike").val();
+// $("#spike").val(0);
+
+if (alignment == "blastz")
+ {
+
+  animate_section("#blastz_options", "slideToggle");
+ }
+else if (alignment == "LAGAN")
+ {
+  animate_section("#lagan_options", "slideToggle");
+ }
+else if (alignment == "CHAOS")
+ {
+  animate_section("#chaos_options", "slideToggle");
+  animate_section("#spike_sequence", "slideDown");
+  // if (spike == "undefined" || spike == 0) {spike = 15;}
+  // $("#spike").val(spike);
+
+ }
+else if (alignment == "DiAlign_2")
+ {
+  animate_section("#dialign_options", "slideToggle");
+  animate_section("#dialign_parameters", "slideToggle");
+  check_dialign_anchor_program();
+ }
+else if (alignment == "tblastx")
+ {
+  $("#blast_wordsize").val(3);
+  $("#blast_gapopen").val(11);
+  $("#blast_gapextend").val(1);
+  $("#blast_eval").val("1e-10");
+  check_spike(1);
+  animate_section(".blastn_options", "hide",0);
+  animate_section("#blast_options", "slideDown");
+  animate_section("#tblastx_options", "slideDown");
+ }
+else if (alignment == 'blastn')
+ {
+// $("#blast_wordsize").val(7);
+// $("#blast_gapopen").val(5);
+// $("#blast_gapextend").val(2);
+// $("#blast_eval").val(30);
+  // if (spike == "undefined" || spike == 0) {spike = 15;}
+  // $("#spike").val(spike);
+  check_spike();
+  animate_section("#blast_options", "slideDown");
+  animate_section(".blastn_options", "slideDown");
+ }
+else if (alignment == 'GenomeThreader')
+ {
+  animate_section("#GenomeThreader_options", "slideDown");
+ }
+
+ }
+
+function handle_results (html,w, h, img_base, n_images, gevo_link, basefilename, message) {
+ alert_message(message);
+ populate_page_obj(basefilename);
+ if (n_images >1)
+   {
+    $('#results').html(html);
+/*    var getQueryParamValue = swfobject.getQueryParamValue;
+    var width = getQueryParamValue('w') || w;
+    pageObj.width=width;
+    var height = getQueryParamValue('h') || h;
+    var params = {'bgcolor': '#FFFFFF', 'wmode': "opaque"};
+    var flashVars = {
+            'n'        : getQueryParamValue('n') || n_images,
+            'freezable': getQueryParamValue('freezable') || 'false',
+            'pad_gs'   : jQuery('#pad_gs') ? jQuery('#pad_gs').val()  : getQueryParamValue('pad_gs') || '0',
+            'gsid'     : getQueryParamValue('gsid') || getQueryParamValue('genespace_id') || '0',
+            'gobe_url' : getQueryParamValue('base_url')|| './gobe/',
+            'img_url'  : getQueryParamValue('img_url')|| './tmp/GEvo/',
+            'base_name': getQueryParamValue('base_name')|| img_base
+        };
+    swfobject.embedSWF("./gobe/flash/gobe.swf?<TMPL_VAR NAME="GOBE_VERSION">", "flashcontent", width, height, "9.0.0"
+                , "./gobe/static/swfobject/expresssinstall.swf", flashVars, params, {}, function(){Gobe.swf=Gobe.get_movie();});
+*/
+    for (i=1;i<=$('#num_seqs').val();i++)
+     {
+      if (!pageObj.orig_gbstarts) {pageObj.orig_gbstarts=[];}
+      pageObj.orig_gbstarts[i]=$('#gbstart'+i).val();
+      if (!pageObj.orig_dirstarts) {pageObj.orig_dirstarts=[];}
+      pageObj.orig_dirstarts[i]=$('#dirstart'+i).val();
+     }
+   }
+  else
+  {
+    $('#results').html('');
+  }
+  if (gevo_link)
+   {
+
+     gevo_link = gevo_link.replace(/__/g,':::')
+     get_tiny_url(['args__url','args__'+gevo_link],['tiny_link']);
+   }
+
+   // Take care of Save results button
+   setup_button_states();
+}
+
+function save_GEvo_results () {
+	 var link = $('#tiny_link').html();
+	  $("#save_form").dialog({ autoOpen: false,
+	     			      height: 331,
+				      width: 461,
+	     			      buttons: { "Cancel": function() { $(this).dialog("close"); },
+				      	        "Save": function() {
+						add_to_user_history(['args__work_name','work_name',
+								     'args__description','description',
+								     'args__archive','args__'+1,
+								     'args__url','args__'+link,
+								     'args__note','note'],[]);
+						$(this).dialog("close"); }
+						}
+	})
+	.show(0)
+	.dialog('open');
+
+}
+
+function remove_seq () {
+ var num_seqs = $('#num_seqs').val();
+ if (num_seqs < 3){
+  alert("You must have at least two sequences to perform an alignment. You cannot remove another sequence.");
+  return;
+ }
+ $('#refseq'+num_seqs).remove();
+ $('#seq_set'+num_seqs).remove();
+ num_seqs--;
+ $('#num_seqs').val(num_seqs);
+ gen_go_run(['num_seqs'],update_go_run);
+ gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);
+ set_display_order();
+}
+
+function add_hsp_colors (stuff, num) {
+ $('#hsp_colors').html(stuff);
+ $('.color_chooser').click(function() {color_dialog_setter(this);});
+}
+
+function update_go_run (val){
+ if (val) $('#go_run').html(val);
+}
+
+function alert_message (message) {
+ if (message) alert(message);
+}
+
+function check_seq_submit () {
+ var num_seqs = $("#num_seqs").val();
+ for (var i =1; i<= num_seqs; i++)
+  {
+    var selector = "db"+i;
+    if ($('#accn'+i).val()) {selector='db'+i;}
+    else if ($('#gbaccn'+i).val()) {selector='gb'+i;}
+    else if ($('#dirseq'+i).val()) {selector='dir'+i;}
+    else if ($('#pos'+i).val()) {selector='cogepos'+i;}
+    $('#seq_submit'+i).val(selector);
+    seq_submit_change(i);
+  }
+
+}
+
+function seq_submit_change (seq_num) {
+ animate_section(".seq_submission_type"+seq_num,"hide",0);
+ var seq_set = $('#seq_submit'+seq_num).val();
+ animate_section("#"+seq_set, "fadeIn");
+ if (seq_set == "db"+seq_num || seq_set == "cogepos"+seq_num)
+  {
+    animate_section("#drcoge"+seq_num, "fadeIn");
+  }
+}
+
+function process_add_seq (newseq, num_seqs, go_run, refseq, old_num_seqs)
+{
+ $('#sorter').append(newseq);
+ set_up_sort();
+ if (!old_num_seqs)
+  {
+   old_num_seqs = num_seqs*1-1;
+  }
+ var i = old_num_seqs*1+1;
+ while (i <= num_seqs)
+  {
+   seq_submit_change(i);
+   add_button_states('seqopts'+i);
+   if ($('#accn'+i).val())
+    {
+     $('#accn'+i).select();
+     $('#accn'+i).blur();
+    }
+   i++;
+  }
+ $('#num_seqs').val(num_seqs);
+ $('#go_run').html(go_run);
+ $('#new_refseq').html(refseq);
+ autodistance_setup();
+ gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);
+}
+
+function monitor_log(log)
+{
+  var sequence = 0;
+  var algo = 0;
+  var image = 0;
+  var database = 0;
+  var match;
+  pageObj.finished = 0;
+  if (log) {
+   if (log.match(/Finished!/))
+    {
+     database = database+"done!\n";
+     pageObj.finished = 1;
+    }
+
+   match=log.match(/sequence file/g); // \s+(\d+)/g);
+  if (match && match[0])
+   {
+     match.reverse();
+     sequence = "Generating "+match[0]+"s. . .";
+   }
+   match=log.match(/running\s+(\(.*?\))/g);
+   if (match && match[0]) {
+     sequence = sequence +"done!<br/>";
+     match.reverse();
+     val = match[0];
+     if (!val) val = "";
+     algo = "Alignment algorithm "+val+". . .";
+   }
+
+   match=log.match(/image\s+(\(.*?\))/g);
+   if (match && match[0]) {
+     algo = algo+"done!<br/>";
+     match.reverse();
+     val = match[0];
+     if (!val) val = "";
+     image = "Rendering "+val+". . .";
+   }
+   if (log.match(/database/)) {
+     image = image+"done!<br/>";
+     database = "Generating annotation database. . .";
+   }
+  } else {pageObj.nolog += 1;}
+  var message = 0;
+  if (sequence) message = sequence;
+  if (algo) message += algo;
+  if (image) message += image;
+  if (database) message += database;
+  if (!message) {message = "Initializing search";}
+  if (!pageObj.finished && pageObj.nolog<8)
+  {
+    var waittime = pageObj.waittime;
+    pageObj.waittime = pageObj.waittime*2;
+    if (pageObj.waittime > 60000) {pageObj.waittime = 60000;}
+    message+="<br/>Next progress check in "+waittime/1000+" seconds.";
+    if (ajax.length) {setTimeout("read_log(['args__logfile', 'args__'+pageObj.basefile, 'args__tempdir', 'args__'+pageObj.tempdir], [monitor_log])",waittime);}
+  }
+  else
+  {
+   message = "There has been no update on your results during the first "+pageObj.waittime/1000+ "seconds of your analysis.  An error may have occured.  You can check your logfile at <a href='tmp/GEvo/"+pageObj.basefile+".log' target=_new>this link</a> which may help you determine what went wrong, or send it to CoGe's adminstrator for debugging.  In the meanwhile, we suggest that you either wait a bit longer to see if the analsysi completes, and if not rerun your analysis.  If you have submitting very large regions for anlaysis (e.g. several megabases), please try a smaller region for analsyis.";
+  }
+  if (message) $('#loading').html("<div class=small>"+message+'</div>');
+}
+
+/*
+ * Depreciated, no longer use rgb textboxes to adjust HSP Colors function
+ * update_colors(hsp_num) { var r = $('#r'+hsp_num).val(); var g =
+ * $('#g'+hsp_num).val(); var b = $('#b'+hsp_num).val();
+ * $('#sample_color'+hsp_num).css("backgroundColor","rgb("+r+","+g+","+b+")"); }
+ */
+
+function get_seq(seq_num)
+ {
+  var fid = $('#featid'+seq_num).val();
+
+  var rc = $('input[name=rev'+seq_num+']:checked').val();
+  var left = $('#drup'+seq_num).val();
+  var right = $('#drdown'+seq_num).val();
+  var dsid = $('#dsid'+seq_num).val();
+  var pos = $('#pos'+seq_num).val();
+  var chr = $('#chr'+seq_num).val();
+  var dsgid = $('#dsgid'+seq_num).val();
+  // alert (fid+"::"+rc+"::"+left+"::"+right);
+ window.open("SeqView.pl?rel=1;featid="+fid+"&dsid="+dsid+"&chr="+chr+"&start="+pos+"&upstream="+left+"&downstream="+right+"&rc="+rc+"&dsgid="+dsgid);
+ }
+
+function genome_view(seq_num)
+{
+  var fid = $('#featid'+seq_num).val();
+  var dsid = $('#dsid'+seq_num).val();
+  var pos = $('#pos'+seq_num).val();
+  var chr = $('#chr'+seq_num).val();
+  var dsgid = $('#dsgid'+seq_num).val();
+  // alert (fid+"::"+rc+"::"+left+"::"+right);
+  // window.open("GenomeView.pl?fid="+fid+"&dsid="+dsid+"&chr="+chr+"&x="+pos+"&gid="+dsgid+";z=5"); // mdb removed 11/20/13 issue 254
+
+  // mdb added 11/20/13 issue 254
+  var start = $('#featid'+seq_num+'_start').val();
+  var stop = $('#featid'+seq_num+'_stop').val();
+  window.open("GenomeView.pl?gid="+dsgid+"&loc="+chr+":"+start+'..'+stop);
+}
+
+function show_skip(num){
+  $('#skip_font'+num).show(0);
+}
+
+function hide_skip(num){
+	$('#skip_font'+num).hide(0);
+}
+
+$(function() {
+ // substaniate dialog boxes
+        $(".dialog_box").dialog({ autoOpen: false, width: 500 });
+});
+
+function update_line_width(val)
+ {
+   val = val+(1*$('#line_width_val').val());
+   if (val <1) {val =1;}
+   $('.line_width').each(function() {
+    $(this).val(val);
+   });
+   Gobe.set_linewidth($('#line_width_val').val());
+   $('#svg').find('line').css('stroke-width', val);
+ }
+
+function rand ()
+{
+  return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
+}
+
+function new_left_slider(i, y, h) {
+   var l = $('<canvas id="slider_up_' + (i + 1) + '" style="position:absolute;left:0;top:' + y + 'px;width:11px;height:' + h + 'px" width="' + (11 * window.devicePixelRatio) + 'px" height="' + (h * window.devicePixelRatio) + 'px"></canvas>');
+    var ctx = l[0].getContext('2d');
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    ctx.beginPath();
+    ctx.moveTo(10.5, 0);
+    ctx.quadraticCurveTo(-6, 8, 8.5, 16);
+    ctx.lineTo(8.5, h - 16);
+    ctx.quadraticCurveTo(-6, h - 8, 10.5, h);
+    ctx.closePath();
+    ctx.fillStyle = '#ccc';
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+    return l;
+
+}
+
+function new_right_slider(i, x, y, h) {
+    var r = $('<canvas id="slider_down_' + (i + 1) + '" style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:11px;height:' + h + 'px" width="' + (11 * window.devicePixelRatio) + 'px" height="' + (h * window.devicePixelRatio) + 'px"></canvas>');
+    var ctx = r[0].getContext('2d');
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    ctx.beginPath();
+    ctx.moveTo(0.5, 0);
+    ctx.quadraticCurveTo(16, 8, 2.5, 16);
+    ctx.lineTo(2.5, h - 16);
+    ctx.quadraticCurveTo(16, h - 8, 0.5, h);
+    ctx.closePath();
+    ctx.fillStyle = '#ccc';
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+    return r;
+}
+
+function drag_left(event, ui) {
+    ui.position.left = Math.max(0, ui.position.left);
+    ui.position.left = Math.min(ui.helper[0].r.position().left - 11, ui.position.left);
+    var id = ui.helper[0].id;
+    var num = get_sequence_num(parseInt(id.substring(id.lastIndexOf('_') + 1)));
+    var info = image_info[basename + '_' + num + '.png'];
+    var width = info.bpmax - info.bpmin + 1;
+    var ratio = width / info.img_width;
+    Gobe.set_genespace('up', num, Math.round((info.xmin - ui.position.left - 0.5) * ratio), width, width * ratio);
+}
+
+function drag_right(event, ui) {
+    ui.position.left = Math.max(ui.helper[0].l.position().left + 11, ui.position.left);
+    ui.position.left = Math.min(1011, ui.position.left);
+    var id = ui.helper[0].id;
+    var num = get_sequence_num(parseInt(id.substring(id.lastIndexOf('_') + 1)));
+    var info = image_info[basename + '_' + num + '.png'];
+    var width = info.bpmax - info.bpmin + 1;
+    var ratio = width / info.img_width;
+    Gobe.set_genespace('down', num, Math.round((ui.position.left - 9.5 - info.xmax) * ratio), width, width * ratio);
+}
+
+function get_image_index(y) {
+    for (var i=0; i<num_img; i++)
+        if (y >= tops[i] && y <= tops[i] + image_height)
+            return i;
+    return -1;
+}
+
+function get_sequence_num(order) {
+    for (var i=1; i<=num_img; i++)
+        if ($('#display_order' + i).val() == order)
+            return i;
+}
+
+var tops;
+function get_tops() {
+    tops = [];
+    for (var i=1; i<=num_img; i++) {
+        var img = $('#img' + i);
+        tops.push(img.offset().top - img.parent().offset().top);
+    }
+}
+
+var image_info;
+var image_height;
+var lefts;
+var rights;
+function images_loaded() {
+    for (var i=1; i<=num_img; i++) {
+        var img = document.getElementById('img' + i);
+        if (!img.complete || img.naturalWidth == undefined) {
+            setTimeout(images_loaded, 100);
+            return;
+        }
+    }
+    $('#svg')[0].connectors = {};
+    get_tops();
+    image_height = $('#img1').height();
+    lefts = [];
+    rights = [];
+    var div = $('#images');
+    for (var i=0; i<num_img; i++) {
+        var top = tops[i] + 24;
+        var img = $('#img' + (i + 1));
+        var h = img.height() - 24;
+        var l = new_left_slider(i, top, h).appendTo(div).draggable({axis:'x',drag:drag_left});
+        var r = new_right_slider(i, img.width() + 11, top, h).appendTo(div).draggable({axis:'x',drag:drag_right});
+        l[0].r = r;
+        r[0].l = l;
+        lefts.push(parseInt($('#drup' + (i + 1)).val()));
+        rights.push(parseInt($('#drdown' + (i + 1)).val()));
+    }
+    $.ajax({
+        dataType: 'json',
+        url: 'gobe/gobe.py/' + basename + '/info/',
+        success: function(data) {
+            image_info = data;
+        }
+    });
+}
+
+function svg_click(event) {
+    var bbox = false;
+    drag_started = false;
+    if (!document.getElementById('bbox').hidden) {
+        document.getElementById('bbox').hidden = 1;
+        bbox = true;
+    }
+    var x = event.offsetX;
+    var y = event.offsetY;
+    Gobe.handle_html('');
+    var img = get_image_index(y);
+    if (img == -1)
+        return;
+    y -= tops[img];
+    var url = 'gobe/gobe.py/' + basename + '/query/?y=' + y + '&img=' + (img + 1) + '&x=' + x;
+    if (event.shiftKey || bbox)
+        url += '&all=1';
+    if (bbox)
+        url += '&bbox=' + (Math.min(bbox_x1, bbox_x2) - 11) + ',' + (Math.min(bbox_y1, bbox_y2) - tops[img]) + ',' + (Math.max(bbox_x1, bbox_x2) - 11) + ',' + (Math.max(bbox_y1, bbox_y2) - tops[img]);
+    $.ajax({
+        dataType: 'json',
+        url: url,
+        success: function(data) {
+            data = data.resultset;
+            var wedges = $('#set_wedges').css('display') == 'none';
+            var line_width = $('#line_width_val').val();
+            var svg = document.getElementById('svg');
+            for (var i=0; i<data.length; i++) {
+                var pair = data[i];
+                Gobe.handle_html('<p><a target="_blank" href="' + pair.link + '">full annotation</a></p>&#10;&#10;<p>' + pair.annotation + '</p>');
+                if (!pair.has_pair)
+                    continue;
+                var color = '#' + pair.color.substring(2);
+                var keys = [];
+                for (key in pair.features)
+                    keys.push(key);
+                keys.sort();
+                var coords1 = pair.features[keys[0]];
+                var coords2 = pair.features[keys[1]];
+                if (svg.connectors[coords1[4]])
+                    continue;
+                svg.connectors[coords1[4]] = true;
+                var y1 = tops[keys[0].substring(3) - 1];
+                var y2 = tops[keys[1].substring(3) - 1];
+                var r1x1 = coords1[0] + 11;
+                var r1x2 = coords1[2] + 11;
+                var r2x1 = coords2[0] + 11;
+                var r2x2 = coords2[2] + 11;
+                var r1y = coords1[3] + y1;
+                var r2y = coords2[1] + y2;
+                var r1 = newSVG('rect', {x: r1x1, y: coords1[1] + y1, width: r1x2 - r1x1, height: coords1[3] - coords1[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'remove_connector(this);event.stopPropagation();'});
+                var r2 = newSVG('rect', {x: r2x1, y: r2y, width: r2x2 - r2x1, height: coords2[3] - coords2[1], style: 'fill-opacity:0;stroke:black;stroke-width:0.5;', onclick: 'remove_connector(this);event.stopPropagation();'});
+                var c;
+                if (wedges)
+                    c = newPolygon(r1x1 + ',' + r1y + ' ' + r2x1 + ',' + r2y + ' ' + r2x2 + ',' + r2y + ' ' + r1x2 + ',' + r1y, color);
+                else
+                    c = newLine((r1x1 + r1x2) / 2, r1y, (r2x1 + r2x2) / 2, r2y, color, line_width);
+                r1.r2 = r2;
+                r1.c = c;
+                r2.r1 = r1;
+                r2.c = c;
+                c.r1 = r1;
+                c.r2 = r2;
+                c.connector_id = coords1[4];
+                svg.appendChild(r1);
+                svg.appendChild(r2);
+                svg.appendChild(c);
+            }
+        }
+    });
+}
+
+var bbox_x1 = 0;
+var bbox_y1 = 0;
+var bbox_x2 = 0;
+var bbox_y2 = 0;
+var bbox_img;
+var drag_started = false;
+function calc_bbox() {
+    var x1 = Math.min(bbox_x1, bbox_x2);
+    x1 = Math.max(x1, 11);
+    var x2 = Math.max(bbox_x1, bbox_x2);
+    x2 = Math.min(x2, 1011);
+    var y1 = Math.min(bbox_y1, bbox_y2);
+    y1 = Math.max(y1, tops[bbox_img]);
+    var y2 = Math.max(bbox_y1, bbox_y2);
+    y2 = Math.min(y2, tops[bbox_img] + image_height);
+    var div = document.getElementById('bbox');
+    div.style.left = x1 + 'px';
+    div.style.top = y1 + 'px';
+    div.style.width = x2 - x1 + 'px';
+    div.style.height = y2 - y1 + 'px';
+}
+function svg_mousedown(e) {
+    bbox_img = get_image_index(e.offsetY);
+    if (bbox_img != -1) {
+        bbox_x1 = e.offsetX;
+        bbox_y1 = e.offsetY;
+        drag_started = true;
+    }
+};
+function svg_mousemove(e) {
+    if (drag_started) {
+        if (Math.abs(e.offsetX - bbox_x1) > 2) {
+            drag_started = false;
+            bbox_x2 = e.offsetX;
+            bbox_y2 = e.offsetY;
+            calc_bbox();
+            document.getElementById('bbox').hidden = 0;
+            return;
+        }
+    }
+    if (!document.getElementById('bbox').hidden) {
+        bbox_x2 = e.offsetX;
+        bbox_y2 = e.offsetY;
+        calc_bbox();
+    }
+};
+function svg_mouseleave(e) {
+    drag_started = false;
+    document.getElementById('bbox').hidden = 1;
+}
+
+function remove_connector(e) {
+    drag_started = false;
+    if (!document.getElementById('bbox').hidden) {
+        document.getElementById('bbox').hidden = 1;
+        return;
+    }
+    if (e.connector_id)
+        delete $('#svg')[0].connectors[e.connector_id];
+    var p = e.parentNode;
+    if (e.r1)
+        p.removeChild(e.r1);
+    if (e.r2)
+        p.removeChild(e.r2);
+    if (e.c) {
+        delete $('#svg')[0].connectors[e.c.connector_id];
+        p.removeChild(e.c);
+    }
+    p.removeChild(e);
+}
+
+function set_connector(type) {
+    $('#svg').find(type == 'line' ? 'polygon' : 'line').each(function(i, e) {
+        var c;
+        var r1x1 = parseFloat(e.r1.getAttribute('x'));
+        var r1x2 = r1x1 + parseFloat(e.r1.getAttribute('width'));
+        var r1y = parseFloat(e.r1.getAttribute('y')) + parseFloat(e.r1.getAttribute('height'));
+        var r2x1 = parseFloat(e.r2.getAttribute('x'));
+        var r2x2 = r2x1 + parseFloat(e.r2.getAttribute('width'));
+        var r2y = parseFloat(e.r2.getAttribute('y'));
+        if (type == 'line') {
+            var line_width = $('#line_width_val').val();
+            c = newLine((r1x1 + r1x2) / 2, r1y, (r2x1 + r2x2) / 2, r2y, e.style.stroke, line_width);
+        } else
+            c = newPolygon(r1x1 + ',' + r1y + ' ' + r2x1 + ',' + r2y + ' ' + r2x2 + ',' + r2y + ' ' + r1x2 + ',' + r1y, e.style.stroke);
+        c.r1 = e.r1;
+        c.r1.c = c;
+        c.r2 = e.r2;
+        c.r2.c = c;
+        c.connector_id = e.connector_id;
+        e.parentNode.replaceChild(c, e);
+    });
+}
+
+function newLine(x1,y1,x2,y2,color,width) {
+    return newSVG('line', {x1: x1, y1: y1, x2: x2, y2: y2, style: 'stroke:' + color + ';stroke-width:' + width + ';stroke-linecap:round;stroke-opacity:.6;', onclick: 'remove_connector(this);event.stopPropagation();'});
+}
+
+function newPolygon(points, color) {
+    return newSVG('polygon', {points: points, style: 'fill:' + color + ';fill-opacity:0.3;stroke:' + color + ';stroke-width:0.5;', onclick: 'remove_connector(this);event.stopPropagation();'});
+}
+
+function newSVG(tag, attrs) {
+    var el= document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (var k in attrs)
+        el.setAttribute(k, attrs[k]);
+    return el;
+}
+</SCRIPT>
+
+<div id="go_run"><TMPL_VAR NAME="GO_RUN"></div>
+<div id="message" class="alert"><TMPL_VAR NAME="MESSAGE"></div>
+<div id="color_dialog" class="hidden" title="Choose HSP Color">
+  <table>
+    <tr>
+      <td>
+        <div id="red"></div>
+        <div id="green"></div>
+        <div id="blue"></div>
+        <div id="swatch" class="ui-widget-content ui-corner-all"></div>
+      </td>
+    </tr>
+    <tr>
+      <td align="center">
+        <div id="hsp_buttons"></div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<form method="post" enctype="multipart/form-data" name="main_form" onSubmit="">
+
+<div id="tabs" class="hidden">
+	<ul>
+	  <li class="small"><a href="#tabs-1">Sequence Submission</a></li>
+	  <li class="small"><a href="#tabs-2">Algorithm</a></li>
+	  <li class="small"><a href="#tabs-3">Results Visualization Options</a></li>
+	</ul>
+	
+	<div id="tabs-1">
+    <div id="error-box" class="alert-box alert-box-warn hidden">A genome or dataset was omitted because you lack access to it or it has been marked deleted.</div>
+
+	<input name="num_seqs" id="num_seqs" type="hidden" readonly value=<TMPL_VAR NAME ="NUM_SEQS">>
+	<span class='ui-button ui-corner-all ui-button-icon-left coge-button-sm coge-button-left' onClick="add_seq(['num_seqs'],[process_add_seq]);  $('#new_drseq').remove;"><span class="ui-icon ui-icon-plus"></span>Add Sequence</span>
+
+	<span class='r ui-button ui-corner-all ui-button-icon-left coge-button-sm coge-button-left' onClick="merge_previous(['previous_url','num_seqs'],[process_add_seq]); gen_hsp_colors(['args__num_seqs','num_seqs'],[add_hsp_colors]);"><span class="ui-icon ui-icon-plus"></span>Merge</span>
+	<span class="r small" style="margin-right:1em;">Merge Previous GEvo Analysis (paste in URL): <input name=previous_url id=previous_url size="20" value="<TMPL_VAR NAME='PANEL_URL'>"/></span>
+	<br><br>
+	
+	<span class="small note">Change order by dragging boxes.</span><br><br>
+	  <table>
+	    <tr><td>
+	      <div id="sorter" class="sorter">
+	          <TMPL_VAR NAME="SEQ_SUB">
+	      </div>
+	    <tr><td>
+	    <span class="xsmall link padded" id="open_all_sequence_open_menus" onclick="open_all_sequence_option_menus(1);">Open all sequence option menus</span>
+	    <span class="xsmall link padded" style="display: none;" id="close_all_sequence_open_menus" onclick="open_all_sequence_option_menus(0);">Close all sequence option menus</span>
+	    <span style="color:lightgray;">|</span>
+	    <span class="xsmall link padded" onclick="walk(1)">Walk all sequences left</span>
+	    <span style="color:lightgray;">|</span>
+	    <span class="xsmall link padded" onclick="walk(-1)">Walk all sequences right</span>
+	
+	     <div class="small">
+	     <br>
+	     Apply distance to all submissions: <input size=8 name="apply_all" id="apply_all" value="<TMPL_VAR NAME="APPLY_ALL">" />
+	     &nbsp&nbsp&nbsp&nbsp
+	     Pad CoGe Sequences with additional sequence: <input name="pad_gs" id="pad_gs" value="<TMPL_VAR NAME="PAD_GS">" size =8/>
+
+	     <br>
+	     E-mail results?<input type=checkbox id=check_email onclick="toggle_email_field()"><span id=email_box style="display:none;">Your E-mail Address: <input type=text id=email onBlur='address_validity_check()'><font id=email_error style="display: none; color: red;">You have supplied an invalid e-mail address.</font></span> </div>
+	    </table>
+</div>
+</TMPL_IF>
+
+<TMPL_IF NAME=OPTIONS>
+<div id="tabs-2" class="hidden">
+  <table>
+	  <TR>
+	  <Td>Alignment Algorithm: </TD>
+	  <TD class=small>
+	  <select id="alignment_program" size="1" onchange='check_alignment_program()'>
+	       <TMPL_VAR NAME="ALIGNMENT_PROGRAMS">
+	  </select>
+	  </TD>
+	  <TD>
+	  <font class="xsmall help" style="cursor: help"></font>
+	  </TD>
+	  </TR>
+  </table>
+
+ <DIV id = "blast_options" class="algo_options">
+ <table class="small">
+ <TR class="blastn_options">
+  <TD>Match Score (-r): </TD>
+  <TD><input type="text" name="blast_match" id="blast_match" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_MATCH">" /></TD>
+ </TR>
+ <TR class="blastn_options">
+  <TD>Mismatch Penalty (-q): </TD>
+  <TD><input  type="text" name="blast_mismatch" id="blast_mismatch" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_MISMATCH">" /></TD>
+ </TR>
+ <TR>
+  <TD>Gap Open Penalty (-G): </TD>
+  <TD><input  type="text" name="blast_gapopen" id="blast_gapopen" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_GAPOPEN">" /></TD>
+ </TR>
+ <TR>
+  <TD>Gap Extension Penalty (-E): </TD>
+  <TD><input  type="text" name="blast_gapextend" id="blast_gapextend" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_GAPEXT">" /></TD>
+ </TR>
+  <TR>
+  <TD>Word Size (-W):</TD>
+  <TD><input  type="text" name="blast_wordsize" id="blast_wordsize" tabindex="1" size="3" value="<TMPL_VAR NAME="BLAST_WORDSIZE">" /></TD>
+ </TR>
+ <TR>
+  <TD>Filter query sequence (DUST/SEG) (-F): </TD>
+  <TD>
+    <select  name="blast_filter" id="blast_filter" tabindex="1" >
+     <option value="T" <TMPL_VAR NAME="BLAST_FILTER_YES"> >Yes</option>
+     <option value="F" <TMPL_VAR NAME="BLAST_FILTER_NO"> >No</option>
+    </select>
+  </TD>
+ </TR>
+ <TR>
+  <TD>Expectation value (-e): </TD>
+  <TD><input  type="text" name="blast_eval" id="blast_eval" tabindex="1" size="4" value="<TMPL_VAR NAME="BLAST_EVAL">" /></TD>
+ </TR>
+ <TR>
+      <TD>Other Blast Parameters: </TD>
+  <TD><input  type="text" name="blastparams" id="blastparams" tabindex="1" size="10"/></TD>
+ </TR>
+</TABLE>
+</DIV>
+
+ <DIV id="tblastx_options" class="small algo_options" style="display: none">
+ <font class="small">Hide HSPs with stop codons in a coding sequence?<label><input  type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="1" <TMPL_VAR NAME="HIDE_STOP_YES"> />Yes</label><label><input  type="radio" name="show_hsps_with_stop_codon" id="show_hsps_with_stop_codon" tabindex="1" value="0"   <TMPL_VAR NAME="HIDE_STOP_NO"> />No</label></font>
+<br>Note: Word size limited to 3 for tblastx
+</DIV>
+
+ <DIV id="chaos_options" class="small  algo_options" style="display: none">
+<table class = small>
+   <TR>
+  <TD>Word size: </TD>
+  <TD><input  type="text" name="chaos_word_length" id="chaos_word_length" tabindex="1" size="3" value="8" /></TD>
+ </TR>
+ <TR>
+  <TD>Score cutoff: </TD>
+  <TD><input  type="text" name="chaos_score_cutoff" id="chaos_score_cutoff" tabindex="1" size="3" value="25" /></TD>
+ </TR>
+ <TR>
+  <TD>Rescore cutoff: </TD>
+  <TD><input  type="text" name="chaos_rescore_cutoff" id="chaos_rescore_cutoff" tabindex="1" size="3" value="250" /></TD>
+ </TR>
+ <TR>
+  <TD>Lookback distance:<br><font class=small>(length between seed alignments for chaining)</font></TD>
+  <TD><input  type="text" name="chaos_lookback" id="chaos_lookback" tabindex="1" size="3" value="20" /></TD>
+ </TR>
+ <TR>
+  <TD>Maximum gap length between seeds for chaining: </TD>
+  <TD><input  type="text" name="chaos_gap_length" id="chaos_gap_length" tabindex="1" size="3" value="5" /></TD>
+ </TR>
+ <TR>
+  <TD>Gap start penality: </TD>
+  <TD><input  type="text" name="chaos_gap_start" id="chaos_gap_start" tabindex="1" size="3" value="0" /></TD>
+ </TR>
+ <TR>
+  <TD>Gap extend penality: </TD>
+  <TD><input  type="text" name="chaos_gap_extension" id="chaos_gap_extension" tabindex="1" size="3" value="-1" /></TD>
+ </TR>
+  <TR>
+  <TD>Other CHAOS parameters: </TD>
+  <TD><input  type="text" name="chaos_params" id="chaos_params" tabindex="1" size="10" /></TD>
+ </TR>
+
+</table>
+</DIV>
+
+ <DIV id="spike_sequence" class ="algo_options blastn_options" style="display: none">
+  <table class=small>
+  <tr colspan>
+  <th> HSP filter by spike sequence
+  <td>(set to 0 to turn off):
+  <tr align=left class=small>
+  <td><li>Spike sequence length:
+  <td><input type="text" size="3"  id="spike" onkeyup="check_spike();" value=<TMPL_VAR NAME=SPIKE_LEN>> nucleotides
+   </TR>
+  </table>
+ </DIV>
+
+ <DIV id="blastz_options" class="small algo_options" style="display: none">
+<table class = small>
+   <TR>
+  <TD>Word size: </TD>
+  <TD><input  type="text" name="blastz_wordsize" id="blastz_wordsize" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_WORDSIZE>" /></TD>
+ </TR>
+<TR>
+  <TD>Gap start penality: </TD>
+  <TD><input  type="text" name="blastz_gap_start" id="blastz_gap_start" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_GAPSTART>" /></TD>
+ </TR>
+ <TR>
+  <TD>Gap extend penality: </TD>
+  <TD><input  type="text" name="blastz_gap_extension" id="blastz_gap_extension" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_GAPEXT>" /></TD>
+ </TR>
+ <TR>
+  <TD>Chaining: </TD>
+  <TD><select  id="blastz_chaining" tabindex="1" />
+      <option value=0 <TMPL_VAR NAME=BLASTZ_CHAIN_NO> >no chaining</option>
+      <option value=1 <TMPL_VAR NAME=BLASTZ_CHAIN_OUT> >just output chain</option>
+      <option value=2 <TMPL_VAR NAME=BLASTZ_CHAIN_EXT> >chain and extend</option>
+      <option value=3 <TMPL_VAR NAME=BLASTZ_CHAIN_HSP> >just output HSPs</option>
+      </select></TD>
+ </TR>
+ <TR>
+  <TD>Score threshold: </TD>
+  <TD><input  type="text" name="blastz_threshold" id="blastz_threshold" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_SCORETHRESH>" /></TD>
+ </TR>
+ <TR>
+  <TD>Mask threshold: </TD>
+  <TD><input  type="text" name="blastz_mask" id="blastz_mask" tabindex="1" size="4" value="<TMPL_VAR NAME=BLASTZ_MASKTHRESH>" /></TD>
+ </TR>
+
+  <TR>
+  <TD>Other Blastz parameters: </TD>
+  <TD><input  type="text" name="blastz_params" id="blastz_params" tabindex="1" size="10" /></TD>
+ </TR>
+
+</table>
+
+</DIV>
+
+ <DIV id="lagan_options" class="small algo_options" style="display: none">
+   <Table class=small>
+  <TR>
+  <TD>Min HSP Length: </TD>
+  <TD><input  type="text" name="lagan_min_length" id="lagan_min_length" tabindex="1" size="3" value="21" /></TD>
+ </TR>
+ <TR>
+  <TD>Max Contiguous Gaps in HSPs: </TD>
+  <TD><input  type="text" name="lagan_max_gap" id="lagan_max_gap" tabindex="1" size="3" value="3" /></TD>
+ </TR>
+ <TR>
+  <TD>Min Percent Identity: </TD>
+  <TD><input  type="text" name="lagan_percent_id" id="lagan_percent_id" tabindex="1" size="3" value="70" /></TD>
+ </TR>
+ <TR>
+  <TD>Other LAGAN Parameters: </TD>
+  <TD><input  type="text" name="lagan_params" id="lagan_params" tabindex="1" size="10" /></TD>
+ </TR>
+
+</TABLE>
+</DIV>
+
+<DIV id="dialign_options" class="small algo_options" style="display: none">
+   <Table class=small>
+  <TR>
+   <TD>Use Anchored Alignment: </TD>
+   <TD><select  id="dialign_use_anchor" size="1" onchange="check_dialign_anchor_program();">
+       <option value="1">Use Anchored Search</option>
+       <option value="0" selected>Do NOT use Anchored Search</option>
+      </select>
+   </TD>
+  </TR>
+  <TR>
+  <TD>Min Alignment Score: </TD>
+  <TD><input  type="text" name="dialign_min_score" id="dialign_min_score" tabindex="1" size="3" value="1" /></TD>
+ </TR>
+ <TR>
+  <TD>Max Contiguous Low Score Alignments in HSPs: </TD>
+  <TD><input  type="text" name="dialign_max_gap" id="dialign_max_gap" tabindex="1" size="3" value="4" /></TD>
+ </TR>
+ <TR>
+  <TD>Split HSPs on Different Alignment Scores: </TD>
+  <TD><input  type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="1" />Yes</label><label><input  type="radio" name="dialign_split_score" id="dialign_split_score" tabindex="1" value="0" checked />No</label></TD>
+ </TR>
+ <TR>
+  <TD>Aligment Method: </TD>
+  <TD><select id="dialign_method" size="1" onchange="$('#dialign_params').val($('#dialign_method').val())">
+       <option value="-n ">Short Sequence Alignment, No Translation</option>
+       <option value="-nt -cs -ma ">Short Sequence Alignment with Translation</option>
+       <option value="-ds -n -thr 2 -lmax 30 ">Long Sequence Alignment</option>
+      </select>
+   </TD>
+  </TR>
+  <TR>
+  <TD>Use Motif in Alignment: </TD>
+  <TD><input type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="1" onClick="$('#dialign_motif_options').show();" />Yes</label><label><input  type="radio" name="dialign_motif" id="dialign_motif" tabindex="1" value="0" onClick="$('#dialign_motif_options').hide()" checked />No</label></TD>
+ </TR>
+ </TABLE>
+  </DIV>
+ <DIV id="dialign_motif_options" class="small algo_options hidden">
+ <Table class=small>
+ <TR>
+ <TD align=right> Motif:  </TD>
+  <TD><input type="text" name="dialign_motif_motif" id="dialign_motif_motif" tabindex="1" size="5" /></TD>
+ </TR>
+ <TR>
+ <TD align=right> Weighting Factor: </TD>
+  <TD><input type="text" name="dialign_motif_weight" id="dialign_motif_weight" tabindex="1" size="5" /></TD>
+ </TR>
+ <TR>
+ <TD align=right> Distance Penalty:  </TD>
+  <TD><input type="text" name="dialign_motif_penalty" id="dialign_motif_penalty" tabindex="1" size="5" /></TD>
+ </TR>
+ </TABLE>
+ </DIV>
+ <DIV id="dialign_parameters"  class="small algo_options" style="display: none">
+ <Table class=small>
+ <TR>
+  <TD>Other DiAlign Parameters: </TD>
+  <TD><input  type="text" name="dialign_params" id="dialign_params" tabindex="1" size="20"  value="-n"/></TD>
+ </TR>
+</TABLE>
+<b>Note</b>: Using Translation Increases CDS Alignment Accuracy at Cost of Speed - Not Recommended for Sequences > 10 kb
+</DIV>
+
+<div id="GenomeThreader_options" class="small algo_options hidden">
+ <table class="small"><tr>
+  <td><a class="link" href="http://www.genomethreader.org/" taget=_new>Genome Threader</a> will find splice alignments of protein sequences to a genomic sequence.</td>
+ </table>
+</div>
+
+<TABLE class="small anchor algo_options hidden">
+ <TR align=left>
+  <TH>Select Anchor Program:
+  <select  id="dialign_anchor_program" size="1" onchange='check_dialign_anchor_program()'>
+       <option value="blastz">blastz</option>
+       <option value="bl2seq">bl2seq</option>
+       <option value="CHAOS" selected>CHAOS</option>
+      </select>
+  </TH>
+ </TR>
+ <tr>
+  <td colspan=2>
+   <DIV id="anchor_options" class="anchor small algo_options"></DIV>
+ </TABLE>
+<br>
+ <div>Other options:</div>
+ <table>
+ <tr class="small">
+  <td>Minimum HSP length for finding overlapped features:
+  <td><input  type="text" name="hsp_overlap_length" id="hsp_overlap_length" tabindex="1" size="5" value="50"/></TD>
+ </table>
+
+</div> <!-- end tabs-2 div -->
+
+<div id="tabs-3" class="hidden">
+<table>
+<tr><td>
+<div style="float: left; border-right-style: dotted; border-right-width: 1px;">
+<TABLE class="small" style="margin: 5px;">
+ <TR valign="top">
+  <TD>
+    <DIV>
+      Image Width (Pixels):
+    </DIV>
+  </TD>
+  <TD>
+    <DIV>
+	<input type="text" name="iw" id="iw" tabindex="1"  size="10" value="<TMPL_VAR NAME="IMAGE_WIDTH">" />
+    </DIV>
+  </TD>
+ </TR>
+ <TR>
+  <Td>
+    <DIV>
+      Feature Height (Pixels):
+    </DIV>
+  </Td>
+  <TD>
+    <DIV>
+	<input type="text" name="feat_h" id="feat_h" tabindex="1"  size="10" value="<TMPL_VAR NAME="FEAT_HEIGHT">" />
+    </DIV>
+  </TD>
+
+ </TR>
+ <TR>
+  <Td>
+    <DIV>
+      Padding between tracks (Pixels):
+    </DIV>
+  </Td>
+  <TD>
+    <DIV>
+	<input type="text" name="padding" id="padding" tabindex="1"  size="10" value="<TMPL_VAR NAME="PADDING">" />
+    </DIV>
+  </TD>
+
+ </TR>
+ <TR>
+  <Td>
+Color <span style="color:#009900;">GC</span> content green? (SLOW)
+  <td>
+<label><input  type="radio" name="show_gc" id="show_gc" tabindex="1" value="1" <TMPL_VAR NAME="GC_COLOR_YES"> />Yes</label>
+<label><input  type="radio" name="show_gc" id="show_gc" tabindex="1" value="0" <TMPL_VAR NAME="GC_COLOR_NO"> />No</label>
+  </TD>
+ <TR>
+  <Td>
+Color <span style="color:#FF66FF;">masked</span> and <span style="color:#FF9900;">unsequenced</span> NTs?
+  <td>
+<label><input  type="radio" name="show_nt" id="show_nt" tabindex="1" value="1" <TMPL_VAR NAME="NT_COLOR_YES">/>Yes</label>
+<label><input  type="radio" name="show_nt" id="show_nt" tabindex="1" value="0" <TMPL_VAR NAME="NT_COLOR_NO">/>No</label>
+  </TD>
+ <TR>
+  <Td>
+<font>Color wobble codon GC content:</font>
+  <td>
+<label><input  type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="1" <TMPL_VAR NAME="CBC_YES"> />Yes</label>
+<label><input  type="radio" name="show_cbc" id="show_cbc" tabindex="1" value="0" <TMPL_VAR NAME="CBC_NO"> />No</label>
+  </TD>
+ <TR>
+  <Td>
+<font>Color contigs <span style="color:#FF0000">red</span>:</font>
+  <td>
+<label><input  type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CONTIGS_YES"> />Yes</label>
+<label><input  type="radio" name="show_contigs" id="show_contigs" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CONTIGS_NO"> />No</label>
+  </TD>
+ <TR>
+  <Td>
+<font>Auto adjust overlapping features? </font>
+  <td>
+  <label><input  type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="0" <TMPL_VAR NAME="FEAT_OVERLAP_YES">/>Yes</label>
+  <label><input  type="radio" name="skip_feat_overlap" id="skip_feat_overlap" tabindex="1" value="1" <TMPL_VAR NAME="FEAT_OVERLAP_NO"> />No</label>
+  </TD>
+ <TR>
+  <Td>
+<font>Auto adjust overlapping HSPs (SLOW)? </font>
+  <td>
+  <label><input  type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="0" <TMPL_VAR NAME="HSP_OVERLAP_YES">/>Yes</label>
+  <label><input  type="radio" name="skip_hsp_overlap" id="skip_hsp_overlap" tabindex="1" value="1" <TMPL_VAR NAME="HSP_OVERLAP_NO"> />No</label>
+  </TD>
+ <TR>
+  <td>Only draw HSPs between adjacent regions?
+  <td>
+ <label><input  type="radio" name="comp_adj" id="comp_adj" tabindex="1" value="1" <TMPL_VAR NAME="COMP_ADJ_YES">/>Yes</label>
+ <label><input  type="radio" name="comp_adj" id="comp_adj" tabindex="1" value="0" <TMPL_VAR NAME="COMP_ADJ_NO"> />No</label>
+ </TR>
+ <TR>
+  <TD>
+  <font>Draw high-quality images? (SLOW) </font>
+  <td>
+  <label><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="1" <TMPL_VAR NAME="HIQUAL_YES">/>Yes</label>
+  <label><input  type="radio" name="hiqual" id="hiqual" tabindex="1" value="0" <TMPL_VAR NAME="HIQUAL_NO"> />No</label>
+ </TR>
+ <TR>
+  <TD>
+  <font>Color anchor gene yellow?</font>
+  <td>
+  <label><input  type="radio" name="ca" id="ca" tabindex="1" value="1" <TMPL_VAR NAME="CA_YES">/>Yes</label>
+  <label><input  type="radio" name="ca" id="ca" tabindex="1" value="0" <TMPL_VAR NAME="CA_NO"> />No</label>
+ </TR>
+</TABLE>
+</div>
+<div style="float: left; border-right-style: dotted; border-right-width: 1px;">
+ <table>
+ <table class="small" style="margin: 5px;">
+ <TR>
+  <td>Draw all HSPs on top?
+  <td>
+ <label><input  type="radio" name="hsp_top" id="hsp_top" tabindex="1" value="1" <TMPL_VAR NAME="HSP_TOP_YES">/>Yes</label>
+ <label><input  type="radio" name="hsp_top" id="hsp_top" tabindex="1" value="0" <TMPL_VAR NAME="HSP_TOP_NO"> />No</label>
+ <TR>
+  <td>Draw all HSPs on same track?
+  <td>
+ <label><input  type="radio" name="hsp_track" id="hsp_track" tabindex="1" value="1" <TMPL_VAR NAME="HSP_TRACK_YES">/>Yes</label>
+ <label><input  type="radio" name="hsp_track" id="hsp_track" tabindex="1" value="0" <TMPL_VAR NAME="HSP_TRACK_NO"> />No</label>
+ <TR>
+  <td>Color features overlapped by HSPs?
+ <td>
+ <label><input  type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_FEAT_YES">/>Yes</label>
+ <label><input  type="radio" name="color_overlapped_features" id="color_overlapped_features" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_FEAT_NO"> />No</label>
+ <TR>
+  <Td>
+<font>Color matches in HSPs?</font>
+ <td>
+ <label><input  type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="1" <TMPL_VAR NAME="COLOR_HSP_YES">/>Yes</label>
+ <label><input  type="radio" name="color_hsp" id="color_hsp" tabindex="1" value="0" <TMPL_VAR NAME="COLOR_HSP_NO"> />No</label>
+
+ <TR>
+  <Td>
+<font>Label HSPs? </font>
+ <td>
+<select id="hsp_labels">
+<option value="0" <TMPL_VAR NAME="HSP_LABELS_NO">>No</option>
+<option value="staggered" <TMPL_VAR NAME="HSP_LABELS_STAG">>Draw Staggered</option>
+<option value="linear" <TMPL_VAR NAME="HSP_LABELS_LIN">>Draw Linear</option>
+</select>
+  </TD>
+ <TR>
+  <Td>
+<font>Label Genomic Features?</font>
+ <td>
+<select id="feat_labels">
+<option value="0" <TMPL_VAR NAME="FEAT_LABELS_NO">>No</option>
+<option value="staggered" <TMPL_VAR NAME="FEAT_LABELS_STAG">>Draw Staggered</option>
+<option value="linear" <TMPL_VAR NAME="FEAT_LABELS_LIN">>Draw Linear</option>
+</select>
+  </TD>
+ <tr>
+  <td> Labels font size:
+  <td><input size =3 value="13" id="font_size" />
+ <tr>
+  <td>Don't show HSPs with <input size=3 id="hsp_overlap_limit" value="<TMPL_VAR NAME="HSP_OVERLAP_LIMIT">"/> overlaps
+ <tr>
+  <td colspan=2>Don't show HSPs that are shorter than <input size=3 id="hsp_size_limit" value="<TMPL_VAR NAME="HSP_SIZE_LIMIT">"/> nt. <span>(0 means no limit)</span>
+ <Tr>
+  <td>Draw:
+  <select id="draw_model">
+   <option value = "full" <TMPL_VAR NAME="DRAW_MODEL_FULL">>Complete</option>
+   <option value = "gene" <TMPL_VAR NAME="DRAW_MODEL_GENE">>Gene</option>
+   <option value = "mRNA" <TMPL_VAR NAME="DRAW_MODEL_mRNA">>mRNA</option>
+   <option value = "CDS" <TMPL_VAR NAME="DRAW_MODEL_CDS">>CDS</option>
+   <option value = "RNA" <TMPL_VAR NAME="DRAW_MODEL_RNA">>RNA</option>
+   <option value = "0" <TMPL_VAR NAME="DRAW_MODEL_NO">>No</option>
+  </select> Models
+ <TR>
+  <TD>
+  <font>Show Other Features?</font>
+  <td>
+  <label><input  type="radio" name="show_ofeat" id="show_ofeat" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_OFEAT_YES">/>Yes</label>
+  <label><input  type="radio" name="show_ofeat" id="show_ofeat" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_OFEAT_NO"> />No</label>
+
+ <TR>
+  <TD>
+  <font>Show pre-annotated CNSs?</font>
+  <td>
+  <label><input  type="radio" name="show_cns" id="show_cns" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_CNS_YES">/>Yes</label>
+  <label><input  type="radio" name="show_cns" id="show_cns" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_CNS_NO"> />No</label>
+
+ <TR>
+  <TD>
+  <font>Show pre-annotated Gene spaces?</font>
+  <td>
+  <label><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="1" <TMPL_VAR NAME="SHOW_GENESPACE_YES">/>Yes</label>
+  <label><input  type="radio" name="show_gene_space" id="show_gene_space" tabindex="1" value="0" <TMPL_VAR NAME="SHOW_GENESPACE_NO"> />No</label>
+
+  </table>
+</div>
+<div class="small" style="float: left; margin: 5px;">
+   Change HSP colors <span>(Click Color to Adjust)</span><br>
+   Use First Color for all:
+  <label><input  type="radio" name="hsp_single_color" id="hsp_single_color" tabindex="1" value="1" <TMPL_VAR NAME="HSP_SINGLE_COLOR_YES">/>Yes</label>
+  <label><input  type="radio" name="hsp_single_color" id="hsp_single_color" tabindex="1" value="0" <TMPL_VAR NAME="HSP_SINGLE_COLOR_NO"> />No</label>
+
+ <DIV id="hsp_colors"><TMPL_VAR NAME="HSP_COLOR"></DIV>
+ </div>
+</div>
+<tr><td>
+<TMPL_IF NAME=SAVE_SETTINGS>
+<span class='ui-button ui-corner-all ui-button-icon-left' id="SaveSettings" onclick="<TMPL_VAR NAME="SAVE_SETTINGS">"><span class="ui-icon ui-icon-disk"></span>Save Settings</span>
+<span class='ui-button ui-corner-all ui-button-icon-left' id="ResetSettings" onclick="reset_settings_gevo([],[]); window.location.reload()"><span class="ui-icon ui-icon-arrowrefresh-1-s"></span>Reset Settings </span>
+</TMPL_IF>
+</table>
+</div> <!--end div for tabs-3 div -->
+</div> <!--end div for tabs-->
+
+
+<div class="padded">
+  <span id="go" class='ui-button ui-button-go ui-corner-all go_run coge-button-lg' onClick="populate_page_obj(); set_display_order(); loading([],['results']); go_run();">Run GEvo</span>
+</div>
+</form>
+</TMPL_IF>
+
+<TMPL_IF NAME="RESULTS_DIV">
+<table>
+  <tr>
+    <td>
+      <div id="results" name="results"></div>
+      <div id="results_info" class="dialog_box hidden" title="GEvo Results Info"></div>
+    </td>
+  </tr>
+</table>
+
+<div id="save_form" title="Save GEvo Results" class="hidden">
+<table>
+<tr>
+<td>Work Name:</td>
+<td><input type="text" id='work_name' value='GEvo Data'></td>
+</tr>
+<tr>
+<td>Description:</td>
+<td><input type="text" id='description'></td>
+</tr>
+<tr>
+<td>Notes:</td>
+<td><textarea style="height:150px;width:350px;" id="note"></textarea></td>
+</table>
+</div>
+</TMPL_IF>
+
+<TMPL_IF NAME="SEQ_SELECT">
+	<TMPL_LOOP NAME="SEQ_SELECT_LOOP">
+		<div id="seq_set<TMPL_VAR NAME="SEQ_NUM">" class="coge-bg portlet" style='padding: 0.3em'>
+			<div class="portlet-header">
+				Sequence <TMPL_VAR NAME="SEQ_NUM">:
+				<select id="seq_submit<TMPL_VAR NAME="SEQ_NUM">" size="1" onchange='seq_submit_change(<TMPL_VAR NAME="SEQ_NUM">)'>
+					<TMPL_VAR NAME=COGEPOS>
+					<option value="db<TMPL_VAR NAME="SEQ_NUM">">CoGe Database Name</option>
+					<option value="gb<TMPL_VAR NAME="SEQ_NUM">">NCBI GenBank</option>
+					<option value="dir<TMPL_VAR NAME="SEQ_NUM">">Direct Submission</option>
+				</select>
+				Display Order <input name='display_order<TMPL_VAR NAME ="SEQ_NUM">' id='display_order<TMPL_VAR NAME ="SEQ_NUM">' class="display_order" size="2" value='<TMPL_VAR NAME="SEQ_NUM">' />
+			</div>
+
+		<div class="partlet-content">
+			<DIV id="db<TMPL_VAR NAME="SEQ_NUM">" class="hidden seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+			<table class="small">
+				<TR valign="top">
+					<TD>Name:</td>
+					<TD align="left"><input  type="text" name="accn<TMPL_VAR NAME="SEQ_NUM">" id="accn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="20" onBlur="dataset_search(['args__accn','args__'+encodeURIComponent(document.getElementById('accn<TMPL_VAR NAME="SEQ_NUM">').value),'args__num', 'args__<TMPL_VAR NAME="SEQ_NUM">', 'args__dsid', 'args__<TMPL_VAR NAME="DSID">', 'args__dsgid', 'args__<TMPL_VAR NAME="DSGID">', 'args__gstid', 'args__<TMPL_VAR NAME="GSTID">'],[genome_search_chain])" value="<TMPL_VAR NAME=DRACCN>" /></td>
+				</tr>
+			</table>
+		</div>
+
+		<DIV id="cogepos<TMPL_VAR NAME="SEQ_NUM">" class="hidden seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+			<table class="small">
+				<tr>
+					<td>Organism: <TMPL_VAR NAME=ORGINFO></td>
+				</tr>
+				<tr valign="top">
+					<td>Position: <input  type="text" id="pos<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=POS>" size="15">
+					Chr: <input  type="text" id="chr<TMPL_VAR NAME="SEQ_NUM">" value="<TMPL_VAR NAME=CHR>" size="15">
+				</tr>
+			</table>
+		</DIV>
+
+	<div id="drcoge<TMPL_VAR NAME="SEQ_NUM">" class="hidden seq_submisttion_type seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> drcoge<TMPL_VAR NAME="SEQ_NUM"> ">
+	<table>
+		<tr>
+	    	<td colspan=2>
+	        	<DIV id="dataset<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="dsid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="DSID">"></DIV>
+
+	        	<DIV id="genome<TMPL_VAR NAME="SEQ_NUM">" nowrap><TMPL_VAR NAME="DSG_STUFF"></DIV>
+
+	        	<DIV id="genomic_sequence_type<TMPL_VAR NAME="SEQ_NUM">" nowrap><input type="hidden" id="gstid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="GSTID">"></DIV>
+	        	<DIV id="feat<TMPL_VAR NAME="SEQ_NUM">">
+	        		<input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">" value ="<TMPL_VAR NAME="FEATID">">
+	        	</DIV>
+
+	        	<DIV id="chromosome<TMPL_VAR NAME="SEQ_NUM">"><TMPL_VAR NAME="CHR_STUFF"></DIV>
+
+	        	<input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">_start" value ="<TMPL_VAR NAME="START">">
+        		<input type="hidden" id="featid<TMPL_VAR NAME="SEQ_NUM">_stop" value ="<TMPL_VAR NAME="STOP">">
+	        </td>
+	    </tr>
+	    <tr>
+	    	<td><DIV class="small">Left sequence:</DIV></td>
+	    	<td><DIV id="up<TMPL_VAR NAME="SEQ_NUM">" ><input class="location" type="text" name="drup<TMPL_VAR NAME="SEQ_NUM">" id="drup<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=DRUP>" /> </DIV></td>
+	    </tr>
+	    <tr>
+	    	<td><DIV class="small">Right sequence:</DIV></td>
+	    	<td><DIV  id="down<TMPL_VAR NAME="SEQ_NUM">"><input class="location" type="text" name="drdown<TMPL_VAR NAME="SEQ_NUM">" id="drdown<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=DRDOWN>" /></DIV></td>
+	    </tr>
+	    <tr>
+	    	<td class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="get_seq(<TMPL_VAR NAME=SEQ_NUM>)">Get Sequence</div></td>
+	    	<td class=small><div class="link" id="get_seq<TMPL_VAR NAME=SEQ_NUM>" onclick="genome_view(<TMPL_VAR NAME=SEQ_NUM>)">Genome View</div></td>
+	    </tr>
+	</table>
+	</DIV>
+
+	<DIV id="gb<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+	<TABLE class="small">
+	       <TR valign="top">
+	        <TD>Accession:
+	        <TD><input  type="text" name="gbaccn<TMPL_VAR NAME="SEQ_NUM">" id="gbaccn<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="10" value="<TMPL_VAR NAME=GBACCN>" />
+	      <TR>
+		<TD><DIV class="small">Start Position:</DIV>
+	      	<TD><input  type="text" name="gbstart<TMPL_VAR NAME="SEQ_NUM">" id="gbstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10" value="<TMPL_VAR NAME=GBSTART>" /></TD>
+	      <TR>
+	       <TD><DIV class="small">Sequence Length:</DIV>
+	       <TD><input  type="text" name="gblength<TMPL_VAR NAME="SEQ_NUM">" id="gblength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" size="10"  value="<TMPL_VAR NAME=GBLENGTH>"/>
+	</TABLE>
+	</DIV>
+
+	<DIV id="dir<TMPL_VAR NAME="SEQ_NUM">" style="display: none;" class="seq_submission_type<TMPL_VAR NAME="SEQ_NUM"> seq_submission_type">
+	<TABLE class="small" style="width: 100%">
+	      <TR valign="top">
+	      <TD>
+	     Paste fasta or genbank format sequence below:<BR> <textarea  name="dirseq<TMPL_VAR NAME="SEQ_NUM">" id="dirseq<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  rows="5" style="resize: none; width: 100%;"></textarea><BR>
+	     <font class="small">Start: <input  type="text" name="dirstart<TMPL_VAR NAME="SEQ_NUM">" id="dirstart<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value="1" /></font>
+	     <font class="small">Length: <input  type="text" name="dirlength<TMPL_VAR NAME="SEQ_NUM">" id="dirlength<TMPL_VAR NAME="SEQ_NUM">" tabindex="1"  size="5" value=""  /></font><br>
+	</table>
+	</DIV>
+
+	<table>
+	<tr><td>
+	<div id=skip_font<TMPL_VAR NAME="SEQ_NUM"> style="color: red;display:none"> Sequence Skipped</div>
+	   <span id="seqopts<TMPL_VAR NAME="SEQ_NUM">" class="small ui-button ui-corner-all ui-button-toggle coge-button" onClick='$(".sequence_options<TMPL_VAR NAME="SEQ_NUM">").slideToggle();'>Sequence <TMPL_VAR NAME="SEQ_NUM"> Options</span>
+	   <Table class="small sequence_options<TMPL_VAR NAME="SEQ_NUM">" style="display: none;">
+	 <TR align=left>
+	  <Td>
+	   Skip Sequence:
+	</td>
+	  <TD>
+		<label><input  onClick=show_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" />Yes</label>
+		<label><input  onClick=hide_skip(<TMPL_VAR NAME="SEQ_NUM">) type="radio" name="skip_seq<TMPL_VAR NAME=SEQ_NUM>" id="skip_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" checked/>No</label><br>
+	 </tr>
+	<TR align=left>
+	  <Td>
+	   Reference Sequence:
+	</td>
+	  <TD>
+		<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" <TMPL_VAR NAME=REF_YES> />Yes</label>
+		<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" <TMPL_VAR NAME=REF_NO> />No</label><br>
+	  </tr>
+	  <TR nowrap>
+		<TD>Reverse complement:
+		<td nowrap><label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="1" <TMPL_VAR NAME=REV_YES> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />Yes</label>&nbsp<label><input  type="radio" name="rev<TMPL_VAR NAME="SEQ_NUM">" id="rev<TMPL_VAR NAME="SEQ_NUM">" tabindex="1" value="0" <TMPL_VAR NAME=REV_NO> onclick='rev_locs("<TMPL_VAR NAME="SEQ_NUM">")' />No</label>
+	</tr>
+	 <TR align=left>
+	  <Td>
+	   Mask Sequence:
+	  </TD>
+	  <TD>
+	    <select name="mask<TMPL_VAR NAME="SEQ_NUM">" id="mask<TMPL_VAR NAME="SEQ_NUM">">
+	      <option value=""   >--None--
+	      <option value="cds" <TMPL_VAR NAME=MASK_CDS> >CDS
+	      <option value="rna" <TMPL_VAR NAME=MASK_RNA> >All RNA
+	      <option value="non-cds" <TMPL_VAR NAME=MASK_NCDS> >Non-CDS
+	      <option value="non-genic" <TMPL_VAR NAME=MASK_NGENIC> >Non-genic
+	    </select>
+	</TD>
+	</tr>
+	 </table>
+	</table>
+	</DIV>
+	</DIV>
+
+	</TMPL_LOOP>
+</TMPL_IF>
+
+<TMPL_IF NAME=HSP_COLOR_FORM>
+ <table>
+  <tr valign = top>
+   <td>
+ <TMPL_LOOP NAME="HSP_COLOR_LOOP">
+  <table>
+  <tr>
+   <td class="small" nowrap>
+    HSP <TMPL_VAR NAME="HSP_NUM"> color:
+   <TD class="small" nowrap>
+     <div id="sample_color<TMPL_VAR NAME="HSP_NUM">" class="color_chooser" value='<TMPL_VAR NAME="RED">,<TMPL_VAR NAME="GREEN">,<TMPL_VAR NAME="BLUE">' style="background-color: rgb(<TMPL_VAR NAME="RED">,<TMPL_VAR NAME="GREEN">,<TMPL_VAR NAME="BLUE">)"></div>
+  </table>
+ </TMPL_LOOP>
+  </table>
+</TMPL_IF>
+
+<TMPL_IF NAME=GEN_REFERENCE_SEQUENCES>
+<TMPL_LOOP NAME="REF_SEQ">
+<div id="refseq<TMPL_VAR NAME=SEQ_NUM>">
+<font class ="small">Sequence <TMPL_VAR NAME=SEQ_NUM>:
+<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="1" checked />On</label>
+<label><input  type="radio" name="ref_seq<TMPL_VAR NAME=SEQ_NUM>" id="ref_seq<TMPL_VAR NAME=SEQ_NUM>" tabindex="22" value="0" />Off</label><br>
+</div>
+</TMPL_LOOP>
+<div id="new_refseq"></div>
+</TMPL_IF>
+
