@@ -2,13 +2,13 @@ var Gobe = {
     WEDGE: 'wedge',
     LINE: 'line',
     DIV: 'flashcontent',
-    'get_movie': function () {
+/*    'get_movie': function () {
           if (swfobject.ua.ie) {
               return window[Gobe.DIV];
           } else {
               return document[Gobe.DIV];
           }
-    },
+    },*/
     'handle_html': function(html){
         document.getElementById('querybox').innerHTML = html;
     },
@@ -18,7 +18,7 @@ var Gobe = {
     },
     'clear': function(){
         // dont change this!
-        Gobe.swf.clear_wedges();
+//        Gobe.swf.clear_wedges();
         $('svg').find('rect').remove();
         $('svg').find('line').remove();
         $('svg').find('polygon').remove();
@@ -26,7 +26,7 @@ var Gobe = {
     },
     'set_linewidth': function(linewidth){
         // dont change this. could check for 0 <= lw <= ?
-        Gobe.swf.set_linewidth(linewidth);
+//        Gobe.swf.set_linewidth(linewidth);
     },
     'set_connector': function(contype){
         // dont change this!
@@ -34,7 +34,7 @@ var Gobe = {
         if (! (contype == Gobe.WEDGE || contype == Gobe.LINE)){
             alert('must be one of: ' + Gobe.WEDGE + ' or ' + Gobe.LINE);
         }
-        Gobe.swf.set_connector(contype);
+//        Gobe.swf.set_connector(contype);
     }
 
 };
