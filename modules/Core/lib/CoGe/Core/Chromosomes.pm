@@ -49,11 +49,12 @@ See Also   :
 sub new {
 	my ($class, $gid) = @_;
 	my $self = {};
+	$self->{gid}=$gid;
 	my $genome_file = get_genome_file($gid);
 	if ($genome_file) {
 	    my $fh;
 	    if (!open($fh, $genome_file . '.fai')) { # sd added 12/8/2015 COGE-687
-	        #warn 'error opening index file in Chromosomes::new()';
+	        warn 'error opening index file in Chromosomes::new()';
 	        sleep 1;
 	        open($fh, $genome_file . '.fai');
 	    }
@@ -62,6 +63,25 @@ sub new {
 	$self->{lines} = 0;
 	return bless $self, $class;
 }
+
+sub reset {
+	my $self = shift;
+	my $genome_file = get_genome_file($self->{gid});
+        if ($genome_file) {
+	if ($self->{fh}) {
+                close($self->{fh});
+            }
+            my $fh;
+            if (!open($fh, $genome_file . '.fai')) { # sd added 12/8/2015 COGE-687
+                warn 'error opening index file in Chromosomes::new()';
+                sleep 1;
+                open($fh, $genome_file . '.fai');
+            }
+        $self->{fh} = $fh if open($fh, $genome_file . '.fai');
+        }
+        $self->{lines} = 0;
+}
+
 
 ################################################ subroutine header begin ##
 
@@ -131,12 +151,18 @@ See Also   :
 sub find {
 	my $self = shift;
 	my $name = shift;
+	$self->reset;
 	my $lcl = substr($name, 0, 4) eq 'lcl|';
+	my $gi = substr($name,0,3) eq 'gi|';
+	#warn "searching for $name:";
 	while ($self->next) {
 		my $n = $self->name;
+		#warn "current working chromosome name: $n";
 		$n = substr($n, 4) if !$lcl && substr($n, 0, 4) eq 'lcl|';
+		$n = substr($n, 3) if !$gi && substr($n, 0, 3) eq 'gi|';
 		return 1 if $name eq $n;
 	}
+	#warn "Genome File:". get_genome_file($self->{gid});
 	return 0;
 }
 
@@ -319,12 +345,15 @@ See Also   :
 
 sub next {
 	my $self = shift;
+	$/ = "\n";
 	if (!$self->{fh}) {
 		#warn caller;
 		return 0;
 	}
 	my $line = readline($self->{fh});
 	if ($line) {
+		#warn ($line);
+		chomp $line;
 		my @tokens = split('\t', $line);
 		@{$self->{tokens}} = @tokens;
 		$self->{lines}++;

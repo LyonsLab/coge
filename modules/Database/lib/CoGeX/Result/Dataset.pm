@@ -883,7 +883,7 @@ sub gff {
                 @feat_names = grep { $_ =~ /$name_re/i } @feat_names;#$feat->names;
                 next unless @feat_names;
             }
-            
+             
             if ($feat->{type_name} =~ /gene/i && !$prior_genes{ $feat_names[0] }) {
                 $prior_genes{ $feat_names[0] } = $feat;
 		        $prior_genes{$count} = $feat;
@@ -1013,7 +1013,6 @@ sub gff {
                 $output .= $tmp if $tmp;
                 next main;
             }
-
             #dump other stuff for gene that does not have mRNAs.
             my $sub_rs = $self->_feat_search(
                 name_search => \@feat_names,
