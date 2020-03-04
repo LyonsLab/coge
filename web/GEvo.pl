@@ -188,7 +188,7 @@ sub gen_html {
     $template->param( ADMIN_ONLY => $USER->is_admin,
                       CAS_URL    => $P->{CAS_URL} || '',
                       COOKIE_NAME => $P->{COOKIE_NAME} || '' );
-    my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+    my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX     => $prebox->output );
     $html .= $template->output;
@@ -479,7 +479,7 @@ sub gen_body {
       get_opt( params => $prefs, form => $form, param => 'show_contigs' );
     $show_gene_space = 0 unless $show_gene_space;
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
 
     # Check if a genome was specified
     my $error = (scalar @seq_sub < $num_seqs) ? 1 : 0;
@@ -3956,7 +3956,7 @@ sub gen_hsp_colors {
         coge => $coge
     );
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     my $hsp_colors;
     my @colors = color_pallet( num_seqs => $num_seqs, prefs => $prefs );
     $template->param( HSP_COLOR_FORM => 1 );
@@ -4153,7 +4153,7 @@ sub add_url_seq {
     my $data    = $opts{data};
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
 
     my $total_num = $new_num + $old_num;
 
@@ -4269,7 +4269,7 @@ sub add_seq {
     $num_seq++;
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     my $hsp_colors;
     if ( $num_seq > $MAX_SEQS ) {
         ($hsp_colors) = gen_hsp_colors( num_seqs => $MAX_SEQS );
