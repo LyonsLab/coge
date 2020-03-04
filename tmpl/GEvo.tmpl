@@ -270,7 +270,7 @@ $(document).ready(function(){
     });
 
     if(window.location.toString().indexOf('autogo') != -1){
-        jQuery('#go').trigger('click');
+        $(window).load(function(){jQuery('#go').trigger('click');});
     }
  });
 
