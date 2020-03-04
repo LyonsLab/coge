@@ -188,7 +188,7 @@ sub gen_html {
     $template->param( ADMIN_ONLY => $USER->is_admin,
                       CAS_URL    => $P->{CAS_URL} || '',
                       COOKIE_NAME => $P->{COOKIE_NAME} || '' );
-    my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+    my $prebox = HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     $prebox->param( RESULTS_DIV => 1 );
     $template->param( PREBOX     => $prebox->output );
     $html .= $template->output;
@@ -479,7 +479,7 @@ sub gen_body {
       get_opt( params => $prefs, form => $form, param => 'show_contigs' );
     $show_gene_space = 0 unless $show_gene_space;
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
 
     # Check if a genome was specified
     my $error = (scalar @seq_sub < $num_seqs) ? 1 : 0;
@@ -1015,9 +1015,9 @@ sub run {
 	#print STDERR Dumper $obj;
         next unless $obj;
         my $fullname = $obj->srcfile;
-        $fullname =~ s/\.faa$//;
-        $fullname = $fullname."-".int(rand(100000)).".faa";
-        $obj->srcfile($fullname);
+        #$fullname =~ s/\.faa$//;
+        #$fullname = $fullname."-".int(rand(100000)).".faa";
+        #$obj->srcfile($fullname);
         if ( $obj->sequence && $obj->start ne $obj->stop )
         { #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
             my $accn  = $obj->accn;
@@ -1182,6 +1182,7 @@ sub run {
     my @gfxs;
 
     foreach my $item (@sets) {
+        my $obj      = $item->{obj};
         my $filename = $cogeweb->basefile . "_" . $item->{seq_num} . ".png";
         $filename = CoGe::Accessory::Web::check_filename_taint($filename);
         $item->{png_filename} = $filename;
@@ -1268,14 +1269,14 @@ sub run {
 
     #set up buttons for gobe
 
-    my $gobe_buttons = qq@
+    my $gobe_buttons = qq{
 <table>
 <tr>
 <td><span class='coge-button coge-button-sm' id="clear_lines" onclick="Gobe.clear()">Clear Connectors</span>
 
-<td><span class='coge-button coge-button-sm drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line');set_connector('line');">Set connector as Lines</span>
+<td><span class='coge-button coge-button-sm drawline' id="set_lines" onclick="\$('.drawline').hide();\$('#set_wedges').show();\$('.lineopt').show();Gobe.set_connector('line')">Set connector as Lines</span>
 
-<span style="display: none" class='coge-button coge-button-sm lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge');set_connector('wedge');">Set connector as Wedges</span>
+<span style="display: none" class='coge-button coge-button-sm lineopt' id="set_wedges" onclick="\$('.drawline').show();\$('.lineopt').hide();Gobe.set_connector('wedge')">Set connector as Wedges</span>
 
 <td><div class=lineopt style="float: left; display: none">
  <span class='coge-button coge-button-sm' id="">Line Width</span>
@@ -1283,31 +1284,15 @@ sub run {
  <span class='coge-button coge-button-sm' id="" onclick="update_line_width(1)">+</span>
  <span class='coge-button coge-button-sm' id="" onclick="update_line_width(-1)">-</span>
 </div>
-</td></tr></table>
-@;
+};
+    #$gobe_buttons .=
+#qq{<td><a href="javascript:void(0);" id="history_dialog_button" class='ui-button ui-corner-all ui-button-icon-left' onClick="save_GEvo_results()"><span class="ui-icon ui-icon-newwin"></span>Save Results</a>}
+      #unless $USER->user_name eq 'public';
+    $gobe_buttons .= "</table>";
     $html         .= $gobe_buttons;
-    $html         .= qq{<DIV id=flashcontent></DIV><br>};
-    $html .= '<div id="images" style="position:relative;" onmousedown="event.preventDefault();event.stopPropagation();"><div id="bbox" hidden style="border: 1px dotted #000; position: absolute;"></div>';
-    foreach my $item (@sets) {
-        my $title;
-        $title = $item->{obj}->organism() if $item->{obj}->organism();
-        $title .= " " if $title;
-        $title .= $item->{obj}->accn;
-        $title .=
-            " (chr: "
-          . $item->{obj}->chromosome . " "
-          . $item->{obj}->start . "-"
-          . $item->{obj}->stop . ")"
-          if defined $item->{up};
-        $title .= ' Reverse Complement' if $item->{rev};
-        $html .= '<span class="set_title"';
-        $html .= ' style="color:#ff0000"' if $item->{rev};
-        $html .= '>' . $title . '</span><br>';
-        $html .= '<img id="img' . $item->{seq_num} . '" src="' . $TEMPURL . "/" . basename($item->{png_filename}) . '" style="margin-left:11px;margin-right:11px;"><br>';
-    }
-    $html .= '<svg id="svg" style="position:absolute;top:0;left:0;width:100%;height:100%;" onclick="svg_click(event)" onmousedown="svg_mousedown(event)" onmousemove="svg_mousemove(event)" onmouseleave="svg_mouseleave(event)"></svg></div><script>var basename=\'' . basename($cogeweb->basefile) . '\';var num_img=' . (scalar @sets) . ';images_loaded();</script>';
+    $html         .= qq{<DIV id=flashcontent></DIV>};
     $html .=
-qq{<a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" class="small" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.</a>.};
+qq{<br><a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" class="small" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.  Still no results? Try installing the latest version of Flash</a>.};
     $html .= $gobe_buttons;
     $html .= qq{<table class=small>};
     $html .= qq{<tr valign=top><td><span class=bold>Alignment reports</span>};
@@ -2834,17 +2819,17 @@ sub get_obj_from_genome_db {
     return ( "", "unable able to find dataset for id $dsid" ) unless $ds;
     $accn = $dsg->name if !$accn && $dsg;
     $accn = $ds->name  if !$accn && $ds;
-    if ( -r $seq_file ) {
-        $/ = "\n";
-        open( IN, $seq_file );
-        while (<IN>) {
-            chomp;
-            next if /^>/;    #skip header;
-            $seq .= $_;
-        }
-        close IN;
-
-    }
+    #if ( -r $seq_file ) {
+    #    $/ = "\n";
+    #    open( IN, $seq_file );
+    #    while (<IN>) {
+    #        chomp;
+    #        next if /^>/;    #skip header;
+    #        $seq .= $_;
+    #    }
+    #    close IN;
+    #
+    #}
     unless ($seq && length($seq) > 1) {
         ($chr) = $ds->get_chromosomes unless defined $chr;
         my $tmp;
@@ -3956,7 +3941,7 @@ sub gen_hsp_colors {
         coge => $coge
     );
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     my $hsp_colors;
     my @colors = color_pallet( num_seqs => $num_seqs, prefs => $prefs );
     $template->param( HSP_COLOR_FORM => 1 );
@@ -4153,7 +4138,7 @@ sub add_url_seq {
     my $data    = $opts{data};
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
 
     my $total_num = $new_num + $old_num;
 
@@ -4269,7 +4254,7 @@ sub add_seq {
     $num_seq++;
 
     my $template =
-      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo-new.tmpl' );
+      HTML::Template->new( filename => $P->{TMPLDIR} . 'GEvo.tmpl' );
     my $hsp_colors;
     if ( $num_seq > $MAX_SEQS ) {
         ($hsp_colors) = gen_hsp_colors( num_seqs => $MAX_SEQS );
