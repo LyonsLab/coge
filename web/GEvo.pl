@@ -4298,7 +4298,6 @@ sub dataset_search {
     my @rs;
     while (my $ds = $rs->next) {
 	if ($ds->first_genome) {push (@rs, $ds);}
-	else {print STDERR "No genome for ".$ds->id;}
     }
     my $favorites = CoGe::Core::Favorites->new(user => $USER);
     foreach my $ds ( sort {$a->first_genome->id <=> $b->first_genome->id
