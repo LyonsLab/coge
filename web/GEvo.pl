@@ -4300,9 +4300,7 @@ sub dataset_search {
 	if ($ds->first_genome) {push (@rs, $ds);}
     }
     my $favorites = CoGe::Core::Favorites->new(user => $USER);
-    foreach my $ds ( sort {$a->first_genome->id <=> $b->first_genome->id
-	    		|| $b->id <=> $a->id
-		} @rs ) 
+    foreach my $ds ( @rs ) 
 	{
         my $skip = 0;
         #next if $ds->deleted;  #This function hasn't been pushed out yet
@@ -4355,12 +4353,7 @@ sub dataset_search {
  <SELECT name = "dsid$num" id= "dsid$num" onChange="genome_search(['args__dsid', 'dsid$num', 'args__dsgid', 'dsgid$num', 'args__gstid', 'gstid$num', 'args__num','args__$num', 'args__featid', 'featid$num'],[feat_search_chain]);">
  };
         foreach my $id (
-            sort {
-	             genomecmp2($sources{$a}{genome}, $sources{$b}{genome}, $favorites)
-		  || versioncmp($sources{$b}{version}, $sources{$a}{version})
-	          || $sources{$a}{genome}->id <=> $sources{$b}{genome}->id	     
-                  || $sources{$a}{typeid} <=> $sources{$b}{typeid}
-            } keys %sources
+            sort { genomecmp2($sources{$a}{genome}, $sources{$b}{genome}, $favorites)} keys %sources
           )
         {
             my $val = $sources{$id}{title};
