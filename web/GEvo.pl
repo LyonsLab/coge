@@ -1015,9 +1015,9 @@ sub run {
 	#print STDERR Dumper $obj;
         next unless $obj;
         my $fullname = $obj->srcfile;
-        $fullname =~ s/\.faa$//;
-        $fullname = $fullname."-".int(rand(100000)).".faa";
-        $obj->srcfile($fullname);
+        #$fullname =~ s/\.faa$//;
+        #$fullname = $fullname."-".int(rand(100000)).".faa";
+        #$obj->srcfile($fullname);
         if ( $obj->sequence && $obj->start ne $obj->stop )
         { #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
             my $accn  = $obj->accn;
