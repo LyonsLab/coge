@@ -109,9 +109,6 @@ $|         = 1;         # turn off buffering
 
 my %ajax = CoGe::Accessory::Web::ajax_func();
 
-#$ajax{dataset_search} = \&dataset_search; #override this method from Accessory::Web for restricted organisms
-#$ajax{feat_search} = \&feat_search;
-#print STDERR join ("\n", keys %ajax),"\n";
 
 %FUNCTION = (
     %ajax,
@@ -136,17 +133,12 @@ my $pj = new CGI::Ajax(%FUNCTION);
 $pj->JSDEBUG(0);
 $pj->DEBUG(0);
 
-#$pj->js_encode_function('escape');
 if ( $FORM->param('jquery_ajax') ) {
     dispatch();
 }
 else {
     print $pj->build_html( $FORM, \&gen_html );
 }
-
-#print $pj->build_html($FORM, \&gen_html);
-
-#print $FORM->header;gen_html();
 
 sub dispatch {
     my %args  = $FORM->Vars;
@@ -254,7 +246,6 @@ sub gen_body {
 
             # Check for available genomes
             next unless grep {
-                #$_ && !$_->deleted && $USER->has_access_to_genome($_) # mdb removed 7/16/15
                 $USER->has_access_to_genome($_) # mdb added 7/16/15
             } $feat->dataset->genomes;
 
@@ -272,7 +263,6 @@ sub gen_body {
 
             if ($dataset) {
                 next unless grep {
-                    #$_ && !$_->deleted && $USER->has_access_to_genome($_) # mdb removed 7/16/15
                     $USER->has_access_to_genome($_) # mdb added 7/16/15 
                 } $dataset->genomes;
             }
@@ -281,7 +271,6 @@ sub gen_body {
         ## Check if the genome was deleted
         if ($dsgid) {
             my $genome = $coge->resultset('Genome')->find($dsgid);
-            #next unless $genome && !$genome->deleted && $USER->has_access_to_genome($genome); # mdb removed 7/16/15
             next unless $genome && $USER->has_access_to_genome($genome); # mdb added 7/16/15
         }
 
@@ -297,7 +286,6 @@ sub gen_body {
                 while (my $ds = $rs->next()) {
                     if ($ds) {
                         next unless grep {
-                            #$_ && !$_->deleted && $USER->has_access_to_genome($_) # mdb removed 7/16/15
                             $USER->has_access_to_genome($_) # mdb added 7/16/15
                         } $ds->genomes;
                     }
@@ -312,8 +300,6 @@ sub gen_body {
         $drup   = 10000 unless defined $drup;
         $drdown = 10000 unless defined $drdown;
 
-        #$drup += $pad_gs if $pad_gs;
-        #$drdown += $pad_gs if $pad_gs;
         my $gbaccn = $form->param( "gbaccn" . $i )
           if $form->param( "gbaccn" . $i );
         my $gbstart = $form->param( "gbstart" . $i )
@@ -450,11 +436,6 @@ sub gen_body {
     my $hsp_label =
       get_opt( params => $prefs, form => $form, param => 'hsp_labels' );
     $hsp_label = undef unless defined $hsp_label;
-
-#    my $hsp_limit = get_opt(params=>$prefs, form=>$form, param=>'hsplim');
-#    $hsp_limit = 0 unless $hsp_limit;
-#    my $hsp_limit_num = get_opt(params=>$prefs, form=>$form, param=>'hsplimnum');
-#    $hsp_limit_num = 20 unless defined $hsp_limit_num;
     my $draw_model =
       get_opt( params => $prefs, form => $form, param => 'draw_model' );
     $draw_model = "full" unless $draw_model;
@@ -553,12 +534,6 @@ sub gen_body {
         $template->param( FEAT_LABELS_LIN => "selected" );
     }
     else { $template->param( FEAT_LABELS_NO => "selected" ); }
-
-    #    if ($feat_labels) {$template->param(FEAT_LABELS_YES=>"checked");}
-    #    else {$template->param(FEAT_LABELS_NO=>"checked");}
-    #    if ($hsp_limit) {$template->param(HSP_LIMIT_YES=>"checked");}
-    #    else {$template->param(HSP_LIMIT_NO=>"checked");}
-    #    $template->param(HSP_LIMIT_NUM=>$hsp_limit_num);
     if ( $draw_model eq "full" ) {
         $template->param( DRAW_MODEL_FULL => "selected" );
     }
@@ -574,8 +549,6 @@ sub gen_body {
     elsif ( $draw_model eq "RNA" ) {
         $template->param( DRAW_MODEL_RNA => "selected" );
     }
-
-#elsif ($draw_model eq "Gene_space") {$template->param(DRAW_MODEL_GENE_SPACE=>"selected");}
     else { $template->param( DRAW_MODEL_NO => "selected" ); }
 
     #set algorithm parameters
@@ -666,17 +639,12 @@ sub gen_body {
     $template->param( SEQ_RETRIEVAL => 1 );
     $template->param( NUM_SEQS      => scalar @seq_sub);
 
-    # $template->param(COLOR_NUM=>$num_colors);
     $message .= "<BR/>" if $message;
+
     $template->param( MESSAGE   => $message );
     $template->param( SEQ_SUB   => $seq_submission );
     $template->param( HSP_COLOR => $hsp_colors );
     $template->param( GO_RUN    => gen_go_run($num_seqs) );
-    #my $cmd          = "/usr/bin/svnversion " . $P->{COGEDIR} . "gobe/flash";
-    #my $gobe_version = `$cmd`;
-    #$gobe_version =~ s/\n//g;
-    #$template->param( GOBE_VERSION => $gobe_version );
-
     $template->param( OPTIONS            => 1 );
     $template->param( ALIGNMENT_PROGRAMS => algorithm_list($prog) );
     $template->param( SAVE_SETTINGS      => gen_save_settings($num_seqs) )
@@ -710,9 +678,6 @@ sub run {
     my $hsp_overlap_limit = $opts{hsp_overlap_limit};
     my $hsp_size_limit    = $opts{hsp_size_limit};
     my $hiqual            = $opts{hiqual};
-
-    #my $hsp_limit = $opts{hsplim};
-    #my $hsp_limit_num = $opts{hsplimnum};
     my $show_hsps_with_stop_codon = $opts{showallhsps};
     my $padding                   = $opts{padding};
     my ( $analysis_program, $param_string, $parser_opts, $add_gevo_link ) =
@@ -746,7 +711,6 @@ sub run {
         $basefilename = $cogeweb->basefilename;
     }
 ######
-    #print STDERR "Running GEvo:  basefile:  $basefilename\n";
     CoGe::Accessory::Web::write_log(
         "Beginning GEvo analysis.  Basefilename: $basefilename",
         $cogeweb->logfile );
@@ -765,8 +729,6 @@ sub run {
         push @hsp_colors, \@tmp;
     }
 
-    #my $stagger_label = $hsp_label && $hsp_label =~ /staggered/i ? 1 : 0;
-    #my $feature_labels = !$hsp_label ? 0 : 1;
     my $form      = $FORM;
     my $gevo_link = $form->url . "?prog=$analysis_program";
     $gevo_link .= ";show_cns=1"        if $show_cns;
@@ -812,7 +774,6 @@ sub run {
         my $accn = $opts{"draccn$i"};
         $accn = uri_unescape($accn);    # mdb added 10/9/12 issue #11
 
-        #print STDERR "run: accn=$accn\n";
         #trim whitespace at ends of accn
         $accn =~ s/^\s+// if $accn;
         $accn =~ s/\s+$// if $accn;
@@ -919,8 +880,6 @@ sub run {
                   : length( $obj->sequence ) - $dirstart + 1;
                 $obj->add_feature(
                     type => "direct sequence submission",
-
-                    #location=>(1-$dirstart*2+1)."..".(1-$dirstart*2+1),
                     location   => ( 1 - $dirstart + 1 ) . ".." . $anchor_stop,
                     strand     => 1,
                     qualifiers => {
@@ -1012,12 +971,8 @@ sub run {
                 $message .= "No GenBank entry found for $gbaccn\n";
             }
         }
-	#print STDERR Dumper $obj;
         next unless $obj;
         my $fullname = $obj->srcfile;
-        #$fullname =~ s/\.faa$//;
-        #$fullname = $fullname."-".int(rand(100000)).".faa";
-        #$obj->srcfile($fullname);
         if ( $obj->sequence && $obj->start ne $obj->stop )
         { #need to check for duplicate accession names -- sometimes happens and major pain in the ass for other parts of the code
             my $accn  = $obj->accn;
@@ -1040,9 +995,6 @@ sub run {
                 reference_seq => $reference_seq,
                 seq_num       => $display_order,
               };
-        }
-        else {
-            #push @sets, {seq_num=>$i};
         }
     }
     @sets = sort { $a->{seq_num} <=> $b->{seq_num} } @sets;
@@ -1075,8 +1027,6 @@ sub run {
         $gevo_link .= ";rev$i=1"                 if $item->{rev};
         $gevo_link .= ";ref$i=" . $item->{ref};
         $gevo_link .= ";mask$i=" . $item->{mask} if $item->{mask};
-
-        #$gevo_link .= ";do$i=".$item->{d} if $item->{do};
         $i++;
     }
     $i--;
@@ -1214,9 +1164,6 @@ sub run {
                 show_cbc    => $show_cbc,
                 hsp_labels  => $hsp_labels,
                 feat_labels => $feat_labels,
-
-                #			     hsp_limit=>$hsp_limit,
-                #			     hsp_limit_num=>$hsp_limit_num,
                 color_hsp        => $color_hsp,
                 hsp_top          => $hsp_top,
                 hsp_track        => $hsp_track,
@@ -1311,10 +1258,6 @@ qq{<a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="
     $html .= $gobe_buttons;
     $html .= qq{<table class=small>};
     $html .= qq{<tr valign=top><td><span class=bold>Alignment reports</span>};
-
-    #    my $stats_file = $cogeweb->basefile."_stats.txt";
-    #    $stats_file = CoGe::Accessory::Web::check_filename_taint($stats_file);
-
     if ( $analysis_reports && @$analysis_reports ) {
         foreach my $item (@$analysis_reports) {
             my $report         = $item->[0];
@@ -1385,7 +1328,6 @@ qq{<div><a href="http://cas-bioinfo.cas.unt.edu/mgsv/index.php" target=_new>mGSV
     $html .= "<div><A HREF=\"$logfile\" target=_new>Log</A></DIV>\n";
     $html .= qq{<td class="dropmenu"><td><span class="bold">Return to this analysis</span>};
     $html .= qq{<div id="tiny_link"></div>};
-    #$html .= qq{<div><a href="GEvo_direct.pl?name=$basefilename" target=_new>Results only</a></div></td>}; # mdb removed 8/20/14 issue 467
 
     my (@ncbi_links);
     foreach my $item (@sets) {
@@ -1430,9 +1372,6 @@ Total time                                          : $total_time
 
 };
 
-    #    print STDERR "\n",$gevo_link,"\n";
-    #    print STDERR $bench if $BENCHMARK;
-    #    print STDERR "GEvo run time: $total_time\n";
     CoGe::Accessory::Web::write_log( $bench,      $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "Finished!", $cogeweb->logfile );
     CoGe::Accessory::Web::write_log( "GEvo link: $gevo_link",
@@ -1443,7 +1382,6 @@ Total time                                          : $total_time
         end_time => \"current_timestamp"
     } ) if defined($job);
 
-    #    CoGe::Accessory::Web::write_log("Tiny url: $tiny", $cogeweb->logfile);
     email_results(
         email         => $email_address,
         basefile      => $basefilename,
@@ -1467,9 +1405,6 @@ sub generate_mGSV_files {
     my %genome_info;
     my $count = 1;
     foreach my $item ( @{ $dbh->selectall_arrayref($image_query) } ) {
-
-        #my ($name) = $item->[1];#=~ /^(\w{10})/;
-        #$name =~ s/\s|\(|\)/_/g;
         my $name = "Org" . $count;
         $name .= " $item->[1]";
         $name =~ s/\s|\(|\)/_/g;
@@ -1482,8 +1417,6 @@ qq{select name, type, bpmin, bpmax, image_id, pair_id, link, annotation, strand 
     my %annotations;
     my %synpairs;
     foreach my $item ( @{ $dbh->selectall_arrayref($query) } ) {
-
-        #	print join ("\t", @$item[0..6]),"\n";
         if ( $item->[5] == -99 ) {
             my ($fid) = $item->[6] =~ /fid=(\d+)/;
             push @{ $annotations{ $item->[4] }{ $item->[1] } },
@@ -1588,9 +1521,6 @@ sub generate_image {
     my $reverse_image = $opts{reverse_image};
     my $hsp_labels    = $opts{hsp_labels};
     my $feat_labels   = $opts{feat_labels};
-
-    #    my $hsp_limit = $opts{hsp_limit};
-    #    my $hsp_limit_num = $opts{hsp_limit_num};
     my $hsp_top                   = $opts{hsp_top};
     my $hsp_single_color          = $opts{hsp_single_color};
     my $hsp_track                 = $opts{hsp_track};
@@ -1651,9 +1581,6 @@ sub generate_image {
         rev        => $reverse_image,
         seq_length => length( $gbobj->sequence ),
         hsp_labels => $hsp_labels,
-
-#			     hsp_limit=>$hsp_limit,
-#			     hsp_limit_num=>$hsp_limit_num, #number of hsps for which to draw labels
         gbobj                     => $gbobj,
         color_hsp                 => $color_hsp,
         hsp_top                   => $hsp_top,
@@ -1804,10 +1731,7 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
         $try++;
     }
 
-#    print STDERR $cogeweb->sqlitefile, "\n", $statement unless $dbh->do($statement);
     foreach my $feat ( $gfx->get_feats ) {
-
-        #		print STDERR Dumper $feat unless $feat->color;
         if ( $feat->fill ) {
             next unless $feat->{"anchor"} || $feat->type eq "anchor";
         }
@@ -1844,13 +1768,6 @@ INSERT INTO image_info (id, display_id, iname, title, px_width, px_height, dsid,
         $xmin++;
         $xmax++;
         my $anno = $feat->description;
-
-        #	    $anno =~ s/'|"//g;
-        #	$anno =~ s/'//g if $anno;
-        #	$anno =~ s/<br\/?>/&#10;/ig if $anno;
-        #	$anno =~ s/\n/&#10;/g if $anno;
-        #	$anno =~ s/[\[\]\(\)]/ /g if $anno;
-        #	$anno = " " unless $anno;
         my $start      = $feat->start;
         my $stop       = $feat->stop;
         my $strand     = $feat->strand;
@@ -1907,8 +1824,6 @@ sub image_db_create_hsp_pairs {
             $run_statement = $dbh->do($statement);
             $try++;
         }
-
-        #	$dbh->do($statement);
         $statement     = "update image_data set pair_id = $id2 where id = $id1";
         $try           = 1;
         $run_statement = $dbh->do($statement);
@@ -1919,8 +1834,6 @@ sub image_db_create_hsp_pairs {
             $run_statement = $dbh->do($statement);
             $try++;
         }
-
-        #	$dbh->do($statement);
     }
     $dbh->do("commit transaction") or die $dbh->errstr;
     $dbh->disconnect();
@@ -1992,9 +1905,6 @@ sub process_features {
           sort { length($b) <=> length($a) || $a cmp $b }
           @{ $feat->qualifiers->{names} }
           if ref( $feat->qualifiers ) =~ /hash/i;
-
-#	my $anchor = $feat if ref ($feat->qualifiers) =~ /hash/i && $feat->qualifiers->{type} && $feat->qualifiers->{type} eq "anchor";
-
         if ( $type =~ /pseudogene/i ) {
             next unless $draw_model eq "full";
             $f = CoGe::Graphics::Feature::Gene->new();
@@ -2017,8 +1927,6 @@ sub process_features {
             next
               unless $draw_model eq "full" || $draw_model eq "gene" || $anchor;
             $f = CoGe::Graphics::Feature::Gene->new();
-
-            #$f->color([255,0,0,50]);
             $f->color( [ 219, 219, 219, 50 ] );
             $f->order($track);
             $f->overlay(1);
@@ -2064,9 +1972,6 @@ sub process_features {
             }
 
             if ($cbc) {
-
-                #my $seq = $feat->genomic_sequence;
-                #$f->sequence($seq);
                 my $seq;
                 my $seq_len = length( $obj->sequence );
                 foreach
@@ -2177,9 +2082,6 @@ sub process_features {
             }
 
             my $order = 1;
-
-            #	    $order = 0 if $feat->location =~ /complement/;
-
             $f->order($order);
             $f->overlay(10);
             $f->type($type);
@@ -2195,8 +2097,6 @@ sub process_features {
                     stop  => $feat->blocks->[0][1]
                 }
             );
-
-#$f = CoGe::Graphics::Feature::Line->new({start=>$feat->blocks->[0][0], stop=>$feat->blocks->[0][1]});
 
             $f->color( [ 255, 255, 102 ] );
 
@@ -2221,19 +2121,10 @@ sub process_features {
             );
             $f->_initialize();
             $f->color( [ 255, 0, 0 ] );
-
-            #$f->bgcolor([255,255,255]);
             $f->order( $feat->location =~ /complement/ ? 0 : 1 );
-
             $f->overlay(-1);
-
-            #	    $f->type($type);
-            #	    $f->description($feat->annotation);
             $f->label( join( "\t", @{ $feat->qualifiers->{names} } ) )
               if $feat->qualifiers->{names};
-
-            #	    $c->add_feature($f);
-            #	    next;
         }
         elsif ($show_ofeat) {    #show everything else
             #print STDERR $type, "\n";
@@ -2250,16 +2141,12 @@ sub process_features {
             $f->color( [ 255, 150, 66 ] );
             my $order = 1;
 
-            #	    $order = 0 if $feat->location =~ /complement/;
-
             $f->order($order);
             $f->overlay(-1);
             $f->type($type);
             $f->force_draw(1);
             $f->description( $feat->annotation );
             $c->add_feature($f);
-
-            #			next;
         }
 
         else {
@@ -2321,7 +2208,6 @@ sub process_features {
             $f->force_draw(1);
         }
 
-#	$f->label(join ("\t", @{$feat->qualifiers->{names}})) if !$f->label && $feat->qualifiers->{names};
         $c->add_feature($f);
 
         if ( $prior_feat{ $feat->type }{$strand} ) {
@@ -2346,9 +2232,6 @@ sub process_hsps {
     my $reverse    = $opts{rev};
     my $seq_len    = $opts{seq_length};
     my $hsp_labels = $opts{hsp_labels};
-
-    #    my $hsp_limit = $opts{hsp_limit};
-    #    my $hsp_limit_num = $opts{hsp_limit_num};
     my $gbobj                     = $opts{gbobj};
     my $eval_cutoff               = $opts{eval_cutoff};
     my $bitscore_cutoff           = $opts{bitscore_cutoff};
@@ -2509,17 +2392,8 @@ sub process_hsps {
             $f->strand($strand);
             $f->strand(1) if $hsp_top;
             $f->color_matches($color_hsp) if ref($f) =~ /HSP/;
-
-            #	    if ($hsp_limit)
-            #	      {
-            #		$f->label($hsp->number) if $hsp->number <= $hsp_limit_num;
-            #	      }
-            #	    else
-            #	      {
             $f->label( $hsp->number )
               if $hsp_labels;    #add label to HSP if they are to be drawn
-
-            #	      }
             $f->alt( join( "-", $hsp->number, $accn1, $accn2 ) );
             my ( $ab_start, $ab_stop ) =
               $reverse
@@ -2611,10 +2485,7 @@ sub process_hsps {
           || $a->start <=> $b->start
     } @feats;
 
-    #    @feats = reverse @feats if $reverse;
     foreach my $f (@feats) {
-
-#	next unless $f->label; #this has been commented out so that if features are labeled, but HSP are not, HSPs will still get drawn.  Not sure why this check was put into place. . .
         $order = $f->track unless $order;
         if ( $order ne $f->track ) {
             $order          = $f->track;
@@ -2625,8 +2496,6 @@ sub process_hsps {
         $f->font_size($font_size);
         $f->skip_overlap_search($skip_overlap_search);
         $c->add_feature($f);
-
-        #	$c->_check_overlap($f);
         if ( !$label_location ) {
             $label_location = "bot";
         }
@@ -2778,11 +2647,7 @@ sub get_obj_from_genome_db {
         return "", "Can't find entry for $dsgid" unless $dsg;
         return "", "Permission denied"
           if $dsg->restricted && !$USER->has_access_to_genome($dsg);
-
-#($ds) = $dsid ? $coge->resultset('Dataset')->find($dsid) : $dsg->datasets( chr => $chr );
         ($ds) = $dsg->datasets( chr => $chr );
-
-#print STDERR join ("\t", map {$_->id} $dsg->datasets(chromosome=>$chr) ),"::$chr\n";
         return ( "", "Chromosome '$chr' not found for this genome" ) unless $ds;
         $dsid  = $ds->id;
         $gstid = $dsg->type->id;
@@ -2850,10 +2715,7 @@ sub get_obj_from_genome_db {
         my $tmp;
         ( $tmp, $seq_file ) = CoGe::Accessory::Web::check_taint($seq_file);
         unlink($seq_file);
-        ##Eric changes 11/1/19
-	#$seq = $ds->get_genomic_sequence(
         $seq = $dsg->get_genomic_sequence(
-	###
             start => $start,
             stop  => $stop,
             chr   => $chr,
@@ -2898,8 +2760,6 @@ sub get_obj_from_genome_db {
     my %used_names;
     $used_names{$accn} = 1;
     my $t4 = new Benchmark;
-
-    #print STDERR "Region: $chr: $start-$stop\n";# if $DEBUG;
     my %feats = map { $_->id, $_ } $coge->get_features_in_region(
         start      => $start,
         stop       => $stop,
@@ -2908,89 +2768,7 @@ sub get_obj_from_genome_db {
         gid        => $dsgid
     );
 
-    #print STDERR join ("\t", $start, $stop, $chr, $dsid),"\n";
     $feats{ $feat->id } = $feat if $feat;
-
-#    my $t5 = new Benchmark;
-#    my $prot_sequence;
-#    foreach my $f ( values %feats ) {
-#        my $name;
-#        my @names = $f->names;
-#        next if $f->type->name =~ /misc_feat/;
-#        next if $f->type->name eq "chromosome";
-#	#new changes to deal with GD failures:  EHL 4/30/15
-#	next if $f->start == $f->stop;
-#
-#        #	next if $f->type->name eq "contig";
-#        foreach my $tmp (@names) {
-#            $name = $tmp;
-#            last if ( $tmp =~ /^$accn.+/i );
-#        }
-#        unless (@names) {
-#
-#            #	    next;
-#            push @names, "No Name Feature: " . $f->type->name, "\n";
-#
-##	    print STDERR "Feature has no Name.  Db Id: ",$f->id,"\n" unless $f->type->name =~ /misc/;
-#
-#        }
-#        $name = $accn unless $name;
-#	    print STDERR "\n" if $DEBUG;
-#        print STDERR $name, " ID: ",$f->id,"\n" if $DEBUG;
-#        print STDERR "\t", $f->genbank_location_string(), "\n" if $DEBUG;
-#        print STDERR "\t", $f->genbank_location_string( recalibrate => $start ) if $DEBUG;
-#        $new_seq = 1;
-#        if ( !$seq ) {
-#            print STDERR "Error retrieving sequence: "
-#              . join( "\t", $dsg->name, $start, $stop, $chr, $gstid ), "\n";
-#        }
-#        $seq = CoGeX::Result::Feature->reverse_complement($seq) if $rev;
-#    }
-#    if ( $stop - $start + 1 > length($seq) ) {
-#        my $len = length($seq);
-#        $stop = $start + $len - 1;
-#    }
-#    my $t3       = new Benchmark;
-#    my $gst      = $coge->resultset('GenomicSequenceType')->find($gstid);
-#    my $org_name = $ds->organism->name();
-#    $org_name .= ": " . $dsg->description if $dsg && $dsg->description;
-#    $org_name .= " ("
-#      . $ds->data_source->name . " v"
-#      . $ds->version . ", "
-#      . $gst->name . ")";
-#    my $obj = new CoGe::Accessory::GenBank(
-#        {
-#            accn                     => $accn,
-#            locus                    => $accn,
-#            version                  => $ds->version(),
-#            data_source              => $ds->data_source->name(),
-#            dataset                  => $dsid,
-#            chromosome               => $chr,
-#            start                    => $start,
-#            stop                     => $stop,
-#            organism                 => $org_name,
-#            seq_length               => length($seq),
-#            genomic_sequence_type_id => $gstid,
-#            srcfile                  => $seq_file,
-#        }
-#    );
-#
-#    my %used_names;
-#    $used_names{$accn} = 1;
-#    my $t4 = new Benchmark;
-#
-#    #print STDERR "Region: $chr: $start-$stop\n";# if $DEBUG;
-#    my %feats = map { $_->id, $_ } $coge->get_features_in_region(
-#        start      => $start,
-#        stop       => $stop,
-#        chr        => $chr,
-#        dataset_id => $dsid,
-#        gid        => $dsgid
-#    );
-#
-#    #print STDERR join ("\t", $start, $stop, $chr, $dsid),"\n";
-#    $feats{ $feat->id } = $feat if $feat;
-
     my $t5 = new Benchmark;
     my $prot_sequence;
     foreach my $f ( values %feats ) {
@@ -3000,19 +2778,12 @@ sub get_obj_from_genome_db {
         next if $f->type->name eq "chromosome";
 	#new changes to deal with GD failures:  EHL 4/30/15
 	next if $f->start == $f->stop;
-
-        #	next if $f->type->name eq "contig";
         foreach my $tmp (@names) {
             $name = $tmp;
             last if ( $tmp =~ /^$accn.+/i );
         }
         unless (@names) {
-
-            #	    next;
             push @names, "No Name Feature: " . $f->type->name, "\n";
-
-#	    print STDERR "Feature has no Name.  Db Id: ",$f->id,"\n" unless $f->type->name =~ /misc/;
-
         }
         $name = $accn unless $name;
 	    print STDERR "\n" if $DEBUG;
@@ -3308,9 +3079,7 @@ sub run_lagan {
             CoGe::Accessory::Web::write_log(
                 "running ($count/$total_runs) " . $command,
                 $cogeweb->logfile );
-
             #time for execution
-            #	    print STDERR "running $command\n";
             `$command`;
             system "/bin/chmod +rw '$tempfile'";
             my $report = new CoGe::Accessory::lagan_report(
@@ -3406,8 +3175,6 @@ sub run_dialign {
     my $kill_length = 2 * $max_length;
     my $program_ran = "DIALIGN";
     my $error_message;
-
-    #my $algo_limits = $opts{algo_limits};
     my @files;
     my @reports;
     my $total_runs = number_of_runs($sets);
@@ -3494,8 +3261,6 @@ sub run_dialign {
                         anchor_report_opts =>
                           $parser_opts->{anchor_params}{parser_opts},
                         log_file => $cogeweb->logfile,
-
-                        #									DEBUG=>1,
                     }
                 );
                 $tempfile = $obj->dialign_file;
@@ -3594,8 +3359,6 @@ sub run_genomethreader {
             next
               unless $sets->[$i]{reference_seq} || $sets->[$j]{reference_seq};
             my ( $accn1, $accn2 ) = ( $sets->[$i]{accn}, $sets->[$j]{accn} );
-
-#	    foreach my $item ({genomic=>$seqfile1, protein=>$protfile2},{genomic=>$seqfile2, protein=>$protfile1})
             foreach my $item ( { genomic => $seqfile2, protein => $protfile1 } )
             {
                 my ($tempfile) =
@@ -3654,8 +3417,6 @@ sub run_genomethreader {
                 $count++;
             }
         }
-
-        #	$pm->wait_all_children;
     }
     return \@reports;
 }
@@ -3687,9 +3448,6 @@ sub write_fasta {
     my $length   = $opts{length};
     my $force    = $opts{force};
     my $fullname = $gbobj->srcfile;
-    #$fullname =~ s/\.faa$//;
-    #$fullname = $fullname."-".int(rand(100000)).".faa";
-    #$gbobj->srcfile($fullname);
     my ($seq)    = uc( $gbobj->sequence() );
 # EHL 5/6/19:  Removing the check for the cached sequence file due to problems generating bad sequences.
 #    if ( -r $fullname && !$force ) {
@@ -3811,8 +3569,6 @@ qq{'args__draccn$i', 'args__'+encodeURIComponent(document.getElementById('accn$i
         $params .= qq{'args__pos$i', 'pos$i',};
         $params .= qq{'args__dsid$i', 'dsid$i',};
         $params .= qq{'args__dsgid$i', 'dsgid$i',};
-
-        #	$params .= qq{'args__posdsid$i', 'posdsid$i',};
         $params .= qq{'args__chr$i', 'chr$i',};
         $params .= qq{'args__gbaccn$i', 'gbaccn$i',};
         $params .= qq{'args__gbstart$i', 'gbstart$i',};
@@ -3828,9 +3584,6 @@ qq{'args__draccn$i', 'args__'+encodeURIComponent(document.getElementById('accn$i
     for ( my $i = 1 ; $i <= num_colors($num_seqs) ; $i++ ) {
         $params .=
 qq{'args__rgb$i', 'args__'+\$('#sample_color$i').css('backgroundColor'),};
-
-        #	$params .= qq{'args__g$i', 'g$i',};
-        #	$params .= qq{'args__b$i', 'b$i',};
     }
 
     $params .= qq{
@@ -3999,7 +3752,6 @@ sub color_pallet {
         BLUE    => $start->[2]
     );
 
-    #    push @colors, \%set;
     my $temp = [@$start];
     for ( my $i = 1 ; $i <= num_colors($num_seqs) ; $i++ ) {
         my @color;
@@ -4061,8 +3813,6 @@ sub algorithm_list {
         "-=None=-"       => "-=None=-",
     );
     my @programs = sort { lc $a cmp lc $b } keys %progs;
-
-    #    push @programs, "-=NONE=-";
     my $html;
     foreach my $prog (@programs) {
         $html .= "<option value=$prog";
@@ -4297,9 +4047,6 @@ sub add_seq {
     $template->param( REF_SEQ => [ { SEQ_NUM => $num_seq } ] );
     my $ref_seqs = $template->output;
     my $go_run   = gen_go_run($num_seq);
-
-    #    $hsp_colors = gen_hsp_colors(num_seqs=>$num_seq);
-
     return ( $seq_submission, $num_seq, $go_run, $ref_seqs );
 }
 
@@ -4526,8 +4273,6 @@ sub dataset_search {
 
     $accn = uri_unescape($accn);    # mdb added 10/9/12 issue #11
 
-    #	print STDERR "dataset_search: accn=$accn\n";
-
     my $feat = $coge->resultset('Feature')->find($featid) if $featid;
     $dsid = $feat->dataset->id if $feat;
     my $html;
@@ -4543,8 +4288,6 @@ sub dataset_search {
             { 'feature_names.name' => $accn, },
             {
                 'join' => { 'features' => 'feature_names', },
-
-                #						   'prefetch'=>['datasource', 'organism'],
             }
         );
     }
@@ -4588,10 +4331,6 @@ sub dataset_search {
     }
 
     if ( keys %sources ) {
-
-# 	$html .= qq{
-# <SELECT name = "dsid$num" id= "dsid$num" onChange="feat_search(['args__accn','accn$num','args__dsid', 'dsid$num', 'args__num','args__$num', 'args__featid'],['feat$num']);">
-# };
         $html .= qq{
  <SELECT name = "dsid$num" id= "dsid$num" onChange="genome_search(['args__dsid', 'dsid$num', 'args__dsgid', 'dsgid$num', 'args__gstid', 'gstid$num', 'args__num','args__$num', 'args__featid', 'featid$num'],[feat_search_chain]);">
  };
@@ -4749,8 +4488,6 @@ qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
         my $dsgid_tmp = $item->id;
         my $title;
         $title = $item->name . " " if $item->name;
-
-        #	$title = $dsg->organism->name unless $title;
         $title    .= "v" . $item->version . " " . $item->type->name;
         $title    .= " (dsgid" . $item->id . ")";
         $dsg_menu .= "<option value = $dsgid_tmp";
@@ -4765,8 +4502,6 @@ qq{<span class="small">Genome: </span><SELECT name="dsgid$num" id="dsgid$num">};
     my $oid  = $dsg->organism->id;
     my $type = $gst->name if $gst;
     $chr = join( ", ", $dsg->get_chromosomes ) unless defined $chr;
-
-#    my $title = qq{<span class="link"><a class="link" href="OrganismView.pl?oid=$oid;dsgid=$dsgid" target=_new>$org $type (v$ver):</a></span> chr. $chr};
     my $title =
 qq{<span class="link"><a class="link" href="OrganismView.pl?oid=$oid" target=_new>$org</a></span>};
     return ( $title, $dsid, $gstid, $dsgid, $dsg_menu );
@@ -4781,8 +4516,6 @@ sub feat_search {
     my $num    = $opts{num};
     my $featid = $opts{featid};
     $accn = uri_unescape($accn);    # mdb added 10/9/12 issue #11
-
-    #print STDERR "feat_search: accn=$accn\n";
     $accn =~ s/^\s+// if $accn;
     $accn =~ s/\s+$// if $accn;
     my $feat = $coge->resultset('Feature')->find($featid) if $featid;
