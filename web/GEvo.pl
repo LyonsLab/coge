@@ -16,6 +16,8 @@ use File::Path;
 
 use CoGeX;
 use CoGeX::Result::Feature;
+use CoGe::Core::Favorites;
+use CoGe::Core::Genome(qw(genomecmp genomecmp2));
 use CoGe::Accessory::GenBank;
 use CoGe::Accessory::Web;
 use CoGe::Accessory::Utils qw( commify );
@@ -4288,11 +4290,21 @@ sub dataset_search {
             { 'feature_names.name' => $accn, },
             {
                 'join' => { 'features' => 'feature_names', },
+		'order_by' => { -desc => 'dataset_id'}
             }
         );
     }
     return unless $rs;
-    while ( my $ds = $rs->next() ) {
+    my @rs;
+    while (my $ds = $rs->next) {
+	if ($ds->first_genome) {push (@rs, $ds);}
+	else {print STDERR "No genome for ".$ds->id;}
+    }
+    my $favorites = CoGe::Core::Favorites->new(user => $USER);
+    foreach my $ds ( sort {$a->first_genome->id <=> $b->first_genome->id
+	    		|| $b->id <=> $a->id
+		} @rs ) 
+	{
         my $skip = 0;
         #next if $ds->deleted;  #This function hasn't been pushed out yet
         foreach my $item ( $ds->genomes ) {
@@ -4304,6 +4316,8 @@ sub dataset_search {
         my $desc    = $ds->description;
         my $sname   = $ds->data_source->name;
         my $ds_name = $ds->name;
+	my $genome = $ds->first_genome;
+
         foreach my $seqtype ( $ds->sequence_type ) {
             my $typeid = $seqtype->id if $seqtype;
             unless ($typeid) {
@@ -4311,8 +4325,13 @@ sub dataset_search {
                   $ds->name, ": dsid ", $ds->id, "\n";
                 next;
             }
-            my $title =
-                "$ds_name ($sname, "
+            my $title;
+	    $title .= "&#11088; " if ($favorites->is_favorite($genome->id)); 
+	    $title .= "&#x2705; " if $genome->certified;
+	    $title .= "&#x1f512; " if $genome->restricted;
+	     
+	    $title .=
+                $ds->first_genome->organism->name." $ds_name ($sname, "
               . ( $ver ? "v$ver, " : '' ) . "dsid"
               . $ds->id . ")";
 
@@ -4325,7 +4344,9 @@ sub dataset_search {
             $sources{ $ds->id } = {
                 title   => $title,
                 version => $ver,
-                typeid  => $typeid
+                typeid  => $typeid,
+		ds=>$ds,
+		genome=>$ds->first_genome
             };
         }
     }
@@ -4336,7 +4357,9 @@ sub dataset_search {
  };
         foreach my $id (
             sort {
-                     $sources{$b}{version} cmp $sources{$a}{version}
+	             genomecmp2($sources{$a}{genome}, $sources{$b}{genome}, $favorites)
+		  || versioncmp($sources{$b}{version}, $sources{$a}{version})
+	          || $sources{$a}{genome}->id <=> $sources{$b}{genome}->id	     
                   || $sources{$a}{typeid} <=> $sources{$b}{typeid}
             } keys %sources
           )
