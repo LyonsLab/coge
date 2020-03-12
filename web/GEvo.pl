@@ -4326,7 +4326,7 @@ sub dataset_search {
                 next;
             }
             my $title;
-	    $title .= "&#11088; " if ($favorites->is_favorite($genome->id)); 
+	    $title .= "&#11088; " if ($favorites->is_favorite($genome)); 
 	    $title .= "&#x2705; " if $genome->certified;
 	    $title .= "&#x1f512; " if $genome->restricted;
 	     
