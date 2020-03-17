@@ -826,24 +826,24 @@ function new_right_slider(image_num, x, y, h) {
 }
 
 function drag_left(event, ui) {
-    ui.position.left = Math.max(0, ui.position.left);
-    ui.position.left = Math.min(ui.helper[0].r.position().left - 11, ui.position.left);
     var id = ui.helper[0].id;
     var num = parseInt(id.substring(id.lastIndexOf('_') + 1));
     var info = image_info[basename + '_' + num + '.png'];
     var width = info.bpmax - info.bpmin + 1;
     var ratio = width / info.img_width;
+    ui.position.left = Math.max(0, ui.position.left);
+    ui.position.left = Math.min(ui.helper[0].r.position().left - 11, ui.position.left);
     Gobe.set_genespace('up', info, Math.round((info.xmin - ui.position.left - 0.5) * ratio), width, width * ratio);
 }
 
 function drag_right(event, ui) {
-    ui.position.left = Math.max(ui.helper[0].l.position().left + 11, ui.position.left);
-    ui.position.left = Math.min(1011, ui.position.left);
     var id = ui.helper[0].id;
     var num = parseInt(id.substring(id.lastIndexOf('_') + 1));
     var info = image_info[basename + '_' + num + '.png'];
     var width = info.bpmax - info.bpmin + 1;
     var ratio = width / info.img_width;
+    ui.position.left = Math.max(ui.helper[0].l.position().left + 11, ui.position.left);
+    ui.position.left = Math.min(info.img_width+11, ui.position.left);
     Gobe.set_genespace('down', info, Math.round((ui.position.left - 9.5 - info.xmax) * ratio), width, width * ratio);
 }
 
