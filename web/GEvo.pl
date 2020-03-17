@@ -1254,7 +1254,7 @@ sub run {
         $html .= '>' . $title . '</span><br>';
         $html .= '<img id="img' . $item->{seq_num} . '" src="' . $TEMPURL . "/" . basename($item->{png_filename}) . '" style="margin-left:11px;margin-right:11px;"><br>';
     }
-    $html .= '<svg id="svg" style="position:absolute;top:0;left:0;width:100%;height:100%;" onclick="svg_click(event)" onmousedown="svg_mousedown(event)" onmousemove="svg_mousemove(event)" onmouseleave="svg_mouseleave(event)"></svg></div><script>var basename=\'' . basename($cogeweb->basefile) . '\';var num_img=' . (scalar @sets) . ';images_loaded();</script>';
+    $html .= '<svg id="svg" style="position:absolute;top:0;left:0;width:100%;height:100%;" onclick="svg_click(event)" onmousedown="svg_mousedown(event)" onmousemove="svg_mousemove(event)" onmouseleave="svg_mouseleave(event)"></svg></div><script>var basename=\'' . basename($cogeweb->basefile) . '\';var num_img=' . (scalar @sets) . ';setup_images();images_loaded();</script>';
     $html .=
 qq{<a href="http://genomevolution.org/wiki/index.php/Gobe" class="small" style="color: red" target=_new>Click here for help!</a>  <a href="http://get.adobe.com/flashplayer/" class="small" target=_new >No results?  Rerun by pressing "Run GEvo Analysis!" again.</a>.};
     $html .= $gobe_buttons;
