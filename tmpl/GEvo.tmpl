@@ -150,43 +150,43 @@ if(window.console == undefined){ console = {}; console.debug = function(){}}
 
 // function set_genespace(updown, idx, value, length, anchorlength){
 
-Gobe.set_genespace= function (updown, idx, value, length, anchorlength){
-// console.log(updown, idx, value, length, anchorlength);
+Gobe.set_genespace= function (updown, info, value, length, anchorlength){
+// console.log(updown, info, value, length, anchorlength);
 /* e.g. ('up', 1, 330) becomes: byId('drup1').value = 330; */
 /* so up is the 'left', down is the 'right' bar. */
     value = parseFloat(value);
-    value = Math.min(value, updown == 'up' ? lefts[idx - 1] : rights[idx - 1]);
-    var eid = 'dr' + updown + idx;
+    value = Math.min(value, updown == 'up' ? lefts[info.i] : rights[info.i]);
+    var eid = 'dr' + updown + info.idx;
     $('#'+eid).val(value);
     value = value*-1;
     if (value < 1) {value = 1;}
     if (updown == "up")
      {
-      var orig_gbstart = parseFloat($('#gbstart'+idx).val());
-      var orig_dirstart = parseFloat($('#dirstart'+idx).val());
-      $('#gbstart'+idx).val(value);
-      $('#dirstart'+idx).val(value);
+      var orig_gbstart = parseFloat($('#gbstart'+info.idx).val());
+      var orig_dirstart = parseFloat($('#dirstart'+info.idx).val());
+      $('#gbstart'+info.idx).val(value);
+      $('#dirstart'+info.idx).val(value);
       // adjust length
 
-       var gblength = $('#gblength'+idx).val();
+       var gblength = $('#gblength'+info.idx).val();
        if (gblength == undefined || gblength == ""){gblength=length;}
-       gblength = gblength-($('#gbstart'+idx).val()-orig_gbstart);
-       $('#gblength'+idx).val(gblength);
+       gblength = gblength-($('#gbstart'+info.idx).val()-orig_gbstart);
+       $('#gblength'+info.idx).val(gblength);
 
-       var dirlength = $('#dirlength'+idx).val();
+       var dirlength = $('#dirlength'+info.idx).val();
        if (dirlength == undefined || dirlength == ""){dirlength=length;}
-       dirlength = dirlength-($('#dirstart'+idx).val()-orig_dirstart);
-       $('#dirlength'+idx).val(dirlength);
+       dirlength = dirlength-($('#dirstart'+info.idx).val()-orig_dirstart);
+       $('#dirlength'+info.idx).val(dirlength);
      }
     else if (updown == "down")
      {
 
-       gblength = length-value-($('#gbstart'+idx).val()-pageObj.orig_gbstarts[idx]);
-       $('#gblength'+idx).val(gblength);
+       gblength = length-value-($('#gbstart'+info.idx).val()-pageObj.orig_gbstarts[info.idx]);
+       $('#gblength'+info.idx).val(gblength);
 
-       var tmp = (anchorlength-value+1)-parseFloat($('#dirstart'+idx).val());
-       dirlength = length-value-($('#dirstart'+idx).val()-pageObj.orig_dirstarts[idx]);
-       $('#dirlength'+idx).val(dirlength);
+       var tmp = (anchorlength-value+1)-parseFloat($('#dirstart'+info.idx).val());
+       dirlength = length-value-($('#dirstart'+info.idx).val()-pageObj.orig_dirstarts[info.idx]);
+       $('#dirlength'+info.idx).val(dirlength);
      }
 };
 
@@ -419,11 +419,10 @@ function feat_search_chain(stuff, num, featid) {
 // this func switching the "left" and "right" sequence values when reverse
 // region display is selected
 function rev_locs (val) {
-  up = $('#'+'drup'+val).val();
-  down = $('#'+'drdown'+val).val();
-  $('#'+'drup'+val).val(down);
-  $('#'+'drdown'+val).val(up);
-
+  up = $('#drup'+val).val();
+  down = $('#drdown'+val).val();
+  $('#drup'+val).val(down);
+  $('#drdown'+val).val(up);
 }
 
 function check_dialign_anchor_program (){
@@ -791,8 +790,8 @@ function rand ()
   return ( Math.floor ( Math.random ( ) * 99999999 + 1 ) );
 }
 
-function new_left_slider(i, y, h) {
-   var l = $('<canvas id="slider_up_' + (i + 1) + '" style="position:absolute;left:0;top:' + y + 'px;width:11px;height:' + h + 'px" width="' + (11 * window.devicePixelRatio) + 'px" height="' + (h * window.devicePixelRatio) + 'px"></canvas>');
+function new_left_slider(image_num, y, h) {
+   var l = $('<canvas id="slider_up_' + image_num + '" style="position:absolute;left:0;top:' + y + 'px;width:11px;height:' + h + 'px" width="' + (11 * window.devicePixelRatio) + 'px" height="' + (h * window.devicePixelRatio) + 'px"></canvas>');
     var ctx = l[0].getContext('2d');
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
     ctx.beginPath();
@@ -809,8 +808,8 @@ function new_left_slider(i, y, h) {
 
 }
 
-function new_right_slider(i, x, y, h) {
-    var r = $('<canvas id="slider_down_' + (i + 1) + '" style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:11px;height:' + h + 'px" width="' + (11 * window.devicePixelRatio) + 'px" height="' + (h * window.devicePixelRatio) + 'px"></canvas>');
+function new_right_slider(image_num, x, y, h) {
+    var r = $('<canvas id="slider_down_' + image_num + '" style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:11px;height:' + h + 'px" width="' + (11 * window.devicePixelRatio) + 'px" height="' + (h * window.devicePixelRatio) + 'px"></canvas>');
     var ctx = r[0].getContext('2d');
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
     ctx.beginPath();
@@ -830,74 +829,82 @@ function drag_left(event, ui) {
     ui.position.left = Math.max(0, ui.position.left);
     ui.position.left = Math.min(ui.helper[0].r.position().left - 11, ui.position.left);
     var id = ui.helper[0].id;
-    var num = get_sequence_num(parseInt(id.substring(id.lastIndexOf('_') + 1)));
+    var num = parseInt(id.substring(id.lastIndexOf('_') + 1));
     var info = image_info[basename + '_' + num + '.png'];
     var width = info.bpmax - info.bpmin + 1;
     var ratio = width / info.img_width;
-    Gobe.set_genespace('up', num, Math.round((info.xmin - ui.position.left - 0.5) * ratio), width, width * ratio);
+    Gobe.set_genespace('up', info, Math.round((info.xmin - ui.position.left - 0.5) * ratio), width, width * ratio);
 }
 
 function drag_right(event, ui) {
     ui.position.left = Math.max(ui.helper[0].l.position().left + 11, ui.position.left);
     ui.position.left = Math.min(1011, ui.position.left);
     var id = ui.helper[0].id;
-    var num = get_sequence_num(parseInt(id.substring(id.lastIndexOf('_') + 1)));
+    var num = parseInt(id.substring(id.lastIndexOf('_') + 1));
     var info = image_info[basename + '_' + num + '.png'];
     var width = info.bpmax - info.bpmin + 1;
     var ratio = width / info.img_width;
-    Gobe.set_genespace('down', num, Math.round((ui.position.left - 9.5 - info.xmax) * ratio), width, width * ratio);
+    Gobe.set_genespace('down', info, Math.round((ui.position.left - 9.5 - info.xmax) * ratio), width, width * ratio);
 }
 
 function get_image_index(y) {
     for (var i=0; i<num_img; i++)
-        if (y >= tops[i] && y <= tops[i] + image_height)
+        if (y >= images[i].top && y <= images[i].top + image_height)
             return i;
     return -1;
 }
 
 function get_sequence_num(order) {
-    for (var i=1; i<=num_img; i++)
-        if ($('#display_order' + i).val() == order)
+    for (var i=0; i<num_img; i++)
+        if ($('#display_order' + images[i].index).val() == order)
             return i;
 }
 
-var tops;
-function get_tops() {
-    tops = [];
-    for (var i=1; i<=num_img; i++) {
-        var img = $('#img' + i);
-        tops.push(img.offset().top - img.parent().offset().top);
+var images;
+function setup_images() {
+    images = [];
+    var index = 1;
+    while (images.length < num_img) {
+        var img = $('#img' + index);
+        if (img.length)
+            images.push({img:img,index:index});
+        ++index;
     }
 }
-
+function get_image(index) {
+    for (var i=0; i<images.length; i++)
+        if (images[i].index == index)
+            return images[i];
+}
 var image_info;
 var image_height;
 var lefts;
 var rights;
 function images_loaded() {
-    for (var i=1; i<=num_img; i++) {
-        var img = document.getElementById('img' + i);
-        if (!img.complete || img.naturalWidth == undefined) {
+    for (var i=0; i<num_img; i++) {
+        if (!images[i].img[0].complete || images[i].img[0].naturalWidth === undefined || images[i].img[0].naturalWidth === 0) {
             setTimeout(images_loaded, 100);
             return;
         }
     }
+    for (var i=0; i<num_img; i++) {
+        images[i].top = images[i].img.offset().top - images[i].img.parent().offset().top;
+        images[i].height = images[i].img.height();
+    }
     $('#svg')[0].connectors = {};
-    get_tops();
-    image_height = $('#img1').height();
+    image_height = images[0].height;
     lefts = [];
     rights = [];
     var div = $('#images');
     for (var i=0; i<num_img; i++) {
-        var top = tops[i] + 24;
-        var img = $('#img' + (i + 1));
-        var h = img.height() - 24;
-        var l = new_left_slider(i, top, h).appendTo(div).draggable({axis:'x',drag:drag_left});
-        var r = new_right_slider(i, img.width() + 11, top, h).appendTo(div).draggable({axis:'x',drag:drag_right});
+        var top = images[i].top + 24;
+        var h = images[i].height - 24;
+        var l = new_left_slider(images[i].index, top, h).appendTo(div).draggable({axis:'x',drag:drag_left});
+        var r = new_right_slider(images[i].index, images[i].img.width() + 11, top, h).appendTo(div).draggable({axis:'x',drag:drag_right});
         l[0].r = r;
         r[0].l = l;
-        lefts.push(parseInt($('#drup' + (i + 1)).val()));
-        rights.push(parseInt($('#drdown' + (i + 1)).val()));
+        lefts.push(parseInt($('#drup' + images[i].index).val()));
+        rights.push(parseInt($('#drdown' + images[i].index).val()));
     }
     $.ajax({
         dataType: 'json',
@@ -918,15 +925,13 @@ function svg_click(event) {
     var x = event.offsetX;
     var y = event.offsetY;
     Gobe.handle_html('');
-    var img = get_image_index(y);
-    if (img == -1)
-        return;
-    y -= tops[img];
-    var url = 'gobe/gobe.py/' + basename + '/query/?y=' + y + '&img=' + (img + 1) + '&x=' + x;
+    var index = get_image_index(y);
+    y -= images[index].top;
+    var url = 'gobe/gobe.py/' + basename + '/query/?y=' + y + '&img=' + images[index].index + '&x=' + x;
     if (event.shiftKey || bbox)
         url += '&all=1';
     if (bbox)
-        url += '&bbox=' + (Math.min(bbox_x1, bbox_x2) - 11) + ',' + (Math.min(bbox_y1, bbox_y2) - tops[img]) + ',' + (Math.max(bbox_x1, bbox_x2) - 11) + ',' + (Math.max(bbox_y1, bbox_y2) - tops[img]);
+        url += '&bbox=' + (Math.min(bbox_x1, bbox_x2) - 11) + ',' + (Math.min(bbox_y1, bbox_y2) - images[index].top) + ',' + (Math.max(bbox_x1, bbox_x2) - 11) + ',' + (Math.max(bbox_y1, bbox_y2) - images[index].top);
     $.ajax({
         dataType: 'json',
         url: url,
@@ -950,8 +955,8 @@ function svg_click(event) {
                 if (svg.connectors[coords1[4]])
                     continue;
                 svg.connectors[coords1[4]] = true;
-                var y1 = tops[keys[0].substring(3) - 1];
-                var y2 = tops[keys[1].substring(3) - 1];
+                var y1 = get_image(keys[0].substring(3)).top;
+                var y2 = get_image(keys[1].substring(3)).top;
                 var r1x1 = coords1[0] + 11;
                 var r1x2 = coords1[2] + 11;
                 var r2x1 = coords2[0] + 11;
@@ -992,9 +997,9 @@ function calc_bbox() {
     var x2 = Math.max(bbox_x1, bbox_x2);
     x2 = Math.min(x2, 1011);
     var y1 = Math.min(bbox_y1, bbox_y2);
-    y1 = Math.max(y1, tops[bbox_img]);
+    y1 = Math.max(y1, images[bbox_img].top);
     var y2 = Math.max(bbox_y1, bbox_y2);
-    y2 = Math.min(y2, tops[bbox_img] + image_height);
+    y2 = Math.min(y2, images[bbox_img].top + image_height);
     var div = document.getElementById('bbox');
     div.style.left = x1 + 'px';
     div.style.top = y1 + 'px';
