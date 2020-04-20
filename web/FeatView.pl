@@ -604,7 +604,7 @@ sub get_data_source_info_for_accn {
 
         foreach my $type (@gstypes) {
             my $gstname = $type->name;
-            my $title   = "$org: $ds_name ($dsid, $sname, v$ver, $gstname)";
+            my $title   = "$org (gid ".$dsg->id. " v".$dsg->version."): $ds_name (dsid: $dsid, $sname, v$ver, $gstname)";
             #my $title = "$org: $ds_name (v$ver, $type)";
             $sources{$title}{id}    = $val->id;
             $sources{$title}{v}     = $ver;
