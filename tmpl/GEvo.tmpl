@@ -208,6 +208,8 @@ function return_image_info (id) {
  }
 
 Gobe.handle_html= function (html) {
+  if (!html)
+    html = "<p>No Results</p>";
   html = "<span class='ui-button ui-corner-all coge-button-sm' id='clear_lines' onclick='Gobe.clear()'>Clear Connectors</span><br>"+html;
   $('#results_info').html(html);
 
