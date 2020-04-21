@@ -942,9 +942,11 @@ function svg_click(event) {
             var wedges = $('#set_wedges').css('display') == 'none';
             var line_width = $('#line_width_val').val();
             var svg = document.getElementById('svg');
+	    var html_data="";
             for (var i=0; i<data.length; i++) {
                 var pair = data[i];
-                Gobe.handle_html('<p><a target="_blank" href="' + pair.link + '">full annotation</a></p>&#10;&#10;<p>' + pair.annotation + '</p>');
+                //Gobe.handle_html('<p><a target="_blank" href="' + pair.link + '">Full annotation feature ' + i + '</a></p>&#10;&#10;<p>' + pair.annotation + '</p>');
+                html_data = html_data + '<p><a target="_blank" href="' + pair.link + '">Full annotation feature ' + i + '</a></p>&#10;&#10;<p>' + pair.annotation + '</p>';
                 if (!pair.has_pair)
                     continue;
                 var color = '#' + pair.color.substring(2);
@@ -983,6 +985,7 @@ function svg_click(event) {
                 svg.appendChild(r2);
                 svg.appendChild(c);
             }
+	  Gobe.handle_html(html_data);
         }
     });
 }
