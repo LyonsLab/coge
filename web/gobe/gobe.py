@@ -181,6 +181,10 @@ class query(object):
                     'key%i' % result['image_id']: f1pts,
                     'key%i' % (pair and pair['image_id'] or 999): f2pts}
             ))
+	if not results:
+	    results.append(dict(
+		annotation = "No results found"
+	    ))
         web.header('Content-type', 'text/javascript')
         return simplejson.dumps({'resultset':results})
 
