@@ -254,11 +254,14 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
           . '%GC Hist</div>';
 
         $feat_string .= "<td>|</td>";
+
         $feat_string .= "<td class='small link' onclick=\"window.open('FeatList.pl?dsgid=$dsgid"
           . "&ftid="
           . $feats->{$type}{id}
           . ";gstid=$gstid')\">FeatList";
+
         $feat_string .= "<td>|</td>";
+
         $feat_string .= "<td class='small link' onclick=\"window.open('get_seqs_for_feattype_for_genome.pl?ftid=" . $feats->{$type}{id} . ";";
         $feat_string .= "dsgid=$dsgid;";
         $feat_string .= "')\">Nuc Seqs</td>";
@@ -266,6 +269,8 @@ SELECT count(distinct(feature_id)), ft.name, ft.feature_type_id
         my $fid = $feats->{$type}{id};
 
         $feat_string .= qq{<td>|</td><td class="small link" onclick="export_features_to_irods($dsgid, $fid, true, 0);">Export Nuc Seqs</td>};
+
+        $feat_string .= qq{<td>|</td><td class="small link" onclick="get_bed($fid);">BED};
 
         if ( $feats->{$type}{name} eq "CDS" ) {
             $feat_string .= "<td>|</td>";
@@ -1530,9 +1535,13 @@ sub get_bed { #TODO migrate to API
 
     # ensure user has permission
     return $ERROR unless $USER->has_access_to_genome($dsg);
-
-    $args{basename} = sanitize_name($dsg->organism->name);
-
+    
+    my $basename = sanitize_name($dsg->organism->name);
+    if ($args{ftid}) {
+        my $ft = $DB->resultset('FeatureType')->find($args{ftid});
+        $basename.=".".$ft->name;
+    }
+    $args{basename} = $basename;
     my $workflow = $JEX->create_workflow(name => "Export bed file");
     my ($output, $task) = generate_bed(%args);
     $workflow->add_job($task);
