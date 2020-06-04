@@ -796,7 +796,7 @@ function get_tbl() {
     });
 }
 
-function get_bed() {
+function get_bed(ftid) {
     var title = $("<h4>Generating bed file</h4>");
 
     reset_dialog();
@@ -813,7 +813,8 @@ function get_bed() {
         dataType: "json",
         data: {
             fname: "get_bed",
-            gid: GENOME_ID
+            gid: GENOME_ID,
+            ftid: ftid
         },
         success: function(json) {
             if (json.error) {
