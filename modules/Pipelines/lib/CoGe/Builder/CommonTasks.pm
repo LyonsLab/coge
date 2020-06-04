@@ -82,14 +82,19 @@ sub generate_bed {
     my $filename = "$basename" . "_id" . $args{gid} . ".bed";
     my $path = get_genome_cache_path($args{gid});
     my $output_file = catfile($path, $filename);
-
+    my @job_args = (
+        ['-gid', $args{gid}, 0],
+        ['-f', $filename,0],
+        ['-config', $CONF->{_CONFIG_PATH}, 0],
+    );
+    if ($args{ftid}) {push @job_args, ['-ftid', $args{ftid}, 0];}
     return $output_file, {
-        cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.pl"),
-        args => [
-            ['-gid', $args{gid}, 0],
-            ['-f', $filename, 0],
-            ['-config', $CONF->{_CONFIG_PATH}, 0],
-        ],
+        cmd  => catfile($CONF->{SCRIPTDIR}, "coge2bed.v2.pl"),
+        args => [@job_args],
+            #['-gid', $args{gid}, 0],
+            #['-f', $filename, 0],
+            #['-config', $CONF->{_CONFIG_PATH}, 0],
+        #],
         outputs => [$output_file]
     };
 }
