@@ -594,6 +594,10 @@ sub process_gff_file {
         next if $type eq "stop_codon";
 #        next if $type eq "transcript";
         next if $type eq "protein";
+        next if $type eq "protein_match";
+        next if $type eq "match";
+        next if $type eq "match_part";
+        next if $type eq "expressed_sequence_match";
 
         # Process and check chromosomes
         ($chr) = split(/\s+/, $chr);
