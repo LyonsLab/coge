@@ -265,6 +265,15 @@ sub gen_body {
 	$autogo = 0 unless defined $autogo;
 	$template->param( AUTOGO => $autogo );
 
+    #special admin function to delete results from a synmap job off the server
+    if ($USER->is_admin && $FORM->param('clean')&& $FORM->param('gid1') && $FORM->param('gid2') ){
+        my $cmd = $config->{CLEAN_SYNMAP}." -gid1 ".$FORM->param('gid1') ." -gid2 ".$FORM->param('gid2'). " -config ".$ENV{COGE_HOME}.'coge.conf';
+        `$cmd`;
+    }
+    if ($USER->is_admin && $FORM->param('clean')&& $FORM->param('dsgid1') && $FORM->param('dsgid2') ){
+        my $cmd = $config->{CLEAN_SYNMAP}." -gid1 ".$FORM->param('dsgid1') ." -gid2 ".$FORM->param('dsgid2'). " -config ".$ENV{COGE_HOME}.'coge.conf';
+        `$cmd`;
+    }
     #if the page is loading with genomes, there will be a check for whether the genome is rest
     #populate organism menus
 	my $error = 0;
@@ -1376,7 +1385,7 @@ sub get_results {
 	$results->param( axis_metric => $axis_metric );
 	$results->param( ylabel      => $y_label );
 	$results->param( xlabel      => $x_label );
-
+    
 	if ($flip) {
 		$results->param( yorg_name => html_escape($org_name1) );
 		$results->param( xorg_name => html_escape($org_name2) );
@@ -1693,7 +1702,7 @@ sub get_results {
 	);
 
 	$dagchainer_file =~ s/^$URL/$DIR/;
-
+    
 	my $rows = [
 		{
 			general  => 'General',
