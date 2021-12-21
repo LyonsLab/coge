@@ -292,7 +292,7 @@ sub get_genomes_for_user {
     #my $t4 = time;
     #print STDERR 'merge: ', ($t4-$t3)*1000, "\n";
     
-    return [ values $combined ];
+    return [ values %$combined ];
 }
 
 sub get_experiments_for_user {
@@ -354,7 +354,7 @@ sub get_experiments_for_user {
     
     Hash::Merge::set_behavior('LEFT_PRECEDENT');
     my $combined = Hash::Merge::merge($results1, $results2); # order is important here, results1 should overwrite results2
-    return [ values $combined ];
+    return [ values %$combined ];
 }
 
 sub get_lists_for_user {
