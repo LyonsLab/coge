@@ -35,7 +35,7 @@ $(function () {
 			title: 'Experiments',
 			displayType: 'grid',
 			dataTypes: ['experiment'],
-			operations: ['share', 'organize', 'favorite', 'delete', 'sendto']
+			operations: ['share', 'organize', 'favorite', 'delete', 'sendto', 'info']
 		},
 		notebook: {
 			title: 'Notebooks',

@@ -389,3 +389,8 @@ function toggle_star(img, id) {
 		}
 	});
 }
+
+
+function open_close_info() {
+	$( "#info_panel" ).toggle();
+}
